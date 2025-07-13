@@ -21,26 +21,26 @@ fun ByteBuf.readFixedLengthString(length: Int): String {
 }
 
 fun ByteBuf.readLengthEncodedInteger(): Long {
-    val firstByte = readByte().toInt() and 0xFF
+    val firstByte = readUnsignedByte().toInt()
     return when {
-        firstByte < 251 -> firstByte.toLong()
-        firstByte == 251 -> -1L // NULL value
-        firstByte == 252 -> readShortLE().toLong() and 0xFFFF
-        firstByte == 253 -> readMediumLE().toLong() and 0xFFFFFF
-        firstByte == 254 -> readLongLE()
+        firstByte < 0xFB -> firstByte.toLong()
+        firstByte == 0xFC -> readShortLE().toLong()
+        firstByte == 0xFD -> readMediumLE().toLong()
+        firstByte == 0xFE -> readLongLE()
         else -> throw IllegalArgumentException("Invalid length encoded integer prefix: $firstByte")
     }
 }
 
 private val NULL_BYTE_BUF = Delimiters.nulDelimiter()[0]
 
-fun ByteBuf.readNullTerminatedString(): String {
+fun ByteBuf.readNullTerminatedString(): ByteBuf {
     val index = ByteBufUtil.indexOf(NULL_BYTE_BUF, this)
     if (index < 0) {
         throw IndexOutOfBoundsException("No null terminator found in ByteBuf.")
     }
-
-    return readString(index - readerIndex(), Charsets.UTF_8)
+    val read = readSlice(index - readerIndex())
+    skipBytes(1) // Skip the null terminator byte
+    return read
 }
 
 fun ByteBuf.readLengthEncodedString(): ByteBuf {

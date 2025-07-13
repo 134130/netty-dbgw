@@ -1,10 +1,14 @@
 package com.github.l34130.netty.dbgw.app.handler.codec.mysql
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.netty.buffer.Unpooled
 import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.SimpleChannelInboundHandler
+import io.netty.handler.ssl.SslContextBuilder
 import io.netty.handler.ssl.SslHandler
-import javax.net.ssl.SSLContext
+import io.netty.handler.ssl.util.InsecureTrustManagerFactory
+import io.netty.util.ReferenceCountUtil
+import java.io.File
 import kotlin.math.max
 
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_connection_phase_packets_protocol_handshake_v10.html
@@ -16,6 +20,8 @@ class InitialHandshakeRequestInboundHandler(
         msg: Packet,
     ) {
         val payload = msg.payload
+        payload.markReaderIndex()
+
         val protocolVersion = payload.readFixedLengthInteger(1)
         if (protocolVersion.value != 10L) {
             logger.error { "Unsupported MySQL protocol version: ${protocolVersion.value}" }
@@ -25,11 +31,11 @@ class InitialHandshakeRequestInboundHandler(
 
         // human-readable server version
         val serverVersion = payload.readNullTerminatedString()
-        logger.debug { "Server version: $serverVersion" }
+        logger.trace { "Server version: ${serverVersion.toString(Charsets.UTF_8)}" }
 
         // connection id
         val threadId = payload.readFixedLengthInteger(4)
-        logger.debug { "Thread ID: ${threadId.value}" }
+        logger.trace { "Thread ID: ${threadId.value}" }
 
         // scramble buffer
         val authPluginDataPart1 = payload.readBytes(8)
@@ -49,18 +55,19 @@ class InitialHandshakeRequestInboundHandler(
             } else {
                 0x00
             }
-        logger.debug { "Supports Client Plugin Auth: $supportsClientPluginAuth" }
+        logger.trace { "Supports Client Plugin Auth: $supportsClientPluginAuth" }
 
         payload.skipBytes(10) // skip reserved bytes
 
         val authPluginDataPart2 = payload.readBytes(max(13, authPluginDataLength - 8))
         if (supportsClientPluginAuth) {
             val authPluginName = payload.readNullTerminatedString()
-            logger.debug { "Auth Plugin Name: $authPluginName" }
+            logger.trace { "Auth Plugin Name: ${authPluginName.toString(Charsets.UTF_8)}" }
         }
 
+        payload.resetReaderIndex()
+        proxyContext.downstream().writeAndFlush(msg)
         ctx.pipeline().remove(this)
-        ctx.fireChannelRead(msg)
     }
 
     companion object {
@@ -76,78 +83,157 @@ class InitialHandshakeResponseInboundHandler(
         msg: Packet,
     ) {
         val payload = msg.payload
+        payload.markReaderIndex()
+
         val clientFlag = payload.readFixedLengthInteger(4)
-        if ((clientFlag.value and CapabilitiesFlags.CLIENT_PROTOCOL_41) == 0L) {
+        val clientCapabilities = CapabilitiesFlags(clientFlag.value)
+        proxyContext.clientCapabilities = clientCapabilities
+        if (!clientCapabilities.hasFlag(CapabilitiesFlags.CLIENT_PROTOCOL_41)) {
             logger.error { "Unsupported MySQL client protocol version: ${clientFlag.value}" }
             ctx.close()
             return
         }
 
         val maxPacketSize = payload.readFixedLengthInteger(4)
-        val characterSet = payload.readFixedLengthInteger(1)
+        val characterSet =
+            when (val v = payload.readFixedLengthInteger(1).value.toInt()) {
+                1 -> "big5_chinese_ci"
+                2 -> "latin2_czech_cs"
+                3 -> "dec8_swedish_ci"
+                4 -> "cp850_general_ci"
+                5 -> "latin1_german1_ci"
+                6 -> "hp8_english_ci"
+                7 -> "koi8_ru_general_ci"
+                8 -> "latin1_swedish_ci"
+                9 -> "latin2_general_ci"
+                10 -> "swe7_swedish_ci"
+                else -> "unknown_character_set($v)"
+            }
+        logger.trace { "Character Set: $characterSet" }
         payload.skipBytes(23) // skip filler bytes
 
-        if (proxyContext.serverCapabilities.hasFlag(CapabilitiesFlags.CLIENT_SSL)) {
+        if (proxyContext.clientCapabilities.hasFlag(CapabilitiesFlags.CLIENT_SSL) && ctx.pipeline().get("ssl-handler") == null) {
+            logger.trace { "Client supports SSL" }
+
+            val downstream = proxyContext.downstream()
+            val upstream = proxyContext.upstream()
+
+            // TODO: Singletonize SSL context creation
+            val serverSslContext =
+                SslContextBuilder
+                    .forServer(File("certificate.pem"), File("private.key"))
+                    .build()
+                    .newEngine(downstream.alloc())
+
+            // TODO: Use InsecureTrustManagerFactory for testing purposes only
+            val clientSslContext =
+                SslContextBuilder
+                    .forClient()
+                    .trustManager(InsecureTrustManagerFactory.INSTANCE)
+                    .build()
+                    .newEngine(upstream.alloc())
+
+            payload.resetReaderIndex()
+            upstream.writeAndFlush(msg).addListener { future ->
+                if (!future.isSuccess) {
+                    logger.error(future.cause()) { "[Upstream] Failed to send initial handshake response." }
+                    proxyContext.downstream().closeOnFlush()
+                    return@addListener
+                }
+
+                downstream.pipeline().addFirst(
+                    "ssl-handler",
+                    SslHandler(serverSslContext).apply {
+                        handshakeFuture().addListener { future ->
+                            if (!future.isSuccess) {
+                                logger.error(future.cause()) { "[Downstream] SSL handshake failed." }
+                                proxyContext.downstream().closeOnFlush()
+                                return@addListener
+                            }
+
+                            logger.info { "[Downstream] SSL handshake completed successfully." }
+                            proxyContext.upstream().pipeline().addFirst(
+                                "ssl-handler",
+                                SslHandler(clientSslContext).apply {
+                                    handshakeFuture().addListener { future ->
+                                        if (!future.isSuccess) {
+                                            logger.error(future.cause()) { "[Upstream] SSL handshake failed." }
+                                            proxyContext.downstream().closeOnFlush()
+                                            return@addListener
+                                        }
+
+                                        logger.info { "[Upstream] SSL handshake completed successfully." }
+                                    }
+                                },
+                            )
+                            proxyContext.upstream().writeAndFlush(Unpooled.EMPTY_BUFFER) // Trigger the SSL handshake
+                        }
+                    },
+                )
+            }
+
             // If the server supports SSL, we should have already added the SslHandler
-            ctx.pipeline().addAfter(
-                "ssl-connection-request-handler",
-                "ssl-handler",
-                SslHandler(SSLContext.getDefault().createSSLEngine()),
-            )
+
+            return
         }
 
         // login username
         val username = payload.readNullTerminatedString()
-        logger.debug { "Username: $username" }
+        logger.trace { "Username: ${username.toString(Charsets.US_ASCII)}" }
 
         val authResponse =
-            if ((clientFlag.value and CapabilitiesFlags.CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA) != 0L) {
+            if (clientCapabilities.hasFlag(CapabilitiesFlags.CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA)) {
                 payload.readLengthEncodedString()
             } else {
                 val authResponseLength = payload.readFixedLengthInteger(1).value.toInt()
-                payload.readBytes(authResponseLength)
+                payload.readLengthEncodedString()
             }
 
         val database =
-            if (clientFlag.value and CapabilitiesFlags.CLIENT_CONNECT_WITH_DB != 0L) {
+            if (clientCapabilities.hasFlag(CapabilitiesFlags.CLIENT_CONNECT_WITH_DB)) {
                 payload.readNullTerminatedString()
             } else {
                 null
             }
-        logger.debug { "Database: $database" }
+        logger.trace { "Database: ${database?.toString(Charsets.US_ASCII)}" }
 
         val clientPluginName =
-            if ((clientFlag.value and CapabilitiesFlags.CLIENT_PLUGIN_AUTH) != 0L) {
+            if (clientCapabilities.hasFlag(CapabilitiesFlags.CLIENT_PLUGIN_AUTH)) {
                 payload.readNullTerminatedString()
             } else {
                 null
             }
-        logger.debug { "Client Plugin Name: $clientPluginName" }
+        logger.trace { "Client Plugin Name: ${clientPluginName?.toString(Charsets.UTF_8)}" }
 
         val clientConnectAttrs =
-            if ((clientFlag.value and CapabilitiesFlags.CLIENT_CONNECT_ATTRS) != 0L) {
+            if (clientCapabilities.hasFlag(CapabilitiesFlags.CLIENT_CONNECT_ATTRS)) {
                 val lengthOfAllKeyValues = payload.readLengthEncodedInteger()
 
+                val keyValuesByteBuf = payload.readBytes(lengthOfAllKeyValues.toInt())
+
                 val attrs = mutableListOf<Pair<String, String>>()
-                (0 until lengthOfAllKeyValues).forEach { i ->
-                    val key = payload.readLengthEncodedString().toString(Charsets.UTF_8)
-                    val value = payload.readLengthEncodedString().toString(Charsets.UTF_8)
+                while (keyValuesByteBuf.readableBytes() > 0) {
+                    val key = keyValuesByteBuf.readLengthEncodedString().toString(Charsets.UTF_8)
+                    val value = keyValuesByteBuf.readLengthEncodedString().toString(Charsets.UTF_8)
                     attrs.add(key to value)
                 }
+                ReferenceCountUtil.release(keyValuesByteBuf)
+                attrs
             } else {
-                emptyList<Pair<String, String>>()
+                emptyList()
             }
-        logger.debug { "Client Connect Attributes: $clientConnectAttrs" }
+        logger.trace { "Client Connect Attributes: $clientConnectAttrs" }
 
         val zstdCompressionLevel =
-            if ((clientFlag.value and CapabilitiesFlags.CLIENT_ZSTD_COMPRESSION_ALGORITHM) != 0L) {
+            if (clientCapabilities.hasFlag(CapabilitiesFlags.CLIENT_ZSTD_COMPRESSION_ALGORITHM)) {
                 payload.readFixedLengthInteger(1).value.toInt()
             } else {
                 0
             }
 
+        payload.resetReaderIndex()
+        proxyContext.upstream().writeAndFlush(msg)
         ctx.pipeline().remove(this)
-        ctx.fireChannelRead(msg)
     }
 
     companion object {

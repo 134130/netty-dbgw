@@ -2,12 +2,13 @@ package com.github.l34130.netty.dbgw.app.handler.codec.mysql
 
 import io.netty.bootstrap.Bootstrap
 import io.netty.channel.Channel
+import io.netty.channel.ChannelFuture
 import io.netty.channel.socket.nio.NioSocketChannel
 
 class ProxyContext(
     private val downstreamChannel: Channel,
 ) {
-    private lateinit var upstreamChannel: Channel
+    private lateinit var upstreamChannelFuture: ChannelFuture
     private val upstreamBootstrap: Bootstrap = Bootstrap()
 
     lateinit var serverCapabilities: CapabilitiesFlags
@@ -15,8 +16,8 @@ class ProxyContext(
 
     fun downstream(): Channel = downstreamChannel
 
-    fun connectUpstream() {
-        if (::upstreamChannel.isInitialized) {
+    fun connectUpstream(): ChannelFuture {
+        if (::upstreamChannelFuture.isInitialized) {
             throw IllegalStateException("Upstream channel is already initialized.")
         }
 
@@ -26,13 +27,14 @@ class ProxyContext(
             .remoteAddress("mysql.querypie.io", 3307)
             .handler(MySqlProxyChannelInitializer.UpstreamInboundHandler(this))
 
-        upstreamChannel = upstreamBootstrap.connect().channel()
+        upstreamChannelFuture = upstreamBootstrap.connect()
+        return upstreamChannelFuture
     }
 
     fun upstream(): Channel {
-        if (!::upstreamChannel.isInitialized) {
+        if (!::upstreamChannelFuture.isInitialized) {
             throw IllegalStateException("Upstream channel is not initialized. Call connectUpstream() first.")
         }
-        return upstreamChannel
+        return upstreamChannelFuture.channel()
     }
 }

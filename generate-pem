@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+openssl genrsa -out private.key 2048
+openssl req -new -key private.key -out certificate.csr \
+  -subj "/C=KR/ST=Seoul/L=Seoul/O=l34130/OU=IT/CN=localhost" \
+
+openssl x509 -req -days 365 -in certificate.csr -signkey private.key -out certificate.pem

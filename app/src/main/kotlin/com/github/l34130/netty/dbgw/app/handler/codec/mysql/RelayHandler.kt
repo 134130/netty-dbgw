@@ -15,11 +15,6 @@ class RelayHandler(
         msg: Any?,
     ) {
         if (relayChannel.isActive) {
-            when (msg) {
-                is Packet -> {
-                    println("$debugName| ${msg.sequenceId}: ${msg.payload.toString(Charsets.UTF_8)}")
-                }
-            }
             relayChannel.writeAndFlush(msg)
         } else {
             ReferenceCountUtil.release(msg)

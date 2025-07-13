@@ -22,9 +22,9 @@ class MySqlProxyChannelInitializer : ChannelInitializer<Channel>() {
             proxyContext.connectUpstream()
             ctx
                 .pipeline()
-                .addLast(PacketEncoder())
-                .addLast(PacketDecoder())
-//                .addLast("initial-handshake-handler", InitialHandshakeResponseInboundHandler(proxyContext))
+                .addLast("packet-encoder", PacketEncoder())
+                .addLast("packet-decoder", PacketDecoder())
+                .addLast("initial-handshake-handler", InitialHandshakeResponseInboundHandler(proxyContext))
                 .addLast("relay-handler", RelayHandler(proxyContext.upstream(), "downstream"))
         }
     }
@@ -35,10 +35,10 @@ class MySqlProxyChannelInitializer : ChannelInitializer<Channel>() {
         override fun channelActive(ctx: ChannelHandlerContext) {
             ctx
                 .pipeline()
-                .addLast(PacketEncoder())
-                .addLast(PacketDecoder())
-//                .addLast("initial-handshake-handler", InitialHandshakeRequestInboundHandler(proxyContext))
-                .addLast("relay-handler", RelayHandler(proxyContext.downstream(), "  upstream"))
+                .addLast("packet-encoder", PacketEncoder())
+                .addLast("packet-decoder", PacketDecoder())
+                .addLast("initial-handshake-handler", InitialHandshakeRequestInboundHandler(proxyContext))
+                .addLast("relay-handler", RelayHandler(proxyContext.downstream(), "upstream"))
         }
     }
 }
