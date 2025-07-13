@@ -4,6 +4,7 @@ import com.github.l34130.netty.dbgw.app.handler.codec.mysql.Packet
 import com.github.l34130.netty.dbgw.app.handler.codec.mysql.ProxyContext
 import com.github.l34130.netty.dbgw.app.handler.codec.mysql.constant.CapabilityFlag
 import com.github.l34130.netty.dbgw.app.handler.codec.mysql.constant.MySqlFieldType
+import com.github.l34130.netty.dbgw.app.handler.codec.mysql.constant.ServerStatusFlag
 import com.github.l34130.netty.dbgw.app.handler.codec.mysql.readFixedLengthInteger
 import com.github.l34130.netty.dbgw.app.handler.codec.mysql.readFixedLengthString
 import com.github.l34130.netty.dbgw.app.handler.codec.mysql.readLenEncInteger
@@ -145,21 +146,43 @@ class QueryCommandResponseTextResultsetHandler(
         ctx: ChannelHandlerContext,
         msg: Packet,
     ): Boolean {
-        val packet =
-            if (msg.isErrorPacket()) {
-                Packet.Error.readFrom(msg.payload, proxyContext.capabilities())
-            } else if (proxyContext.capabilities().contains(CapabilityFlag.CLIENT_DEPRECATE_EOF) && msg.isOkPacket()) {
-                Packet.Ok.readFrom(msg.payload, proxyContext.capabilities())
+        if (msg.isErrorPacket()) {
+            val packet = Packet.Error.readFrom(msg.payload, proxyContext.capabilities())
+            logger.debug { "Text Resultset terminated: $packet" }
+
+            msg.payload.resetReaderIndex()
+            ctx.pipeline().remove(this)
+            proxyContext.downstream().pipeline().addBefore("relay-handler", "com-query-handler", QueryCommandHandler(proxyContext))
+            proxyContext.downstream().writeAndFlush(msg)
+            return true
+        }
+
+        val moreResultsExists =
+            if (proxyContext.capabilities().contains(CapabilityFlag.CLIENT_DEPRECATE_EOF) && msg.isOkPacket()) {
+                val packet = Packet.Ok.readFrom(msg.payload, proxyContext.capabilities())
+                logger.debug { "Text Resultset terminated: $packet" }
+                packet.statusFlags?.contains(ServerStatusFlag.SERVER_MORE_RESULTS_EXISTS) == true
             } else if (msg.isEofPacket()) {
-                Packet.Eof.readFrom(msg.payload, proxyContext.capabilities())
+                val packet = Packet.Eof.readFrom(msg.payload, proxyContext.capabilities())
+                logger.debug { "Text Resultset terminated: $packet" }
+                packet.statusFlags?.contains(ServerStatusFlag.SERVER_MORE_RESULTS_EXISTS) == true
             } else {
                 return false // Not a terminator packet
             }
-        logger.debug { "COM_QUERY_RESPONSE terminated: $packet" }
+
+        if (moreResultsExists) {
+            logger.debug { "More results exist, continuing to new Text Resultset" }
+            ctx.pipeline().replace(
+                this,
+                "com-query-response-text-resultset-handler",
+                QueryCommandResponseTextResultsetHandler(proxyContext),
+            )
+        } else {
+            ctx.pipeline().remove(this)
+            proxyContext.downstream().pipeline().addBefore("relay-handler", "com-query-handler", QueryCommandHandler(proxyContext))
+        }
 
         msg.payload.resetReaderIndex()
-        ctx.pipeline().remove(this)
-        proxyContext.downstream().pipeline().addBefore("relay-handler", "com-query-handler", QueryCommandHandler(proxyContext))
         proxyContext.downstream().writeAndFlush(msg)
         return true
     }
