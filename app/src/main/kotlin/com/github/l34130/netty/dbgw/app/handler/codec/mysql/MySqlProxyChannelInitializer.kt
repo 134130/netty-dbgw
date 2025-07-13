@@ -1,5 +1,7 @@
 package com.github.l34130.netty.dbgw.app.handler.codec.mysql
 
+import com.github.l34130.netty.dbgw.app.handler.codec.mysql.connection.InitialHandshakeRequestInboundHandler
+import com.github.l34130.netty.dbgw.app.handler.codec.mysql.connection.InitialHandshakeResponseInboundHandler
 import io.netty.channel.Channel
 import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.ChannelInboundHandlerAdapter
@@ -12,10 +14,10 @@ class MySqlProxyChannelInitializer : ChannelInitializer<Channel>() {
 
         downstream
             .pipeline()
-            .addLast(DownstreamInboundHandler(proxyContext))
+            .addLast(ProxyDownstreamHandler(proxyContext))
     }
 
-    class DownstreamInboundHandler(
+    class ProxyDownstreamHandler(
         private val proxyContext: ProxyContext,
     ) : ChannelInboundHandlerAdapter() {
         override fun channelActive(ctx: ChannelHandlerContext) {
@@ -29,7 +31,7 @@ class MySqlProxyChannelInitializer : ChannelInitializer<Channel>() {
         }
     }
 
-    class UpstreamInboundHandler(
+    class ProxyUpstreamHandler(
         private val proxyContext: ProxyContext,
     ) : ChannelInboundHandlerAdapter() {
         override fun channelActive(ctx: ChannelHandlerContext) {

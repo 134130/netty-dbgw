@@ -10,10 +10,13 @@ class RelayHandler(
     private val relayChannel: Channel,
     private val debugName: String? = null,
 ) : ChannelInboundHandlerAdapter() {
+    private val logger = KotlinLogging.logger("RelayHandler-$debugName")
+
     override fun channelRead(
         ctx: ChannelHandlerContext,
         msg: Any?,
     ) {
+        logger.warn { "Unhandled message: $msg" }
         if (relayChannel.isActive) {
             relayChannel.writeAndFlush(msg)
         } else {
@@ -40,9 +43,5 @@ class RelayHandler(
     ) {
         logger.error(cause) { "Exception caught in RelayHandler" }
         ctx.channel().closeOnFlush()
-    }
-
-    companion object {
-        private val logger = KotlinLogging.logger { }
     }
 }

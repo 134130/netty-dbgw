@@ -7,6 +7,24 @@ import io.netty.buffer.Unpooled
 import io.netty.channel.Channel
 import io.netty.channel.ChannelFutureListener
 import io.netty.handler.codec.Delimiters
+import java.io.EOFException
+
+fun <T> ByteBuf.peek(action: (ByteBuf) -> T): T? {
+    if (readableBytes() == 0) {
+        return null
+    }
+    val currentReaderIndex = readerIndex()
+    return try {
+        try {
+            action(readSlice(readableBytes()))
+        } catch (e: EOFException) {
+            // Handle EOFException gracefully, return null if no data is available
+            null
+        }
+    } finally {
+        readerIndex(currentReaderIndex) // Reset the reader index
+    }
+}
 
 fun ByteBuf.readFixedLengthInteger(length: Int): FixedLengthInteger {
     val bytes = ByteArray(length)
@@ -20,7 +38,7 @@ fun ByteBuf.readFixedLengthString(length: Int): String {
     return String(bytes, Charsets.UTF_8)
 }
 
-fun ByteBuf.readLengthEncodedInteger(): Long {
+fun ByteBuf.readLenEncInteger(): Long {
     val firstByte = readUnsignedByte().toInt()
     return when {
         firstByte < 0xFB -> firstByte.toLong()
@@ -43,8 +61,19 @@ fun ByteBuf.readNullTerminatedString(): ByteBuf {
     return read
 }
 
-fun ByteBuf.readLengthEncodedString(): ByteBuf {
-    val length = readLengthEncodedInteger()
+fun ByteBuf.readRestOfPacketString(): ByteBuf {
+    val length = readableBytes()
+    return when {
+        length < 0 -> NULL_BYTE_BUF
+        length == 0 -> NULL_BYTE_BUF
+        else -> {
+            readSlice(length)
+        }
+    }
+}
+
+fun ByteBuf.readLenEncString(): ByteBuf {
+    val length = readLenEncInteger()
     return when {
         length < 0 -> NULL_BYTE_BUF
         length == 0L -> NULL_BYTE_BUF

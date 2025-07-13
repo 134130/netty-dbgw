@@ -5,6 +5,8 @@ import io.netty.bootstrap.ServerBootstrap
 import io.netty.channel.MultiThreadIoEventLoopGroup
 import io.netty.channel.nio.NioIoHandler
 import io.netty.channel.socket.nio.NioServerSocketChannel
+import io.netty.handler.logging.LogLevel
+import io.netty.handler.logging.LoggingHandler
 
 fun main() {
     val factory = NioIoHandler.newFactory()
@@ -16,9 +18,10 @@ fun main() {
             ServerBootstrap()
                 .group(bossGroup, workerGroup)
                 .channel(NioServerSocketChannel::class.java)
+                .handler(LoggingHandler(LogLevel.INFO))
                 .childHandler(MySqlProxyChannelInitializer())
 
-        val f = b.bind(8080).sync()
+        val f = b.bind(3306).sync()
         f.channel().closeFuture().sync()
     } finally {
         workerGroup.shutdownGracefully()
