@@ -14,7 +14,7 @@ fun <E> EnumSet<E>.toFlags(): Int where E : Enum<E>, E : Flag =
 fun <E> Int.toEnumSet(enumClass: Class<E>): EnumSet<E> where E : Enum<E>, E : Flag {
     val enumConstants = enumClass.enumConstants ?: throw IllegalArgumentException("Enum class $enumClass has no constants")
     return enumConstants
-        .filter { (this and (1 shl it.value)) != 0 }
+        .filter { (this and it.value) != 0 }
         .let { EnumSet.copyOf(it) }
 }
 

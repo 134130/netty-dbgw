@@ -29,7 +29,11 @@ fun <T> ByteBuf.peek(action: (ByteBuf) -> T): T? {
 fun ByteBuf.readFixedLengthInteger(length: Int): FixedLengthInteger {
     val bytes = ByteArray(length)
     readBytes(bytes)
-    return FixedLengthInteger.fromBytes(bytes)
+    var value = 0L
+    for (i in bytes.indices) {
+        value = value or (bytes[i].toLong() and 0xFFL shl (i * 8))
+    }
+    return FixedLengthInteger(bytes.size, value)
 }
 
 fun ByteBuf.readFixedLengthString(length: Int): String {

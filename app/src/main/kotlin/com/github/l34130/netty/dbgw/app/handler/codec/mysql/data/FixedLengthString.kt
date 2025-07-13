@@ -9,11 +9,4 @@ class FixedLengthString(
     }
 
     override fun compareTo(other: FixedLengthString): Int = value.compareTo(other.value)
-
-    companion object {
-        fun fromBytes(bytes: ByteArray): FixedLengthString {
-            val value = String(bytes, Charsets.UTF_8)
-            return FixedLengthString(bytes.size, value)
-        }
-    }
 }

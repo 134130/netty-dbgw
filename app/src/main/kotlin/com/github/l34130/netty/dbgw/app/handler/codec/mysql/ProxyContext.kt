@@ -3,6 +3,7 @@ package com.github.l34130.netty.dbgw.app.handler.codec.mysql
 import io.netty.bootstrap.Bootstrap
 import io.netty.channel.Channel
 import io.netty.channel.ChannelFuture
+import java.util.*
 
 class ProxyContext(
     private val downstreamChannel: Channel,
@@ -10,8 +11,8 @@ class ProxyContext(
     private lateinit var upstreamChannelFuture: ChannelFuture
     private val upstreamBootstrap: Bootstrap = Bootstrap()
 
-    lateinit var serverCapabilities: Capabilities
-    lateinit var clientCapabilities: Capabilities
+    lateinit var serverCapabilities: EnumSet<CapabilityFlag>
+    lateinit var clientCapabilities: EnumSet<CapabilityFlag>
 
     fun downstream(): Channel = downstreamChannel
 

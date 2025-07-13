@@ -1,6 +1,6 @@
 package com.github.l34130.netty.dbgw.app.handler.codec.mysql.command
 
-import com.github.l34130.netty.dbgw.app.handler.codec.mysql.Capabilities
+import com.github.l34130.netty.dbgw.app.handler.codec.mysql.CapabilityFlag
 import com.github.l34130.netty.dbgw.app.handler.codec.mysql.MySqlFieldType
 import com.github.l34130.netty.dbgw.app.handler.codec.mysql.Packet
 import com.github.l34130.netty.dbgw.app.handler.codec.mysql.ProxyContext
@@ -34,7 +34,7 @@ class QueryCommandHandler(
         }
         logger.trace { "Received COM_QUERY" }
 
-        if (proxyContext.clientCapabilities.hasFlag(Capabilities.CLIENT_QUERY_ATTRIBUTES)) {
+        if (proxyContext.clientCapabilities.contains(CapabilityFlag.CLIENT_QUERY_ATTRIBUTES)) {
             val parameterCount = payload.readLenEncInteger().toInt()
             val parameterSetCount = payload.readLenEncInteger().toInt() // always 1 currently
             if (parameterCount > 0) {
@@ -100,7 +100,7 @@ class QueryCommandResponseHandler(
 
         if (columnCount == null) {
             val metadataFollows =
-                if (proxyContext.clientCapabilities.hasFlag(Capabilities.CLIENT_OPTIONAL_RESULTSET_METADATA)) {
+                if (proxyContext.clientCapabilities.contains(CapabilityFlag.CLIENT_OPTIONAL_RESULTSET_METADATA)) {
                     when (payload.readFixedLengthInteger(1).value.toInt()) {
                         0 -> false // 0x00 means no metadata follows
                         1 -> true // 0x01 means full metadata follows
@@ -121,7 +121,7 @@ class QueryCommandResponseHandler(
             }
         }
 
-        if (!proxyContext.clientCapabilities.hasFlag(Capabilities.CLIENT_DEPRECATE_EOF)) {
+        if (!proxyContext.clientCapabilities.contains(CapabilityFlag.CLIENT_DEPRECATE_EOF)) {
             val eofPacket = Packet.Eof.readFrom(payload, proxyContext.clientCapabilities)
             logger.trace { "EOF Packet: $eofPacket" }
         }
@@ -140,7 +140,7 @@ class QueryCommandResponseHandler(
         }
 
         if (msg.isOkPacket()) {
-            if (proxyContext.clientCapabilities.hasFlag(Capabilities.CLIENT_DEPRECATE_EOF)) {
+            if (proxyContext.clientCapabilities.contains(CapabilityFlag.CLIENT_DEPRECATE_EOF)) {
                 logger.trace {
                     "COM_QUERY_RESPONSE terminated with OK_Packet - ${Packet.Ok.readFrom(
                         payload,

@@ -39,7 +39,7 @@ class Packet(
         companion object {
             fun readFrom(
                 byteBuf: ByteBuf,
-                clientCapabilities: Capabilities,
+                clientCapabilities: EnumSet<CapabilityFlag>,
             ): Eof {
                 val firstByte = byteBuf.readFixedLengthInteger(1).value
                 if (firstByte != 0xFEL) {
@@ -48,7 +48,7 @@ class Packet(
 
                 var warnings: Int? = null
                 var statusFlags: Int? = null
-                if (clientCapabilities.hasFlag(Capabilities.CLIENT_PROTOCOL_41)) {
+                if (clientCapabilities.contains(CapabilityFlag.CLIENT_PROTOCOL_41)) {
                     warnings = byteBuf.readFixedLengthInteger(2).value.toInt()
                     statusFlags = byteBuf.readFixedLengthInteger(2).value.toInt()
                 }
@@ -71,7 +71,7 @@ class Packet(
         companion object {
             fun readFrom(
                 byteBuf: ByteBuf,
-                clientCapabilities: Capabilities,
+                clientCapabilities: EnumSet<CapabilityFlag>,
             ): Error {
                 val firstByte = byteBuf.readFixedLengthInteger(1).value
                 if (firstByte != 0xFFL) {
@@ -81,7 +81,7 @@ class Packet(
                 val errorCode = byteBuf.readFixedLengthInteger(2).value.toInt()
                 var sqlStateMarker: String? = null
                 var sqlState: String? = null
-                if (clientCapabilities.hasFlag(Capabilities.CLIENT_PROTOCOL_41)) {
+                if (clientCapabilities.contains(CapabilityFlag.CLIENT_PROTOCOL_41)) {
                     sqlStateMarker = byteBuf.readFixedLengthString(1)
                     sqlState = byteBuf.readFixedLengthString(5)
                 }
@@ -97,6 +97,7 @@ class Packet(
         }
     }
 
+    // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_basic_ok_packet.html
     data class Ok(
         val affectedRows: Long,
         val lastInsertId: Long,
@@ -119,7 +120,7 @@ class Packet(
         companion object {
             fun readFrom(
                 byteBuf: ByteBuf,
-                clientCapabilities: Capabilities,
+                clientCapabilities: EnumSet<CapabilityFlag>,
             ): Ok {
                 val firstByte = byteBuf.readFixedLengthInteger(1).value
                 if (firstByte != 0x00L && firstByte != 0xFEL) {
@@ -131,24 +132,24 @@ class Packet(
 
                 var statusFlags: EnumSet<ServerStatusFlag>? = null
                 var warnings: Int? = null
-                if (clientCapabilities.hasFlag(Capabilities.CLIENT_PROTOCOL_41)) {
+                if (clientCapabilities.contains(CapabilityFlag.CLIENT_PROTOCOL_41)) {
                     val flags = byteBuf.readFixedLengthInteger(2).value.toInt()
                     statusFlags = flags.toEnumSet()
                     warnings = byteBuf.readFixedLengthInteger(2).value.toInt()
-                } else if (clientCapabilities.hasFlag(8192)) {
+                } else if (clientCapabilities.contains(CapabilityFlag.CLIENT_TRANSACTIONS)) {
                     val flags = byteBuf.readFixedLengthInteger(2).value.toInt()
                     statusFlags = flags.toEnumSet()
                 }
 
                 var info: String? = null
-                if (clientCapabilities.hasFlag(Capabilities.CLIENT_SESSION_TRACK)) {
+                if (clientCapabilities.contains(CapabilityFlag.CLIENT_SESSION_TRACK)) {
                     if (statusFlags?.contains(ServerStatusFlag.SERVER_SESSION_STATE_CHANGED) == true ||
                         (false /* TODO: handle status is not empty */)
                     ) {
                         info = byteBuf.readLenEncString().toString(Charsets.UTF_8)
                     }
                 } else {
-                    if (clientCapabilities.hasFlag(Capabilities.CLIENT_SESSION_TRACK)) {
+                    if (clientCapabilities.contains(CapabilityFlag.CLIENT_SESSION_TRACK)) {
                         info = byteBuf.readRestOfPacketString().toString(Charsets.UTF_8)
                     }
                 }

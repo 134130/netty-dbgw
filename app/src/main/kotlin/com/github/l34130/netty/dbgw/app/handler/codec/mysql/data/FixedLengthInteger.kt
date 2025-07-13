@@ -25,19 +25,5 @@ class FixedLengthInteger(
 
     companion object {
         private val ALLOWED_LENGTHS = setOf(1, 2, 3, 4, 6, 8)
-
-        /**
-         * Creates a [FixedLengthInteger] from a byte array.
-         *
-         * @param bytes The byte array to convert.
-         * @return A [FixedLengthInteger] with the value represented by the byte array.
-         */
-        fun fromBytes(bytes: ByteArray): FixedLengthInteger {
-            var value = 0L
-            for (i in bytes.indices) {
-                value = value or (bytes[i].toLong() and 0xFFL shl (i * 8))
-            }
-            return FixedLengthInteger(bytes.size, value)
-        }
     }
 }

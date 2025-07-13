@@ -1,6 +1,6 @@
 package com.github.l34130.netty.dbgw.app.handler.codec.mysql.connection
 
-import com.github.l34130.netty.dbgw.app.handler.codec.mysql.Capabilities
+import com.github.l34130.netty.dbgw.app.handler.codec.mysql.CapabilityFlag
 import com.github.l34130.netty.dbgw.app.handler.codec.mysql.Packet
 import com.github.l34130.netty.dbgw.app.handler.codec.mysql.ProxyContext
 import com.github.l34130.netty.dbgw.app.handler.codec.mysql.closeOnFlush
@@ -9,6 +9,7 @@ import com.github.l34130.netty.dbgw.app.handler.codec.mysql.readFixedLengthInteg
 import com.github.l34130.netty.dbgw.app.handler.codec.mysql.readLenEncInteger
 import com.github.l34130.netty.dbgw.app.handler.codec.mysql.readLenEncString
 import com.github.l34130.netty.dbgw.app.handler.codec.mysql.readNullTerminatedString
+import com.github.l34130.netty.dbgw.app.handler.codec.mysql.toEnumSet
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.buffer.Unpooled
 import io.netty.channel.ChannelHandlerContext
@@ -18,6 +19,7 @@ import io.netty.handler.ssl.SslHandler
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory
 import io.netty.util.ReferenceCountUtil
 import java.io.File
+import java.util.*
 import kotlin.math.max
 
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_connection_phase_packets_protocol_handshake_v10.html
@@ -54,10 +56,10 @@ class InitialHandshakeRequestInboundHandler(
         val characterSet = payload.readFixedLengthInteger(1)
         val statusFlags = payload.readFixedLengthInteger(2)
         val capabilityFlags2 = payload.readFixedLengthInteger(2)
-        val serverCapabilities = Capabilities(capabilityFlags1.value, capabilityFlags2.value)
+        val serverCapabilities: EnumSet<CapabilityFlag> = ((capabilityFlags1.value) or (capabilityFlags2.value shl 32)).toInt().toEnumSet()
         proxyContext.serverCapabilities = serverCapabilities
 
-        val supportsClientPluginAuth = (serverCapabilities.hasFlag(Capabilities.Companion.CLIENT_PLUGIN_AUTH))
+        val supportsClientPluginAuth = (serverCapabilities.contains(CapabilityFlag.CLIENT_PLUGIN_AUTH))
         val authPluginDataLength =
             if (supportsClientPluginAuth) {
                 payload.readFixedLengthInteger(1).value.toInt()
@@ -94,11 +96,11 @@ class InitialHandshakeResponseInboundHandler(
         val payload = msg.payload
         payload.markReaderIndex()
 
-        val clientFlag = payload.readFixedLengthInteger(4)
-        val clientCapabilities = Capabilities(clientFlag.value)
+        val clientFlag = payload.readFixedLengthInteger(4).value.toInt()
+        val clientCapabilities: EnumSet<CapabilityFlag> = clientFlag.toEnumSet()
         proxyContext.clientCapabilities = clientCapabilities
-        if (!clientCapabilities.hasFlag(Capabilities.Companion.CLIENT_PROTOCOL_41)) {
-            logger.error { "Unsupported MySQL client protocol version: ${clientFlag.value}" }
+        if (!clientCapabilities.contains(CapabilityFlag.CLIENT_PROTOCOL_41)) {
+            logger.error { "Unsupported MySQL client protocol version: $clientFlag" }
             ctx.close()
             return
         }
@@ -116,12 +118,14 @@ class InitialHandshakeResponseInboundHandler(
                 8 -> "latin1_swedish_ci"
                 9 -> "latin2_general_ci"
                 10 -> "swe7_swedish_ci"
+                33 -> "utf8mb3_general_ci"
+                63 -> "binary"
                 else -> "unknown_character_set($v)"
             }
         logger.trace { "Character Set: $characterSet" }
         payload.skipBytes(23) // skip filler bytes
 
-        if (proxyContext.clientCapabilities.hasFlag(Capabilities.Companion.CLIENT_SSL) && ctx.pipeline().get("ssl-handler") == null) {
+        if (proxyContext.clientCapabilities.contains(CapabilityFlag.CLIENT_SSL) && ctx.pipeline().get("ssl-handler") == null) {
             logger.trace { "Client supports SSL" }
 
             val downstream = proxyContext.downstream()
@@ -191,7 +195,7 @@ class InitialHandshakeResponseInboundHandler(
         logger.trace { "Username: ${username.toString(Charsets.US_ASCII)}" }
 
         val authResponse =
-            if (clientCapabilities.hasFlag(Capabilities.Companion.CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA)) {
+            if (clientCapabilities.contains(CapabilityFlag.CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA)) {
                 payload.readLenEncString()
             } else {
                 val authResponseLength = payload.readFixedLengthInteger(1).value.toInt()
@@ -199,7 +203,7 @@ class InitialHandshakeResponseInboundHandler(
             }
 
         val database =
-            if (clientCapabilities.hasFlag(Capabilities.Companion.CLIENT_CONNECT_WITH_DB)) {
+            if (clientCapabilities.contains(CapabilityFlag.CLIENT_CONNECT_WITH_DB)) {
                 payload.readNullTerminatedString()
             } else {
                 null
@@ -207,7 +211,7 @@ class InitialHandshakeResponseInboundHandler(
         logger.trace { "Database: ${database?.toString(Charsets.US_ASCII)}" }
 
         val clientPluginName =
-            if (clientCapabilities.hasFlag(Capabilities.Companion.CLIENT_PLUGIN_AUTH)) {
+            if (clientCapabilities.contains(CapabilityFlag.CLIENT_PLUGIN_AUTH)) {
                 payload.readNullTerminatedString()
             } else {
                 null
@@ -215,7 +219,7 @@ class InitialHandshakeResponseInboundHandler(
         logger.trace { "Client Plugin Name: ${clientPluginName?.toString(Charsets.UTF_8)}" }
 
         val clientConnectAttrs =
-            if (clientCapabilities.hasFlag(Capabilities.Companion.CLIENT_CONNECT_ATTRS)) {
+            if (clientCapabilities.contains(CapabilityFlag.CLIENT_CONNECT_ATTRS)) {
                 val lengthOfAllKeyValues = payload.readLenEncInteger()
 
                 val keyValuesByteBuf = payload.readBytes(lengthOfAllKeyValues.toInt())
@@ -234,7 +238,7 @@ class InitialHandshakeResponseInboundHandler(
         logger.trace { "Client Connect Attributes: $clientConnectAttrs" }
 
         val zstdCompressionLevel =
-            if (clientCapabilities.hasFlag(Capabilities.Companion.CLIENT_ZSTD_COMPRESSION_ALGORITHM)) {
+            if (clientCapabilities.contains(CapabilityFlag.CLIENT_ZSTD_COMPRESSION_ALGORITHM)) {
                 payload.readFixedLengthInteger(1).value.toInt()
             } else {
                 0
