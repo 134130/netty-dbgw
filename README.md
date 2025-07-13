@@ -1,23 +1,78 @@
 # netty-dbgw
 
-This project uses [Gradle](https://gradle.org/).
-To build and run the application, use the *Gradle* tool window by clicking the Gradle icon in the right-hand toolbar,
-or run it directly from the terminal:
+`netty-dbgw` is a proxy server for the [MySQL protocol](https://dev.mysql.com/doc/dev/mysql-server/latest/PAGE_PROTOCOL.html), 
+built using the [Netty](https://netty.io/) framework. It acts as an intermediary between a MySQL client and a MySQL server, 
+providing the capability to parse and handle protocol packets at a granular level.
 
-* Run `./gradlew run` to build and run the application.
-* Run `./gradlew build` to only build the application.
-* Run `./gradlew check` to run all checks, including tests.
-* Run `./gradlew clean` to clean all build outputs.
+## Features & Roadmap
 
-Note the usage of the Gradle Wrapper (`./gradlew`).
-This is the suggested way to use Gradle in production projects.
+### MySQL Protocol Features
 
-[Learn more about the Gradle Wrapper](https://docs.gradle.org/current/userguide/gradle_wrapper.html).
+- [ ] **Connection Phase**
+    - [ ] Initial Handshake
+        - [x] Plain Handshake
+        - [ ] SSL Handshake
+            - [x] TLS Handshake
+            - [ ] mTLS Handshake 
+        - [x] Capability Negotiation
+    - [ ] Authentication Phase Fast Path
+    - [ ] Authentication Method Mismatch
+    - [ ] COM_CHANGE_USER
+    - [ ] Authentication Methods
+        - [ ] Old Password Authentication
+        - [ ] caching_sha2_password
+        - [x] Clear text client plugin
+        - [ ] Windows Native Authentication
+        - [ ] authentication_webauthn
+    - [ ] Multi-Factor Authentication (MFA)
+- [ ] **Command Phase**
+    - [ ] Text Protocol: `COM_QUERY`
+        - [ ] LOCAL INFILE Request
+        - [x] Text Resultset Response
+    - [ ] Utility Commands
+        - [x] COM_QUIT
+        - [ ] COM_INIT_DB
+        - [ ] COM_FIELD_LIST
+        - [ ] COM_STATISTICS
+        - [x] COM_DEBUG
+        - [x] COM_PING
+        - [ ] COM_CHANGE_USER
+        - [ ] COM_RESET_CONNECTION
+        - [ ] COM_SET_OPTION
+    - [ ] Prepared Statements 
+        - [ ] COM_STMT_PREPARE
+        - [ ] COM_STMT_EXECUTE
+        - [ ] COM_STMT_CLOSE
+        - [ ] COM_STMT_RESET
+        - [ ] COM_STMT_SEND_LONG_DATA
+    - [ ] Stored Programs
+        - [ ] Multi-Resultset
+        - [ ] Multi-Statement
+- [ ] **Replication Protocol**
+    - [ ] Binlog File 
+    - [ ] Binlog Network Stream 
+    - [ ] Binlog Version
+    - [ ] Binlog Event
+    - [ ] COM_BINLOG_DUMP
 
-[Learn more about Gradle tasks](https://docs.gradle.org/current/userguide/command_line_interface.html#common_tasks).
+### Security Features
 
-This project follows the suggested multi-module setup and consists of the `app` and `utils` subprojects.
-The shared build logic was extracted to a convention plugin located in `buildSrc`.
+- [ ] Connection Rate Limiting
+- [ ] Modifying Server Capabilities
+- [ ] Authentication Modification
+- [ ] Preventing SQL Queries
+- [ ] Modifying SQL Queries
+- [x] Query Logging and Auditing
+- [ ] Query Rate Limiting
+- [ ] Modifying Result Sets
 
-This project uses a version catalog (see `gradle/libs.versions.toml`) to declare and version dependencies
-and both a build cache and a configuration cache (see `gradle.properties`).
+### Another Database Protocols
+
+- [ ] PostgreSQL
+
+## Benchmarks
+
+### Handling a 4GB Result Set (1.4k rows / 3MB each)
+
+- Direct MySQL connection: ~37.75 seconds
+- With `netty-dbgw` proxy: ~38.61 seconds
