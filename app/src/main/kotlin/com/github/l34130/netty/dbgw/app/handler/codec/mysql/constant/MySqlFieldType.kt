@@ -1,4 +1,4 @@
-package com.github.l34130.netty.dbgw.app.handler.codec.mysql
+package com.github.l34130.netty.dbgw.app.handler.codec.mysql.constant
 
 // https://dev.mysql.com/doc/dev/mysql-server/latest/field__types_8h.html
 enum class MySqlFieldType(

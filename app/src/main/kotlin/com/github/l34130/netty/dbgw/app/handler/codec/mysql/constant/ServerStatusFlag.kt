@@ -1,4 +1,6 @@
-package com.github.l34130.netty.dbgw.app.handler.codec.mysql
+package com.github.l34130.netty.dbgw.app.handler.codec.mysql.constant
+
+import com.github.l34130.netty.dbgw.utils.Flag
 
 enum class ServerStatusFlag(
     override val value: Int,

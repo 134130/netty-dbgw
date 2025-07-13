@@ -1,6 +1,6 @@
-package com.github.l34130.netty.dbgw.app.handler.codec.mysql
+package com.github.l34130.netty.dbgw.utils
 
-import java.util.*
+import java.util.EnumSet
 
 interface Flag {
     val value: Int
@@ -15,7 +15,13 @@ fun <E> Int.toEnumSet(enumClass: Class<E>): EnumSet<E> where E : Enum<E>, E : Fl
     val enumConstants = enumClass.enumConstants ?: throw IllegalArgumentException("Enum class $enumClass has no constants")
     return enumConstants
         .filter { (this and it.value) != 0 }
-        .let { EnumSet.copyOf(it) }
+        .let {
+            if (it.isEmpty()) {
+                EnumSet.noneOf(enumClass)
+            } else {
+                EnumSet.copyOf(it)
+            }
+        }
 }
 
 inline fun <reified E> Int.toEnumSet(): EnumSet<E> where E : Enum<E>, E : Flag = this.toEnumSet(E::class.java)

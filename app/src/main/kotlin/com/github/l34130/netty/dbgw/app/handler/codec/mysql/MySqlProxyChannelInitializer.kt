@@ -1,7 +1,7 @@
 package com.github.l34130.netty.dbgw.app.handler.codec.mysql
 
-import com.github.l34130.netty.dbgw.app.handler.codec.mysql.connection.InitialHandshakeRequestInboundHandler
-import com.github.l34130.netty.dbgw.app.handler.codec.mysql.connection.InitialHandshakeResponseInboundHandler
+import com.github.l34130.netty.dbgw.app.handler.codec.mysql.connection.InitialHandshakeRequestHandler
+import com.github.l34130.netty.dbgw.app.handler.codec.mysql.connection.InitialHandshakeResponseHandler
 import io.netty.channel.Channel
 import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.ChannelInboundHandlerAdapter
@@ -26,8 +26,8 @@ class MySqlProxyChannelInitializer : ChannelInitializer<Channel>() {
                 .pipeline()
                 .addLast("packet-encoder", PacketEncoder())
                 .addLast("packet-decoder", PacketDecoder())
-                .addLast("initial-handshake-handler", InitialHandshakeResponseInboundHandler(proxyContext))
-                .addLast("relay-handler", RelayHandler(proxyContext.upstream(), "downstream"))
+                .addLast("initial-handshake-handler", InitialHandshakeResponseHandler(proxyContext))
+                .addLast("relay-handler", RelayHandler(proxyContext, proxyContext.upstream(), "downstream"))
         }
     }
 
@@ -39,8 +39,8 @@ class MySqlProxyChannelInitializer : ChannelInitializer<Channel>() {
                 .pipeline()
                 .addLast("packet-encoder", PacketEncoder())
                 .addLast("packet-decoder", PacketDecoder())
-                .addLast("initial-handshake-handler", InitialHandshakeRequestInboundHandler(proxyContext))
-                .addLast("relay-handler", RelayHandler(proxyContext.downstream(), "upstream"))
+                .addLast("initial-handshake-handler", InitialHandshakeRequestHandler(proxyContext))
+                .addLast("relay-handler", RelayHandler(proxyContext, proxyContext.downstream(), "upstream"))
         }
     }
 }

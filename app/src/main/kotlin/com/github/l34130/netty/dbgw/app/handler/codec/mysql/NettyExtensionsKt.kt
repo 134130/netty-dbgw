@@ -1,39 +1,31 @@
 package com.github.l34130.netty.dbgw.app.handler.codec.mysql
 
-import com.github.l34130.netty.dbgw.app.handler.codec.mysql.data.FixedLengthInteger
 import io.netty.buffer.ByteBuf
 import io.netty.buffer.ByteBufUtil
-import io.netty.buffer.Unpooled
-import io.netty.channel.Channel
-import io.netty.channel.ChannelFutureListener
 import io.netty.handler.codec.Delimiters
-import java.io.EOFException
 
-fun <T> ByteBuf.peek(action: (ByteBuf) -> T): T? {
-    if (readableBytes() == 0) {
-        return null
-    }
-    val currentReaderIndex = readerIndex()
-    return try {
-        try {
-            action(readSlice(readableBytes()))
-        } catch (e: EOFException) {
-            // Handle EOFException gracefully, return null if no data is available
-            null
-        }
-    } finally {
-        readerIndex(currentReaderIndex) // Reset the reader index
-    }
-}
-
-fun ByteBuf.readFixedLengthInteger(length: Int): FixedLengthInteger {
+fun ByteBuf.readFixedLengthInteger(length: Int): Long {
     val bytes = ByteArray(length)
     readBytes(bytes)
     var value = 0L
     for (i in bytes.indices) {
         value = value or (bytes[i].toLong() and 0xFFL shl (i * 8))
     }
-    return FixedLengthInteger(bytes.size, value)
+    return value
+}
+
+fun ByteBuf.writeFixedLengthInteger(
+    length: Int,
+    value: Long,
+): ByteBuf {
+    require(length in 1..8) { "Length must be between 1 and 8." }
+    require(value >= 0) { "Value must be a non-negative integer." }
+    require(value < (1L shl (length * 8))) { "Value exceeds the maximum for the specified length." }
+
+    for (i in 0 until length) {
+        writeByte((value shr (i * 8)).toInt() and 0xFF)
+    }
+    return this
 }
 
 fun ByteBuf.readFixedLengthString(length: Int): String {
@@ -42,6 +34,21 @@ fun ByteBuf.readFixedLengthString(length: Int): String {
     return String(bytes, Charsets.UTF_8)
 }
 
+fun ByteBuf.writeFixedLengthString(
+    length: Int,
+    value: String,
+): ByteBuf {
+    require(value.length <= length) { "Value exceeds the maximum length of $length characters." }
+    val bytes = value.toByteArray(Charsets.UTF_8)
+    writeBytes(bytes)
+    // Fill the remaining space with null bytes if necessary
+    if (bytes.size < length) {
+        writeZero(length - bytes.size)
+    }
+    return this
+}
+
+// https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_basic_dt_integers.html#sect_protocol_basic_dt_int_le
 fun ByteBuf.readLenEncInteger(): Long {
     val firstByte = readUnsignedByte().toInt()
     return when {
@@ -84,12 +91,5 @@ fun ByteBuf.readLenEncString(): ByteBuf {
         else -> {
             readBytes(length.toInt())
         }
-    }
-}
-
-fun Channel.closeOnFlush() {
-    if (isActive) {
-        writeAndFlush(Unpooled.EMPTY_BUFFER)
-            .addListener(ChannelFutureListener.CLOSE)
     }
 }

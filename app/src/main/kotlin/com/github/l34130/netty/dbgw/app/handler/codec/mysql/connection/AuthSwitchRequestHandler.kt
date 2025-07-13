@@ -1,0 +1,59 @@
+package com.github.l34130.netty.dbgw.app.handler.codec.mysql.connection
+
+import com.github.l34130.netty.dbgw.app.handler.codec.mysql.Packet
+import com.github.l34130.netty.dbgw.app.handler.codec.mysql.ProxyContext
+import com.github.l34130.netty.dbgw.app.handler.codec.mysql.command.DebugCommandHandler
+import com.github.l34130.netty.dbgw.app.handler.codec.mysql.command.PingCommandHandler
+import com.github.l34130.netty.dbgw.app.handler.codec.mysql.command.QueryCommandHandler
+import com.github.l34130.netty.dbgw.app.handler.codec.mysql.command.QuitCommandHandler
+import io.github.oshai.kotlinlogging.KotlinLogging
+import io.netty.channel.ChannelHandlerContext
+import io.netty.channel.SimpleChannelInboundHandler
+
+class AuthSwitchRequestHandler(
+    private val proxyContext: ProxyContext,
+) : SimpleChannelInboundHandler<Packet>() {
+    override fun channelRead0(
+        ctx: ChannelHandlerContext,
+        msg: Packet,
+    ) {
+        if (msg.isOkPacket()) {
+            // Authentication succeeded, no action needed
+            logger.trace { "Authentication succeeded" }
+            registerNextHandlers()
+            proxyContext.downstream().writeAndFlush(msg)
+            ctx.pipeline().remove(this)
+            return
+        }
+
+        if (msg.isErrorPacket()) {
+            // Authentication failed, log the error
+            logger.trace {
+                msg.payload.markReaderIndex()
+                "Authentication failed: ${Packet.Error.readFrom(msg.payload, proxyContext.capabilities())}"
+                msg.payload.resetReaderIndex()
+            }
+            registerNextHandlers()
+            proxyContext.downstream().writeAndFlush(msg)
+            ctx.pipeline().remove(this)
+            return
+        }
+
+        TODO("Not yet implemented: handle other types of packets during authentication")
+    }
+
+    private fun registerNextHandlers() {
+        proxyContext
+            .downstream()
+            .pipeline()
+            .addBefore("relay-handler", "com-query-handler", QueryCommandHandler(proxyContext))
+            .addAfter("com-query-handler", "com-debug-handler", DebugCommandHandler(proxyContext))
+            .addAfter("com-debug-handler", "com-ping-handler", PingCommandHandler(proxyContext))
+            .addAfter("com-ping-handler", "com-quit-handler", QuitCommandHandler(proxyContext))
+        // TODO: com-set-option-handler, com-reset-connection-handler, com-change-user-handler
+    }
+
+    companion object {
+        private val logger = KotlinLogging.logger { }
+    }
+}
