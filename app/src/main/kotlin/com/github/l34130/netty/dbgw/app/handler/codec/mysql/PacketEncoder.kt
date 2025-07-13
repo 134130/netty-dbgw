@@ -23,7 +23,7 @@ class PacketEncoder : MessageToByteEncoder<Packet>() {
 
         FixedLengthInteger(3, msg.payload.readableBytes()).writeTo(out)
         FixedLengthInteger(1, msg.sequenceId).writeTo(out)
-        out.writeBytes(msg.payload.nioBuffer())
+        out.writeBytes(msg.payload)
     }
 
     companion object {

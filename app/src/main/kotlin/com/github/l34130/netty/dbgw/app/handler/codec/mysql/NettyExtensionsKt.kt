@@ -28,11 +28,7 @@ fun ByteBuf.writeFixedLengthInteger(
     return this
 }
 
-fun ByteBuf.readFixedLengthString(length: Int): String {
-    val bytes = ByteArray(length)
-    readBytes(bytes)
-    return String(bytes, Charsets.UTF_8)
-}
+fun ByteBuf.readFixedLengthString(length: Int): String = readString(length, Charsets.UTF_8)
 
 fun ByteBuf.writeFixedLengthString(
     length: Int,
@@ -89,7 +85,7 @@ fun ByteBuf.readLenEncString(): ByteBuf {
         length < 0 -> NULL_BYTE_BUF
         length == 0L -> NULL_BYTE_BUF
         else -> {
-            readBytes(length.toInt())
+            readSlice(length.toInt())
         }
     }
 }

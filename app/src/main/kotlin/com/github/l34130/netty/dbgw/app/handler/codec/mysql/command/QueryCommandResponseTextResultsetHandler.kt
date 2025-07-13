@@ -135,7 +135,7 @@ class QueryCommandResponseTextResultsetHandler(
         }
 
         val rowData = payload.readTextResultsetRow(columnCount)
-        logger.trace { "Row Data: $rowData" }
+//        logger.trace { "Row Data: $rowData" }
 
         payload.resetReaderIndex()
         proxyContext.downstream().writeAndFlush(msg)

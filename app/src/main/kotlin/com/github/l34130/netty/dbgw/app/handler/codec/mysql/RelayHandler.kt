@@ -33,6 +33,7 @@ class RelayHandler(
             relayChannel.writeAndFlush(msg)
         } else {
             ReferenceCountUtil.release(msg)
+            ctx.fireChannelReadComplete()
         }
     }
 

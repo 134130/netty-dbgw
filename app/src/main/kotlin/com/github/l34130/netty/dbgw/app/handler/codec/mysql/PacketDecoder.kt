@@ -26,11 +26,11 @@ class PacketDecoder : ByteToMessageDecoder() {
             return
         }
 
-        val payload = `in`.readSlice(payloadLength.toInt())
+        val payload = `in`.readRetainedSlice(payloadLength.toInt())
         out +=
             Packet(
                 sequenceId = sequenceId.toInt(),
-                payload = payload.retain(),
+                payload = payload,
             )
     }
 
