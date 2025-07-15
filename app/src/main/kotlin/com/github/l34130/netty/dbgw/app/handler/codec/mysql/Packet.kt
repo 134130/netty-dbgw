@@ -4,11 +4,9 @@ package com.github.l34130.netty.dbgw.app.handler.codec.mysql
 
 import com.github.l34130.netty.dbgw.app.handler.codec.mysql.constant.CapabilityFlag
 import com.github.l34130.netty.dbgw.app.handler.codec.mysql.constant.ServerStatusFlag
-import com.github.l34130.netty.dbgw.utils.netty.ByteBufEncodable
 import com.github.l34130.netty.dbgw.utils.netty.peek
 import com.github.l34130.netty.dbgw.utils.toEnumSet
 import io.netty.buffer.ByteBuf
-import io.netty.buffer.Unpooled
 import java.util.EnumSet
 
 class Packet(
@@ -68,15 +66,7 @@ class Packet(
         val sqlStateMarker: String?,
         val sqlState: String?,
         val message: String,
-    ) : ByteBufEncodable {
-        override fun toByteBuf(): ByteBuf {
-            val byteBuf = Unpooled.buffer()
-            byteBuf.writeFixedLengthInteger(1, 0xFF)
-            byteBuf.writeFixedLengthInteger(2, errorCode.toLong())
-            byteBuf.writeBytes(message.encodeToByteArray())
-            return byteBuf
-        }
-
+    ) {
         override fun toString(): String =
             "Packet.Error(errorCode=$errorCode, sqlStateMarker=$sqlStateMarker, sqlState=$sqlState, message='$message')"
 
