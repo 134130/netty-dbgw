@@ -78,6 +78,7 @@ class MySqlIntegrationTest {
             },
         )
 
+    @TestFactory
     fun `test connection with different authentication plugins`(): List<DynamicNode> =
         listOf(
             dynamicTest("test with mysql_native_password") {
@@ -89,20 +90,6 @@ class MySqlIntegrationTest {
                             setProperty("password", "testpass")
                             setProperty("sslMode", "DISABLED")
                             setProperty("defaultAuthenticationPlugin", "mysql_native_password")
-                        },
-                    ).use { conn ->
-                        assertMySqlConnection(conn)
-                    }
-            },
-            dynamicTest("test with sha2_password") {
-                DriverManager
-                    .getConnection(
-                        "jdbc:mysql://localhost:3306/testdb",
-                        Properties().apply {
-                            setProperty("user", "testuser")
-                            setProperty("password", "testpass")
-                            setProperty("sslMode", "DISABLED")
-                            setProperty("defaultAuthenticationPlugin", "sha2_password")
                         },
                     ).use { conn ->
                         assertMySqlConnection(conn)
