@@ -52,7 +52,7 @@ class Packet(
                 var statusFlags: EnumSet<ServerStatusFlag>? = null
                 if (capabilities.contains(CapabilityFlag.CLIENT_PROTOCOL_41)) {
                     warnings = byteBuf.readFixedLengthInteger(2).toInt()
-                    statusFlags = byteBuf.readFixedLengthInteger(2).toInt().toEnumSet()
+                    statusFlags = byteBuf.readFixedLengthInteger(2).toEnumSet()
                 }
 
                 return Eof(warnings, statusFlags)
@@ -135,11 +135,11 @@ class Packet(
                 var statusFlags: EnumSet<ServerStatusFlag>? = null
                 var warnings: Int? = null
                 if (capabilities.contains(CapabilityFlag.CLIENT_PROTOCOL_41)) {
-                    val flags = byteBuf.readFixedLengthInteger(2).toInt()
+                    val flags = byteBuf.readFixedLengthInteger(2)
                     statusFlags = flags.toEnumSet()
                     warnings = byteBuf.readFixedLengthInteger(2).toInt()
                 } else if (capabilities.contains(CapabilityFlag.CLIENT_TRANSACTIONS)) {
-                    val flags = byteBuf.readFixedLengthInteger(2).toInt()
+                    val flags = byteBuf.readFixedLengthInteger(2)
                     statusFlags = flags.toEnumSet()
                 }
 

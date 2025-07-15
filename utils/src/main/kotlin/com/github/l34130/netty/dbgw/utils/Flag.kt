@@ -3,18 +3,18 @@ package com.github.l34130.netty.dbgw.utils
 import java.util.EnumSet
 
 interface Flag {
-    val value: Int
+    val value: ULong
 }
 
-fun <E> EnumSet<E>.toFlags(): Int where E : Enum<E>, E : Flag =
+fun <E> EnumSet<E>.toFlags(): ULong where E : Enum<E>, E : Flag =
     this
         .map { it.value }
-        .fold(0) { acc, value -> acc or (1 shl value) }
+        .fold(0UL) { acc, value -> acc or (1UL shl value.toInt()) }
 
-fun <E> Int.toEnumSet(enumClass: Class<E>): EnumSet<E> where E : Enum<E>, E : Flag {
+fun <E> ULong.toEnumSet(enumClass: Class<E>): EnumSet<E> where E : Enum<E>, E : Flag {
     val enumConstants = enumClass.enumConstants ?: throw IllegalArgumentException("Enum class $enumClass has no constants")
     return enumConstants
-        .filter { (this and it.value) != 0 }
+        .filter { (this and it.value) != 0UL }
         .let {
             if (it.isEmpty()) {
                 EnumSet.noneOf(enumClass)
@@ -24,4 +24,4 @@ fun <E> Int.toEnumSet(enumClass: Class<E>): EnumSet<E> where E : Enum<E>, E : Fl
         }
 }
 
-inline fun <reified E> Int.toEnumSet(): EnumSet<E> where E : Enum<E>, E : Flag = this.toEnumSet(E::class.java)
+inline fun <reified E> ULong.toEnumSet(): EnumSet<E> where E : Enum<E>, E : Flag = this.toEnumSet(E::class.java)

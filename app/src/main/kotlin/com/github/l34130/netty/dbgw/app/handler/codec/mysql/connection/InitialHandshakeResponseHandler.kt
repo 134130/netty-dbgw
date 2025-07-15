@@ -28,7 +28,7 @@ class InitialHandshakeResponseHandler(
         val payload = msg.payload
         payload.markReaderIndex()
 
-        val clientFlag = payload.readFixedLengthInteger(4).toInt()
+        val clientFlag = payload.readFixedLengthInteger(4)
         val clientCapabilities: EnumSet<CapabilityFlag> = clientFlag.toEnumSet()
         proxyContext.setClientCapabilities(clientCapabilities)
         if (!clientCapabilities.contains(CapabilityFlag.CLIENT_PROTOCOL_41)) {
@@ -152,7 +152,7 @@ class InitialHandshakeResponseHandler(
             } else {
                 null
             }
-        logger.trace { "Client Plugin Name: ${clientPluginName?.toString(Charsets.UTF_8)}" }
+        logger.trace { "Client Auth Plugin Name: ${clientPluginName?.toString(Charsets.UTF_8)}" }
 
         val clientConnectAttrs =
             if (clientCapabilities.contains(CapabilityFlag.CLIENT_CONNECT_ATTRS)) {

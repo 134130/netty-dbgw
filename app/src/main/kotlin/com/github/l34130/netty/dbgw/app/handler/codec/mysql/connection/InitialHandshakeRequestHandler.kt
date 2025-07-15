@@ -46,7 +46,7 @@ class InitialHandshakeRequestHandler(
         val characterSet = payload.readFixedLengthInteger(1)
         val statusFlags = payload.readFixedLengthInteger(2)
         val capabilityFlags2 = payload.readFixedLengthInteger(2)
-        val serverCapabilities: EnumSet<CapabilityFlag> = ((capabilityFlags1) or (capabilityFlags2 shl 32)).toInt().toEnumSet()
+        val serverCapabilities: EnumSet<CapabilityFlag> = ((capabilityFlags1) or (capabilityFlags2 shl 16)).toEnumSet()
         proxyContext.setServerCapabilities(serverCapabilities)
         logger.trace { "Server Capabilities: $serverCapabilities" }
 
@@ -63,12 +63,19 @@ class InitialHandshakeRequestHandler(
         val authPluginDataPart2 = payload.readBytes(max(13, authPluginDataLength - 8))
         if (supportsClientPluginAuth) {
             val authPluginName = payload.readNullTerminatedString()
-            logger.trace { "Auth Plugin Name: ${authPluginName.toString(Charsets.UTF_8)}" }
+            logger.trace { "Server Auth Plugin Name: ${authPluginName.toString(Charsets.UTF_8)}" }
         }
 
         payload.resetReaderIndex()
-        proxyContext.downstream().writeAndFlush(msg)
         ctx.pipeline().remove(this)
+        proxyContext.downstream().apply {
+            pipeline().addBefore(
+                "relay-handler",
+                "initial-handshake-response-handler",
+                InitialHandshakeResponseHandler(proxyContext),
+            )
+            writeAndFlush(msg)
+        }
     }
 
     override fun handlerAdded(ctx: ChannelHandlerContext) {
