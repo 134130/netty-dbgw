@@ -48,6 +48,7 @@ class InitialHandshakeRequestHandler(
         val capabilityFlags2 = payload.readFixedLengthInteger(2)
         val serverCapabilities: EnumSet<CapabilityFlag> = ((capabilityFlags1) or (capabilityFlags2 shl 32)).toInt().toEnumSet()
         proxyContext.setServerCapabilities(serverCapabilities)
+        logger.trace { "Server Capabilities: $serverCapabilities" }
 
         val supportsClientPluginAuth = (serverCapabilities.contains(CapabilityFlag.CLIENT_PLUGIN_AUTH))
         val authPluginDataLength =
@@ -56,7 +57,6 @@ class InitialHandshakeRequestHandler(
             } else {
                 0x00
             }
-        logger.trace { "Supports Client Plugin Auth: $supportsClientPluginAuth" }
 
         payload.skipBytes(10) // skip reserved bytes
 

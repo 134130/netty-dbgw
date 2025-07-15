@@ -37,7 +37,10 @@ class ProxyContext(
         clientCapabilities = capabilities
     }
 
-    fun connectUpstream(): ChannelFuture {
+    fun connectUpstream(
+        inetHost: String,
+        inetPort: Int,
+    ): ChannelFuture {
         if (::upstreamChannelFuture.isInitialized) {
             throw IllegalStateException("Upstream channel is already initialized.")
         }
@@ -47,7 +50,7 @@ class ProxyContext(
             .channel(downstreamChannel.javaClass)
             .handler(MySqlProxyChannelInitializer.ProxyUpstreamHandler(this))
 
-        upstreamChannelFuture = upstreamBootstrap.connect("mysql.querypie.io", 3306)
+        upstreamChannelFuture = upstreamBootstrap.connect(inetHost, inetPort)
         return upstreamChannelFuture
     }
 }

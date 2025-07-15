@@ -16,8 +16,6 @@ import io.netty.channel.SimpleChannelInboundHandler
 import io.netty.handler.ssl.SslContextBuilder
 import io.netty.handler.ssl.SslHandler
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory
-import io.netty.util.ReferenceCountUtil
-import java.io.File
 import java.util.EnumSet
 
 class InitialHandshakeResponseHandler(
@@ -38,6 +36,8 @@ class InitialHandshakeResponseHandler(
             ctx.close()
             return
         }
+        logger.trace { "Client Capabilities: $clientCapabilities" }
+        logger.trace { "Server / Client Capabilities: ${proxyContext.capabilities()}" }
 
         val maxPacketSize = payload.readFixedLengthInteger(4)
         val characterSet =
@@ -68,8 +68,10 @@ class InitialHandshakeResponseHandler(
             // TODO: Singletonize SSL context creation
             val serverSslContext =
                 SslContextBuilder
-                    .forServer(File("certificate.pem"), File("private.key"))
-                    .build()
+                    .forServer(
+                        this.javaClass.classLoader.getResourceAsStream("certificate.pem"),
+                        this.javaClass.classLoader.getResourceAsStream("private.key"),
+                    ).build()
                     .newEngine(downstream.alloc())
 
             // TODO: Use InsecureTrustManagerFactory for testing purposes only
@@ -156,7 +158,7 @@ class InitialHandshakeResponseHandler(
             if (clientCapabilities.contains(CapabilityFlag.CLIENT_CONNECT_ATTRS)) {
                 val lengthOfAllKeyValues = payload.readLenEncInteger()
 
-                val keyValuesByteBuf = payload.readBytes(lengthOfAllKeyValues.toInt())
+                val keyValuesByteBuf = payload.readSlice(lengthOfAllKeyValues.toInt())
 
                 val attrs = mutableListOf<Pair<String, String>>()
                 while (keyValuesByteBuf.readableBytes() > 0) {
@@ -164,7 +166,6 @@ class InitialHandshakeResponseHandler(
                     val value = keyValuesByteBuf.readLenEncString().toString(Charsets.UTF_8)
                     attrs.add(key to value)
                 }
-                ReferenceCountUtil.release(keyValuesByteBuf)
                 attrs
             } else {
                 emptyList()

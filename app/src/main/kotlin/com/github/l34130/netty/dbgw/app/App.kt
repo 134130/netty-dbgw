@@ -1,30 +1,16 @@
 package com.github.l34130.app.com.github.l34130.netty.dbgw.app
 
-import com.github.l34130.netty.dbgw.app.handler.codec.mysql.MySqlProxyChannelInitializer
-import io.netty.bootstrap.ServerBootstrap
-import io.netty.channel.MultiThreadIoEventLoopGroup
-import io.netty.channel.nio.NioIoHandler
-import io.netty.channel.socket.nio.NioServerSocketChannel
-import io.netty.handler.logging.LogLevel
-import io.netty.handler.logging.LoggingHandler
+import com.github.l34130.netty.dbgw.app.handler.codec.mysql.MySqlGateway
 
 fun main() {
-    val factory = NioIoHandler.newFactory()
-    val bossGroup = MultiThreadIoEventLoopGroup(factory)
-    val workerGroup = MultiThreadIoEventLoopGroup(factory)
-
+    val gateway =
+        MySqlGateway(
+            port = 3306,
+            upstream = Pair("mysql.querypie.io", 3307),
+        )
     try {
-        val b =
-            ServerBootstrap()
-                .group(bossGroup, workerGroup)
-                .channel(NioServerSocketChannel::class.java)
-                .handler(LoggingHandler(LogLevel.INFO))
-                .childHandler(MySqlProxyChannelInitializer())
-
-        val f = b.bind(3306).sync()
-        f.channel().closeFuture().sync()
+        gateway.start()
     } finally {
-        workerGroup.shutdownGracefully()
-        bossGroup.shutdownGracefully()
+        gateway.shutdown()
     }
 }

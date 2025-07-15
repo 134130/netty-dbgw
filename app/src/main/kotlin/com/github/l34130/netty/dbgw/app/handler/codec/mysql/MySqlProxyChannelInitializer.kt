@@ -7,21 +7,25 @@ import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.ChannelInboundHandlerAdapter
 import io.netty.channel.ChannelInitializer
 
-class MySqlProxyChannelInitializer : ChannelInitializer<Channel>() {
+class MySqlProxyChannelInitializer(
+    private val upstreamProvider: () -> Pair<String, Int>,
+) : ChannelInitializer<Channel>() {
     override fun initChannel(ch: Channel) {
         val downstream = ch
         val proxyContext = ProxyContext(downstream)
 
         downstream
             .pipeline()
-            .addLast(ProxyDownstreamHandler(proxyContext))
+            .addLast(ProxyDownstreamHandler(proxyContext, upstreamProvider))
     }
 
     class ProxyDownstreamHandler(
         private val proxyContext: ProxyContext,
+        private val upstreamProvider: () -> Pair<String, Int>,
     ) : ChannelInboundHandlerAdapter() {
         override fun channelActive(ctx: ChannelHandlerContext) {
-            proxyContext.connectUpstream()
+            val (inetHost, inetPort) = this.upstreamProvider()
+            proxyContext.connectUpstream(inetHost, inetPort)
             ctx
                 .pipeline()
                 .addLast("packet-encoder", PacketEncoder())
