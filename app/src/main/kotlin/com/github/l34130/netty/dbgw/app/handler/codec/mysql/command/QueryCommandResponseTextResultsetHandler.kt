@@ -19,9 +19,9 @@ class QueryCommandResponseTextResultsetHandler(
     private val proxyContext: ProxyContext,
 ) : SimpleChannelInboundHandler<Packet>() {
     private var state: State = State.COLUMN_COUNT
-    private var columnCount: Long = 0
+    private var columnCount: ULong = 0UL
     private var metadataFollows: Boolean = false
-    private var columnDefinitionCount: Long = 0
+    private var columnDefinitionCount: ULong = 0UL
 
     override fun channelRead0(
         ctx: ChannelHandlerContext,
@@ -48,7 +48,7 @@ class QueryCommandResponseTextResultsetHandler(
         payload.markReaderIndex()
 
         if (proxyContext.capabilities().contains(CapabilityFlag.CLIENT_OPTIONAL_RESULTSET_METADATA)) {
-            metadataFollows = payload.readFixedLengthInteger(1) == 1L
+            metadataFollows = payload.readFixedLengthInteger(1) == 1UL
         }
         this.columnCount = payload.readLenEncInteger()
 
@@ -188,10 +188,10 @@ class QueryCommandResponseTextResultsetHandler(
     }
 
     // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_com_query_response_text_resultset_row.html
-    private fun ByteBuf.readTextResultsetRow(columnCount: Long): List<String?> {
+    private fun ByteBuf.readTextResultsetRow(columnCount: ULong): List<String?> {
         val result = mutableListOf<String?>()
 
-        for (i in 0 until columnCount) {
+        for (i in 0UL until columnCount) {
             if (this.readableBytes() == 0) {
                 logger.warn { "No more data to read for column $i, expected $columnCount columns" }
                 return result

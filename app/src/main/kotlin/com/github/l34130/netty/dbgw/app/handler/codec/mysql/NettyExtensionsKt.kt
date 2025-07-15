@@ -2,14 +2,25 @@ package com.github.l34130.netty.dbgw.app.handler.codec.mysql
 
 import io.netty.buffer.ByteBuf
 import io.netty.buffer.ByteBufUtil
+import io.netty.buffer.Unpooled
 import io.netty.handler.codec.Delimiters
 
-fun ByteBuf.readFixedLengthInteger(length: Int): Long {
-    val bytes = ByteArray(length)
-    readBytes(bytes)
-    var value = 0L
-    for (i in bytes.indices) {
-        value = value or (bytes[i].toLong() and 0xFFL shl (i * 8))
+private val AVAILABLE_FIXED_LENGTH_INTEGER_LENGTHS = setOf(1, 2, 3, 4, 6, 8)
+
+/**
+ * Read a fixed-length unsigned integer stores its value in a series of bytes with the least significant byte first.
+ *
+ * https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_basic_dt_integers.html#sect_protocol_basic_dt_int_fixed
+ */
+fun ByteBuf.readFixedLengthInteger(length: Int): ULong {
+    require(length in AVAILABLE_FIXED_LENGTH_INTEGER_LENGTHS) {
+        "Length must be one of ${AVAILABLE_FIXED_LENGTH_INTEGER_LENGTHS.joinToString(", ")}."
+    }
+    var value = 0UL
+    val slice = readSlice(length)
+    for (i in 0 until length) {
+        val byte = slice.readUnsignedByte().toULong()
+        value = value or (byte shl (i * 8))
     }
     return value
 }
@@ -28,6 +39,23 @@ fun ByteBuf.writeFixedLengthInteger(
     return this
 }
 
+// https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_basic_dt_integers.html#sect_protocol_basic_dt_int_le
+
+/**
+ * Read an integer that consumes 1, 3, 4, or 9 bytes, depending on its numeric value
+ */
+fun ByteBuf.readLenEncInteger(): ULong {
+    val firstByte = readUnsignedByte().toInt()
+    return when {
+        firstByte <= 0xFB -> firstByte.toULong()
+        firstByte == 0xFC -> readShortLE().toULong()
+        firstByte == 0xFD -> readMediumLE().toULong()
+        firstByte == 0xFE -> readLongLE().toULong()
+        else -> throw IllegalArgumentException("Invalid length encoded integer prefix: $firstByte")
+    }
+}
+
+// https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_basic_dt_strings.html#sect_protocol_basic_dt_string_fix
 fun ByteBuf.readFixedLengthString(length: Int): String = readString(length, Charsets.UTF_8)
 
 fun ByteBuf.writeFixedLengthString(
@@ -44,24 +72,12 @@ fun ByteBuf.writeFixedLengthString(
     return this
 }
 
-// https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_basic_dt_integers.html#sect_protocol_basic_dt_int_le
-fun ByteBuf.readLenEncInteger(): Long {
-    val firstByte = readUnsignedByte().toInt()
-    return when {
-        firstByte < 0xFB -> firstByte.toLong()
-        firstByte == 0xFC -> readShortLE().toLong()
-        firstByte == 0xFD -> readMediumLE().toLong()
-        firstByte == 0xFE -> readLongLE()
-        else -> throw IllegalArgumentException("Invalid length encoded integer prefix: $firstByte")
-    }
-}
-
 private val NULL_BYTE_BUF = Delimiters.nulDelimiter()[0]
 
 fun ByteBuf.readNullTerminatedString(): ByteBuf {
     val index = ByteBufUtil.indexOf(NULL_BYTE_BUF, this)
     if (index < 0) {
-        throw IndexOutOfBoundsException("No null terminator found in ByteBuf.")
+        throw IndexOutOfBoundsException("No null terminator found in ByteBuf")
     }
     val read = readSlice(index - readerIndex())
     skipBytes(1) // Skip the null terminator byte
@@ -71,21 +87,15 @@ fun ByteBuf.readNullTerminatedString(): ByteBuf {
 fun ByteBuf.readRestOfPacketString(): ByteBuf {
     val length = readableBytes()
     return when {
-        length < 0 -> NULL_BYTE_BUF
-        length == 0 -> NULL_BYTE_BUF
-        else -> {
-            readSlice(length)
-        }
+        length <= 0 -> Unpooled.EMPTY_BUFFER
+        else -> readSlice(length)
     }
 }
 
 fun ByteBuf.readLenEncString(): ByteBuf {
     val length = readLenEncInteger()
     return when {
-        length < 0 -> NULL_BYTE_BUF
-        length == 0L -> NULL_BYTE_BUF
-        else -> {
-            readSlice(length.toInt())
-        }
+        length <= 0UL -> Unpooled.EMPTY_BUFFER
+        else -> readSlice(length.toInt())
     }
 }

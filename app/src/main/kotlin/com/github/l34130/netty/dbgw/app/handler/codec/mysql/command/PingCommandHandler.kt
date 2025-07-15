@@ -15,7 +15,7 @@ class PingCommandHandler(
         ctx: ChannelHandlerContext,
         msg: Packet,
     ) {
-        if (msg.payload.peek { it.readFixedLengthInteger(1) } == 0x0EL) {
+        if (msg.payload.peek { it.readFixedLengthInteger(1) } == 0x0EUL) {
             logger.trace { "Received COM_PING" }
             proxyContext.upstream().pipeline().addBefore(
                 "relay-handler",

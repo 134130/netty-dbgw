@@ -20,7 +20,7 @@ class PacketDecoder : ByteToMessageDecoder() {
         val payloadLength = `in`.readFixedLengthInteger(3)
         val sequenceId = `in`.readFixedLengthInteger(1)
 
-        if (`in`.readableBytes() < payloadLength) {
+        if (`in`.readableBytes().toULong() < payloadLength) {
             // Not enough bytes to read the complete payload.
             `in`.resetReaderIndex()
             return

@@ -24,7 +24,7 @@ class InitialHandshakeRequestHandler(
         payload.markReaderIndex()
 
         val protocolVersion = payload.readFixedLengthInteger(1)
-        if (protocolVersion != 10L) {
+        if (protocolVersion != 10UL) {
             logger.error { "Unsupported MySQL protocol version: $protocolVersion" }
             ctx.close()
             return

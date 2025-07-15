@@ -38,7 +38,7 @@ class QueryCommandHandler(
             if (parameterCount > 0) {
                 val nullBitmap = payload.readString((parameterCount + 7) / 8, Charsets.UTF_8)
                 val nextParamsBindFlag = payload.readFixedLengthInteger(1)
-                if (nextParamsBindFlag != 1L) {
+                if (nextParamsBindFlag != 1UL) {
                     // malformed packet, unexpected nextParamsBindFlag
                     logger.warn { "Unexpected nextParamsBindFlag: $nextParamsBindFlag. Malformed packet" }
                 }

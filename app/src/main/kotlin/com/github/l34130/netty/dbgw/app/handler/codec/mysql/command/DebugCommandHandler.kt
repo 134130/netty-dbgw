@@ -15,7 +15,7 @@ class DebugCommandHandler(
         ctx: ChannelHandlerContext,
         msg: Packet,
     ) {
-        if (msg.payload.peek { it.readFixedLengthInteger(1) } == 0x0DL) {
+        if (msg.payload.peek { it.readFixedLengthInteger(1) } == 0x0DUL) {
             logger.trace { "Received COM_DEBUG" }
             proxyContext.upstream().pipeline().addBefore(
                 "relay-handler",

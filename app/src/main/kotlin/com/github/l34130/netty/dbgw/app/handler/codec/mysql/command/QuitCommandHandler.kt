@@ -16,7 +16,7 @@ class QuitCommandHandler(
         ctx: ChannelHandlerContext,
         msg: Packet,
     ) {
-        if (msg.payload.peek { it.readFixedLengthInteger(1) } == 0x01L) {
+        if (msg.payload.peek { it.readFixedLengthInteger(1) } == 0x01UL) {
             logger.trace { "Received COM_QUIT" }
             ctx.pipeline().addBefore(
                 "relay-handler",

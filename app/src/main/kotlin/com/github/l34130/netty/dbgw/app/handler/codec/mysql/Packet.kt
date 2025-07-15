@@ -17,18 +17,18 @@ class Packet(
 
     fun isErrorPacket(): Boolean {
         val firstByte = payload.peek { it.readFixedLengthInteger(1) }
-        return firstByte == 0xFFL
+        return firstByte == 0xFFUL
     }
 
     fun isOkPacket(): Boolean {
         val firstByte = payload.peek { it.readFixedLengthInteger(1) }
-        return firstByte == 0x00L ||
-            firstByte == 0xFEL // 0xFE is used for OK packets with warnings
+        return firstByte == 0x00UL ||
+            firstByte == 0xFEUL // 0xFE is used for OK packets with warnings
     }
 
     fun isEofPacket(): Boolean {
         val firstByte = payload.peek { it.readFixedLengthInteger(1) }
-        return firstByte == 0xFEL
+        return firstByte == 0xFEUL
     }
 
     // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_basic_eof_packet.html
@@ -44,7 +44,7 @@ class Packet(
                 capabilities: EnumSet<CapabilityFlag>,
             ): Eof {
                 val firstByte = byteBuf.readFixedLengthInteger(1)
-                if (firstByte != 0xFEL) {
+                if (firstByte != 0xFEUL) {
                     throw IllegalStateException("The packet is not an EOF packet, first byte: ${firstByte.toHexString()}")
                 }
 
@@ -76,7 +76,7 @@ class Packet(
                 capabilities: EnumSet<CapabilityFlag>,
             ): Error {
                 val firstByte = byteBuf.readFixedLengthInteger(1)
-                if (firstByte != 0xFFL) {
+                if (firstByte != 0xFFUL) {
                     throw IllegalStateException("The packet is not an error packet, first byte: ${firstByte.toHexString()}")
                 }
 
@@ -101,8 +101,8 @@ class Packet(
 
     // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_basic_ok_packet.html
     data class Ok(
-        val affectedRows: Long,
-        val lastInsertId: Long,
+        val affectedRows: ULong,
+        val lastInsertId: ULong,
         val statusFlags: EnumSet<ServerStatusFlag>?,
         val warnings: Int?,
         /**
@@ -125,7 +125,7 @@ class Packet(
                 capabilities: EnumSet<CapabilityFlag>,
             ): Ok {
                 val firstByte = byteBuf.readFixedLengthInteger(1)
-                if (firstByte != 0x00L && firstByte != 0xFEL) {
+                if (firstByte != 0x00UL && firstByte != 0xFEUL) {
                     throw IllegalStateException("The packet is not an OK packet, first byte: ${firstByte.toHexString()}")
                 }
 
