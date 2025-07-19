@@ -20,7 +20,7 @@ class AuthSwitchRequestHandler(
         if (msg.isOkPacket()) {
             // Authentication succeeded, no action needed
             logger.trace { "Authentication succeeded" }
-            registerNextHandlers()
+            registerCommandPhaseHandlers()
             proxyContext.downstream().writeAndFlush(msg)
             ctx.pipeline().remove(this)
             return
@@ -33,7 +33,7 @@ class AuthSwitchRequestHandler(
                 "Authentication failed: ${Packet.Error.readFrom(msg.payload, proxyContext.capabilities())}"
                 msg.payload.resetReaderIndex()
             }
-            registerNextHandlers()
+            registerCommandPhaseHandlers()
             proxyContext.downstream().writeAndFlush(msg)
             ctx.pipeline().remove(this)
             return
@@ -42,7 +42,7 @@ class AuthSwitchRequestHandler(
         TODO("Not yet implemented: handle other types of packets during authentication")
     }
 
-    private fun registerNextHandlers() {
+    private fun registerCommandPhaseHandlers() {
         proxyContext
             .downstream()
             .pipeline()
