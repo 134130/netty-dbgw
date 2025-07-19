@@ -100,6 +100,39 @@ class MySqlIntegrationTest {
         )
 
     @TestFactory
+    fun `test simple query execution`(): List<DynamicNode> =
+        listOf(
+            dynamicTest("test simple SELECT query") {
+                createConnection().use { conn ->
+                    val result = conn.executeQuery("SELECT 1 AS col1")
+                    assertEquals("col1", result[0][0], "Expected column name to be 'col1'")
+                    assertEquals(1L, result[1][0], "Expected value to be 1, got $result")
+                }
+            },
+            dynamicTest("test multiple rows") {
+                createConnection().use { conn ->
+                    val result = conn.executeQuery("SELECT 1 AS col1 UNION SELECT 2 AS col1")
+                    assertEquals(2, result.size - 1, "Expected 2 rows in the result set")
+                    assertEquals("col1", result[0][0], "Expected column name to be 'col1'")
+                    assertEquals(1L, result[1][0], "Expected first row value to be 1")
+                    assertEquals(2L, result[2][0], "Expected second row value to be 2")
+                }
+            },
+            dynamicTest("test invalid query") {
+                createConnection().use { conn ->
+                    try {
+                        conn.executeQuery("SELECT * FROM non_existent_table")
+                    } catch (e: Exception) {
+                        assertTrue(
+                            e.message?.contains("Table 'testdb.non_existent_table' doesn't exist") == true,
+                            "Expected table not found error, got ${e.message}",
+                        )
+                    }
+                }
+            },
+        )
+
+    @TestFactory
     fun `test various datatypes`(): List<DynamicNode> =
         listOf(
             dynamicTest("test integer data type") {
@@ -196,7 +229,7 @@ class MySqlIntegrationTest {
 
         val result = conn.executeQuery("SELECT 1")
         assert(result.isNotEmpty()) { "Result should not be empty" }
-        assertEquals("1", result[1][0], "Expected result to be 1, got ${result[1][0]}")
+        assertEquals(1L, result[1][0], "Expected result to be 1, got ${result[1][0]}")
 
         assertTrue(conn.isValid(2), "Connection should still be valid after query execution")
     }

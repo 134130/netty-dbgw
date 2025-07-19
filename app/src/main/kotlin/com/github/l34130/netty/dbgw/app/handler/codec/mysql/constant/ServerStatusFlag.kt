@@ -19,13 +19,4 @@ enum class ServerStatusFlag(
     SERVER_PS_OUT_PARAMS(1UL shl 11),
     SERVER_STATUS_IN_TRANS_READONLY(1UL shl 12),
     SERVER_SESSION_STATE_CHANGED(1UL shl 13),
-    ;
-
-    companion object {
-        private val valuesMap = entries.associateBy(ServerStatusFlag::value)
-
-        fun of(value: ULong): ServerStatusFlag =
-            valuesMap[value]
-                ?: throw IllegalArgumentException("Unknown ServerStatusFlags value: $value")
-    }
 }
