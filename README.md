@@ -38,11 +38,11 @@ providing the capability to parse and handle protocol packets at a granular leve
             - [ ] mTLS Handshake 
         - [x] Capability Negotiation
     - [ ] Authentication Phase Fast Path
-    - [ ] Authentication Method Mismatch
+    - [x] Authentication Method Mismatch
     - [ ] COM_CHANGE_USER
     - [ ] Authentication Methods
         - [ ] Old Password Authentication
-        - [ ] caching_sha2_password
+        - [x] caching_sha2_password
         - [x] Clear text client plugin
         - [ ] Windows Native Authentication
         - [ ] authentication_webauthn
@@ -56,7 +56,7 @@ providing the capability to parse and handle protocol packets at a granular leve
         - [ ] COM_INIT_DB
         - [ ] COM_FIELD_LIST
         - [ ] COM_STATISTICS
-        - [x] COM_DEBUG
+        - [ ] COM_DEBUG
         - [x] COM_PING
         - [ ] COM_CHANGE_USER
         - [ ] COM_RESET_CONNECTION
