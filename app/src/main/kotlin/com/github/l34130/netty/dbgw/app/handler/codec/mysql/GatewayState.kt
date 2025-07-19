@@ -7,7 +7,7 @@ interface GatewayState {
         ctx: ChannelHandlerContext,
         packet: Packet,
     ): GatewayState =
-        throw IllegalStateException(
+        error(
             "Unexpected call to onDownstreamPacket in state '${this::class.simpleName}'. " +
                 "This state does not handle downstream packets.",
         )
@@ -16,7 +16,7 @@ interface GatewayState {
         ctx: ChannelHandlerContext,
         packet: Packet,
     ): GatewayState =
-        throw IllegalStateException(
+        error(
             "Unexpected call to onUpstreamPacket in state '${this::class.simpleName}'. " +
                 "This state does not handle upstream packets.",
         )

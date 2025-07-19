@@ -13,9 +13,7 @@ class PingCommandState : GatewayState {
         ctx: ChannelHandlerContext,
         packet: Packet,
     ): GatewayState {
-        if (requested) {
-            throw IllegalStateException("Duplicate COM_PING request received.")
-        }
+        check(!requested) { "Duplicate COM_PING request received." }
         requested = true
         ctx.upstream().writeAndFlush(packet)
         return this
@@ -25,12 +23,8 @@ class PingCommandState : GatewayState {
         ctx: ChannelHandlerContext,
         packet: Packet,
     ): GatewayState {
-        if (!requested) {
-            throw IllegalStateException("COM_PING response received without a prior request.")
-        }
-        if (!packet.isOkPacket()) {
-            error("Expected OK packet for COM_PING, but received: $packet")
-        }
+        check(requested) { "COM_PING response received without a prior request." }
+        check(packet.isOkPacket()) { "Expected an OK packet for COM_PING, but received: $packet" }
 
         ctx.downstream().writeAndFlush(packet)
         return CommandPhaseState()

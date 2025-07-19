@@ -17,9 +17,7 @@ class QuitCommandState : GatewayState {
         ctx: ChannelHandlerContext,
         packet: Packet,
     ): GatewayState {
-        if (requested) {
-            error("Duplicate COM_QUIT command request received.")
-        }
+        check(!requested) { "Duplicate COM_QUIT request received." }
         requested = true
         ctx.upstream().writeAndFlush(packet)
         return this
@@ -29,12 +27,8 @@ class QuitCommandState : GatewayState {
         ctx: ChannelHandlerContext,
         packet: Packet,
     ): GatewayState {
-        if (!requested) {
-            error("COM_QUIT response received without a prior request.")
-        }
-        if (!packet.isErrorPacket()) {
-            error("Expected an error packet for COM_QUIT, but received: $packet")
-        }
+        check(requested) { "COM_QUIT response received without a prior request." }
+        check(packet.isErrorPacket()) { "Expected an error packet for COM_QUIT, but received: $packet" }
 
         logger.trace {
             val errPacket = packet.payload.peek { Packet.Error.readFrom(it, ctx.capabilities().enumSet()) }

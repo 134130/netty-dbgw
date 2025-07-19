@@ -16,9 +16,7 @@ class DebugCommandState : GatewayState {
         ctx: ChannelHandlerContext,
         packet: Packet,
     ): GatewayState {
-        if (requested) {
-            throw IllegalStateException("Duplicate COM_DEBUG request received.")
-        }
+        check(!requested) { "Duplicate COM_DEBUG request received." }
         requested = true
         ctx.upstream().writeAndFlush(packet)
         return this
@@ -28,9 +26,7 @@ class DebugCommandState : GatewayState {
         ctx: ChannelHandlerContext,
         packet: Packet,
     ): GatewayState {
-        if (!requested) {
-            throw IllegalStateException("COM_DEBUG response received without a prior request.")
-        }
+        check(requested) { "COM_DEBUG response received without a prior request." }
         when {
             packet.isOkPacket() -> {
                 logger.trace {
@@ -44,9 +40,7 @@ class DebugCommandState : GatewayState {
                     "Received COM_DEBUG response: $errorPacket"
                 }
             }
-            else -> {
-                logger.warn { "Received unexpected COM_DEBUG response: $packet" }
-            }
+            else -> logger.warn { "Received unexpected COM_DEBUG response: $packet" }
         }
 
         ctx.downstream().writeAndFlush(packet)

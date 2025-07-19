@@ -73,6 +73,12 @@ class MySqlProxyChannelInitializer(
             }
         }
 
+        override fun channelWritabilityChanged(ctx: ChannelHandlerContext) {
+            val canWrite = ctx.channel().isWritable
+            ctx.upstream().config().isAutoRead = canWrite
+            ctx.fireChannelWritabilityChanged()
+        }
+
         companion object {
             private val logger = KotlinLogging.logger {}
         }
@@ -101,6 +107,12 @@ class MySqlProxyChannelInitializer(
                 logger.info { "Upstream channel inactive, closing downstream channel." }
                 ctx.downstream().closeOnFlush()
             }
+        }
+
+        override fun channelWritabilityChanged(ctx: ChannelHandlerContext) {
+            val canWrite = ctx.channel().isWritable
+            ctx.downstream().config().isAutoRead = canWrite
+            ctx.fireChannelWritabilityChanged()
         }
 
         companion object {
