@@ -14,6 +14,7 @@ import com.github.l34130.netty.dbgw.app.handler.codec.mysql.readLenEncString
 import com.github.l34130.netty.dbgw.utils.netty.peek
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.buffer.ByteBuf
+import io.netty.buffer.ByteBufUtil
 import io.netty.channel.ChannelHandlerContext
 
 class QueryCommandResponseState : GatewayState {
@@ -49,8 +50,7 @@ class QueryCommandResponseState : GatewayState {
         }
 
         packet.payload.resetReaderIndex()
-        ctx.downstream().writeAndFlush(packet)
-        return TextResultsetState()
+        return TextResultsetState().onUpstreamPacket(ctx, packet)
     }
 
     companion object {
@@ -88,10 +88,13 @@ class QueryCommandResponseState : GatewayState {
             val payload = packet.payload
             payload.markReaderIndex()
 
+            println(payload.peek { ByteBufUtil.prettyHexDump(it) })
+
             if (ctx.capabilities().contains(CapabilityFlag.CLIENT_OPTIONAL_RESULTSET_METADATA)) {
                 metadataFollows = payload.readFixedLengthInteger(1) == 1UL
             }
             this.columnCount = payload.readLenEncInteger()
+            logger.trace { "Received column count: $columnCount, metadataFollows: $metadataFollows" }
 
             payload.resetReaderIndex()
             ctx.downstream().writeAndFlush(packet)

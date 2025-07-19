@@ -117,5 +117,7 @@ class MySqlIntegrationTest {
         val result = conn.executeQuery("SELECT 1")
         assert(result.isNotEmpty()) { "Result should not be empty" }
         assertEquals(result[1][0], "1", "Expected result to be 1, got ${result[1][0]}")
+
+        assertTrue(conn.isValid(2), "Connection should still be valid after query execution")
     }
 }

@@ -10,6 +10,7 @@ import com.github.l34130.netty.dbgw.app.handler.codec.mysql.readLenEncInteger
 import com.github.l34130.netty.dbgw.app.handler.codec.mysql.readLenEncString
 import com.github.l34130.netty.dbgw.app.handler.codec.mysql.readRestOfPacketString
 import com.github.l34130.netty.dbgw.app.handler.codec.mysql.upstream
+import com.github.l34130.netty.dbgw.utils.netty.peek
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.channel.ChannelHandlerContext
 
@@ -19,12 +20,11 @@ class CommandPhaseState : GatewayState {
         packet: Packet,
     ): GatewayState {
         val payload = packet.payload
-        payload.markReaderIndex()
-        val commandByte = payload.readUnsignedByte().toUInt()
-
+        val commandByte = payload.peek { it.readUnsignedByte().toUInt() }
         return when (commandByte) {
             COM_QUERY -> handleQueryCommand(ctx, packet)
-            else -> TODO("Unhandled command byte: $commandByte")
+            COM_PING -> handlePingCommand(ctx, packet)
+            else -> TODO("Unhandled command byte: 0x${commandByte?.toString(16)?.uppercase()}")
         }
     }
 
@@ -33,6 +33,8 @@ class CommandPhaseState : GatewayState {
         packet: Packet,
     ): GatewayState {
         val payload = packet.payload
+        payload.markReaderIndex()
+        payload.skipBytes(1) // skip command byte
         logger.trace { "Received COM_QUERY" }
 
         if (ctx.capabilities().contains(CapabilityFlag.CLIENT_QUERY_ATTRIBUTES)) {
@@ -65,8 +67,17 @@ class CommandPhaseState : GatewayState {
         return QueryCommandResponseState()
     }
 
+    private fun handlePingCommand(
+        ctx: ChannelHandlerContext,
+        packet: Packet,
+    ): GatewayState {
+        logger.trace { "Received COM_PING" }
+        return PingCommandState().onDownstreamPacket(ctx, packet)
+    }
+
     companion object {
         private val logger = KotlinLogging.logger {}
         private val COM_QUERY = 0x03u
+        private val COM_PING = 0x0Eu
     }
 }
