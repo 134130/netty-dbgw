@@ -56,7 +56,7 @@ providing the capability to parse and handle protocol packets at a granular leve
         - [ ] COM_INIT_DB
         - [ ] COM_FIELD_LIST
         - [ ] COM_STATISTICS
-        - [ ] COM_DEBUG
+        - [x] COM_DEBUG
         - [x] COM_PING
         - [ ] COM_CHANGE_USER
         - [ ] COM_RESET_CONNECTION
