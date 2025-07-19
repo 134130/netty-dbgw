@@ -1,4 +1,4 @@
-package com.github.l34130.app.com.github.l34130.netty.dbgw.app
+package com.github.l34130.netty.dbgw.app
 
 import com.github.l34130.netty.dbgw.app.handler.codec.mysql.MySqlGateway
 

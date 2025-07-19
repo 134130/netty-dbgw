@@ -4,6 +4,23 @@
 built using the [Netty](https://netty.io/) framework. It acts as an intermediary between a MySQL client and a MySQL server, 
 providing the capability to parse and handle protocol packets at a granular level.
 
+## How to Run
+
+### Prerequisites
+- Java 21 or higher
+
+### Run
+
+```shell
+./gradlew run
+
+# or
+
+./gradlew installDist
+./app/build/install/app/bin/app
+```
+
+
 ## Features & Roadmap
 
 ### MySQL Protocol Features
