@@ -160,6 +160,37 @@ class MySqlIntegrationTest {
             },
         )
 
+    @TestFactory
+    fun `test prepared statements`(): List<DynamicNode> =
+        listOf(
+            dynamicTest("test prepared statement") {
+                createConnection { props ->
+                    props.setProperty("useServerPrepStmts", "true")
+                }.use { conn ->
+                    val stmt = conn.prepareStatement("SELECT CONCAT(?, ?) AS col1")
+                    stmt.setObject(1, 1)
+                    stmt.setObject(2, 2)
+                    val result = stmt.executeQuery()
+                    assertTrue(result.next(), "Result set should not be empty")
+                    assertEquals("12", result.getString("col1"), "Expected concatenated value to be '12'")
+                    stmt.close()
+                }
+            },
+//            dynamicTest("test callable statement") {
+//                createConnection { props ->
+//                    props.setProperty("useServerPrepStmts", "true")
+//                }.use { conn ->
+//                    val callableStmt = conn.prepareCall("{CALL my_stored_procedure(?, ?)}")
+//                    callableStmt.setObject(1, 1)
+//                    callableStmt.setObject(2, 2)
+//                    val result = callableStmt.executeQuery()
+//                    assertTrue(result.next(), "Result set should not be empty")
+//                    assertEquals("12", result.getString(1), "Expected stored procedure result to be '12'")
+//                    callableStmt.close()
+//                }
+//            },
+        )
+
     private fun assertMySqlConnection(conn: Connection) {
         assertTrue(conn.isValid(2), "Connection should be valid")
 

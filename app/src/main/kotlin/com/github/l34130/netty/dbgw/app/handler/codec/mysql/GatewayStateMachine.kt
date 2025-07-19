@@ -11,17 +11,10 @@ class GatewayStateMachine {
         ctx: ChannelHandlerContext,
         packet: Packet,
     ) {
-        logger.debug {
-            "Processing downstream packet. currentState='${currentState::class.simpleName}'"
-        }
+        logger.debug { "Processing downstream packet. currentState='${currentState::class.simpleName}'" }
         val nextState = currentState.onDownstreamPacket(ctx, packet)
         logger.debug {
-            "${currentState::class.simpleName} -> ${nextState?.javaClass?.simpleName}"
-        }
-        if (nextState != null) {
-            currentState = nextState
-        } else {
-            throw IllegalStateException("${currentState::class.simpleName} returned null, which is unexpected.")
+            "${currentState::class.simpleName} -> ${nextState.javaClass.simpleName}"
         }
     }
 
@@ -29,17 +22,10 @@ class GatewayStateMachine {
         ctx: ChannelHandlerContext,
         packet: Packet,
     ) {
-        logger.debug {
-            "Processing upstream packet. currentState='${currentState::class.simpleName}'"
-        }
+        logger.debug { "Processing upstream packet. currentState='${currentState::class.simpleName}'" }
         val nextState = currentState.onUpstreamPacket(ctx, packet)
         logger.debug {
-            "${currentState::class.simpleName} -> ${nextState?.javaClass?.simpleName}"
-        }
-        if (nextState != null) {
-            currentState = nextState
-        } else {
-            throw IllegalStateException("${currentState::class.simpleName} returned null, which is unexpected.")
+            "${currentState::class.simpleName} -> ${nextState.javaClass.simpleName}"
         }
     }
 

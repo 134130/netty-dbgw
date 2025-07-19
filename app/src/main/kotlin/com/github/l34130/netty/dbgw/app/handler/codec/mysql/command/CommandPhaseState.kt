@@ -26,6 +26,7 @@ class CommandPhaseState : GatewayState {
             COM_PING -> handlePingCommand(ctx, packet)
             COM_QUIT -> handleQuitCommand(ctx, packet)
             COM_DEBUG -> handleDebugCommand(ctx, packet)
+            COM_STMT_PREPARE -> handlePrepareStatementCommand(ctx, packet)
             else -> TODO("Unhandled command byte: 0x${commandByte?.toString(16)?.uppercase()}")
         }
     }
@@ -51,7 +52,7 @@ class CommandPhaseState : GatewayState {
                     logger.warn { "Unexpected nextParamsBindFlag: $nextParamsBindFlag. Malformed packet" }
                 }
                 val parameters = mutableListOf<Triple<MySqlFieldType, String, Any?>>()
-                for (i in 0 until parameterCount) {
+                (0 until parameterCount).forEach { i ->
                     val parameterTypeAndFlag = payload.readFixedLengthInteger(2)
                     val type = MySqlFieldType.of(parameterTypeAndFlag.toInt())
                     val parameterName = payload.readLenEncString()
@@ -62,7 +63,7 @@ class CommandPhaseState : GatewayState {
         }
 
         val query = payload.readRestOfPacketString()
-        logger.debug { "Query: ${query.toString(Charsets.UTF_8)}" }
+        logger.debug { "Query: '${query.toString(Charsets.UTF_8)}'" }
 
         payload.resetReaderIndex()
         ctx.upstream().writeAndFlush(packet)
@@ -93,11 +94,20 @@ class CommandPhaseState : GatewayState {
         return DebugCommandState().onDownstreamPacket(ctx, packet)
     }
 
+    private fun handlePrepareStatementCommand(
+        ctx: ChannelHandlerContext,
+        packet: Packet,
+    ): GatewayState {
+        logger.trace { "Received COM_STMT_PREPARE" }
+        return CommandPrepareStatementState().onDownstreamPacket(ctx, packet)
+    }
+
     companion object {
         private val logger = KotlinLogging.logger {}
         private val COM_QUERY = 0x03u
         private val COM_PING = 0x0Eu
         private val COM_QUIT = 0x01u
         private val COM_DEBUG = 0x0Du
+        private val COM_STMT_PREPARE = 0x16u
     }
 }
