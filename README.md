@@ -20,7 +20,7 @@ providing the capability to parse and handle protocol packets at a granular leve
 ```
 
 # or
-
+```shell
 ./gradlew installDist
 ./app/build/install/app/bin/app --port=3307 --upstream=localhost:3306
 ```
