@@ -9,6 +9,9 @@ plugins {
 dependencies {
     // Project "app" depends on project "utils". (Project paths are separated with ":", so ":utils" refers to the top-level "utils" project.)
     implementation(project(":utils"))
+
+    implementation("com.xenomachina:kotlin-argparser:2.0.7")
+
     implementation("io.netty:netty-all:4.2.2.Final")
 
     implementation("org.bouncycastle:bcpkix-jdk18on:1.81")

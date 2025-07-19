@@ -8,16 +8,21 @@ providing the capability to parse and handle protocol packets at a granular leve
 
 ### Prerequisites
 - Java 21 or higher
+- Run MySQL server with docker container:
+  ```shell
+  docker run --name mysql -e MYSQL_ROOT_PASSWORD=root -p 3306:3306 -d mysql:latest
+  ```
 
 ### Run
 
 ```shell
-./gradlew run
+./gradlew run --args='--port=3307 --upstream=localhost:3306'
+```
 
 # or
 
 ./gradlew installDist
-./app/build/install/app/bin/app
+./app/build/install/app/bin/app --port=3307 --upstream=localhost:3306
 ```
 
 
