@@ -16,6 +16,7 @@ class GatewayStateMachine {
         logger.debug {
             "${currentState::class.simpleName} -> ${nextState.javaClass.simpleName}"
         }
+        currentState = nextState
     }
 
     fun processUpstream(
@@ -27,6 +28,7 @@ class GatewayStateMachine {
         logger.debug {
             "${currentState::class.simpleName} -> ${nextState.javaClass.simpleName}"
         }
+        currentState = nextState
     }
 
     companion object {

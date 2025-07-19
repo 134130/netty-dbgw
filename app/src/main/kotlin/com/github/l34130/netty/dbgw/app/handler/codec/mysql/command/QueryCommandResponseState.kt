@@ -14,7 +14,6 @@ import com.github.l34130.netty.dbgw.app.handler.codec.mysql.readLenEncString
 import com.github.l34130.netty.dbgw.utils.netty.peek
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.buffer.ByteBuf
-import io.netty.buffer.ByteBufUtil
 import io.netty.channel.ChannelHandlerContext
 
 class QueryCommandResponseState : GatewayState {
@@ -87,8 +86,6 @@ class QueryCommandResponseState : GatewayState {
         ): GatewayState {
             val payload = packet.payload
             payload.markReaderIndex()
-
-            println(payload.peek { ByteBufUtil.prettyHexDump(it) })
 
             if (ctx.capabilities().contains(CapabilityFlag.CLIENT_OPTIONAL_RESULTSET_METADATA)) {
                 metadataFollows = payload.readFixedLengthInteger(1) == 1UL
