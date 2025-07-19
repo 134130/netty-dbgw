@@ -39,6 +39,7 @@ class AuthSwitchRequestHandler(
             return
         }
 
+        // AuthMoreData packet will be here
         TODO("Not yet implemented: handle other types of packets during authentication")
     }
 
