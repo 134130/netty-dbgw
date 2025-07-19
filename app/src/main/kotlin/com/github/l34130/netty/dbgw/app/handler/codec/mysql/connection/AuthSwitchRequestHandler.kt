@@ -6,6 +6,7 @@ import com.github.l34130.netty.dbgw.app.handler.codec.mysql.command.DebugCommand
 import com.github.l34130.netty.dbgw.app.handler.codec.mysql.command.PingCommandHandler
 import com.github.l34130.netty.dbgw.app.handler.codec.mysql.command.QueryCommandHandler
 import com.github.l34130.netty.dbgw.app.handler.codec.mysql.command.QuitCommandHandler
+import com.github.l34130.netty.dbgw.app.handler.codec.mysql.readNullTerminatedString
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.SimpleChannelInboundHandler
@@ -17,12 +18,30 @@ class AuthSwitchRequestHandler(
         ctx: ChannelHandlerContext,
         msg: Packet,
     ) {
+        if (msg.isEofPacket()) {
+            msg.payload.markReaderIndex()
+            msg.payload.skipBytes(1) // Skip the first byte (EOF marker)
+
+            logger.trace {
+                val pluginName = msg.payload.readNullTerminatedString().toString(Charsets.US_ASCII)
+                "Received AuthSwitchRequest with plugin: $pluginName"
+            }
+
+            msg.payload.resetReaderIndex()
+            ctx.pipeline().remove(this)
+            proxyContext.downstream().apply {
+                pipeline().addBefore("relay-handler", "auth-switch-handler", AuthSwitchResponseHandler(proxyContext))
+                writeAndFlush(msg)
+            }
+            return
+        }
+
         if (msg.isOkPacket()) {
             // Authentication succeeded, no action needed
             logger.trace { "Authentication succeeded" }
+            ctx.pipeline().remove(this)
             registerCommandPhaseHandlers()
             proxyContext.downstream().writeAndFlush(msg)
-            ctx.pipeline().remove(this)
             return
         }
 
@@ -33,9 +52,9 @@ class AuthSwitchRequestHandler(
                 "Authentication failed: ${Packet.Error.readFrom(msg.payload, proxyContext.capabilities())}"
                 msg.payload.resetReaderIndex()
             }
+            ctx.pipeline().remove(this)
             registerCommandPhaseHandlers()
             proxyContext.downstream().writeAndFlush(msg)
-            ctx.pipeline().remove(this)
             return
         }
 
