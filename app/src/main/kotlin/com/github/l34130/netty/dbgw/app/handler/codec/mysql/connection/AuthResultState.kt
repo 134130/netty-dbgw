@@ -15,7 +15,7 @@ class AuthResultState : GatewayState {
     override fun onUpstreamPacket(
         ctx: ChannelHandlerContext,
         packet: Packet,
-    ): GatewayState? {
+    ): GatewayState {
         if (packet.isEofPacket()) {
             packet.payload.markReaderIndex()
             packet.payload.skipBytes(1) // Skip the first byte (EOF marker)
@@ -27,8 +27,7 @@ class AuthResultState : GatewayState {
 
             packet.payload.resetReaderIndex()
             ctx.downstream().writeAndFlush(packet)
-            return null
-//            return WaitingForAuthSwitchResponseState()
+            TODO("Not yet implemented: handle AuthSwitchRequest packet")
         }
 
         if (packet.isOkPacket()) {
@@ -45,7 +44,7 @@ class AuthResultState : GatewayState {
             packet.payload.resetReaderIndex()
             ctx.downstream().writeAndFlush(packet)
             ctx.downstream().closeOnFlush()
-            return null
+            TODO("Not yet implemented: handle authentication error")
         }
 
         logger.warn {

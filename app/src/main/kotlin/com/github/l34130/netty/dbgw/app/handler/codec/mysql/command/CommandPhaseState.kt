@@ -17,18 +17,14 @@ class CommandPhaseState : GatewayState {
     override fun onDownstreamPacket(
         ctx: ChannelHandlerContext,
         packet: Packet,
-    ): GatewayState? {
+    ): GatewayState {
         val payload = packet.payload
         payload.markReaderIndex()
         val commandByte = payload.readUnsignedByte().toUInt()
 
         return when (commandByte) {
             COM_QUERY -> handleQueryCommand(ctx, packet)
-            else -> {
-                payload.resetReaderIndex()
-                ctx.fireChannelRead(packet) // Not a COM_QUERY, pass it along
-                null // No state change
-            }
+            else -> TODO("Unhandled command byte: $commandByte")
         }
     }
 

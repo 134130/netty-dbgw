@@ -23,7 +23,7 @@ class HandshakeResponseState : GatewayState {
     override fun onDownstreamPacket(
         ctx: ChannelHandlerContext,
         packet: Packet,
-    ): GatewayState? {
+    ): GatewayState {
         val payload = packet.payload
         payload.markReaderIndex()
 

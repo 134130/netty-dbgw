@@ -18,7 +18,7 @@ class HandshakeState : GatewayState {
     override fun onUpstreamPacket(
         ctx: ChannelHandlerContext,
         packet: Packet,
-    ): GatewayState? {
+    ): GatewayState {
         val payload = packet.payload
         payload.markReaderIndex()
 

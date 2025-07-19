@@ -20,7 +20,7 @@ class QueryCommandResponseState : GatewayState {
     override fun onUpstreamPacket(
         ctx: ChannelHandlerContext,
         packet: Packet,
-    ): GatewayState? {
+    ): GatewayState {
         val payload = packet.payload
         payload.markReaderIndex()
 
@@ -66,7 +66,7 @@ class QueryCommandResponseState : GatewayState {
         override fun onUpstreamPacket(
             ctx: ChannelHandlerContext,
             packet: Packet,
-        ): GatewayState? {
+        ): GatewayState {
             logger.trace { "Processing TextResultSet: currentState='${state.name}'" }
 
             val nextState =
@@ -166,7 +166,7 @@ class QueryCommandResponseState : GatewayState {
         private fun handleRowState(
             ctx: ChannelHandlerContext,
             packet: Packet,
-        ): GatewayState? {
+        ): GatewayState {
             val payload = packet.payload
             payload.markReaderIndex()
 
