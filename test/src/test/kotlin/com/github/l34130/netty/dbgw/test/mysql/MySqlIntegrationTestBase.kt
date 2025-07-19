@@ -252,4 +252,10 @@ abstract class MySqlIntegrationTestBase(
 //                }
 //            },
         )
+
+    // TODO: DML/DDL Tests
+    // TODO: Transaction Tests
+    // TODO: NULL or Empty Row Tests
+    // TODO: Stored Procedure Tests
+    // TODO: Invalid upstream/database connection handling
 }
