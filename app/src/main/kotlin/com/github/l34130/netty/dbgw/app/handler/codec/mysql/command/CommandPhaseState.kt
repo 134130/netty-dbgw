@@ -25,6 +25,7 @@ class CommandPhaseState : GatewayState {
             COM_QUERY -> handleQueryCommand(ctx, packet)
             COM_PING -> handlePingCommand(ctx, packet)
             COM_QUIT -> handleQuitCommand(ctx, packet)
+            COM_DEBUG -> handleDebugCommand(ctx, packet)
             else -> TODO("Unhandled command byte: 0x${commandByte?.toString(16)?.uppercase()}")
         }
     }
@@ -84,10 +85,19 @@ class CommandPhaseState : GatewayState {
         return QuitCommandState().onDownstreamPacket(ctx, packet)
     }
 
+    private fun handleDebugCommand(
+        ctx: ChannelHandlerContext,
+        packet: Packet,
+    ): GatewayState {
+        logger.trace { "Received COM_DEBUG" }
+        return DebugCommandState().onDownstreamPacket(ctx, packet)
+    }
+
     companion object {
         private val logger = KotlinLogging.logger {}
         private val COM_QUERY = 0x03u
         private val COM_PING = 0x0Eu
         private val COM_QUIT = 0x01u
+        private val COM_DEBUG = 0x0Du
     }
 }
