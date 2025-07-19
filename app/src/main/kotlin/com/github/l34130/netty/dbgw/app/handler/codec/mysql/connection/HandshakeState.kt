@@ -1,33 +1,32 @@
 package com.github.l34130.netty.dbgw.app.handler.codec.mysql.connection
 
+import com.github.l34130.netty.dbgw.app.handler.codec.mysql.GatewayAttributes
+import com.github.l34130.netty.dbgw.app.handler.codec.mysql.GatewayState
 import com.github.l34130.netty.dbgw.app.handler.codec.mysql.Packet
-import com.github.l34130.netty.dbgw.app.handler.codec.mysql.ProxyContext
+import com.github.l34130.netty.dbgw.app.handler.codec.mysql.capabilities
 import com.github.l34130.netty.dbgw.app.handler.codec.mysql.constant.CapabilityFlag
 import com.github.l34130.netty.dbgw.app.handler.codec.mysql.readFixedLengthInteger
 import com.github.l34130.netty.dbgw.app.handler.codec.mysql.readNullTerminatedString
 import com.github.l34130.netty.dbgw.utils.toEnumSet
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.channel.ChannelHandlerContext
-import io.netty.channel.SimpleChannelInboundHandler
 import java.util.EnumSet
 import kotlin.math.max
 
-// https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_connection_phase_packets_protocol_handshake_v10.html
-class InitialHandshakeRequestHandler(
-    private val proxyContext: ProxyContext,
-) : SimpleChannelInboundHandler<Packet>() {
-    override fun channelRead0(
+// https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_connection_phase_packets_protocol_handshake.html
+class HandshakeState : GatewayState {
+    override fun onUpstreamPacket(
         ctx: ChannelHandlerContext,
-        msg: Packet,
-    ) {
-        val payload = msg.payload
+        packet: Packet,
+    ): GatewayState? {
+        val payload = packet.payload
         payload.markReaderIndex()
 
         val protocolVersion = payload.readFixedLengthInteger(1)
         if (protocolVersion != 10UL) {
             logger.error { "Unsupported MySQL protocol version: $protocolVersion" }
             ctx.close()
-            return
+            TODO("Handle unsupported protocol version")
         }
 
         // human-readable server version
@@ -47,7 +46,7 @@ class InitialHandshakeRequestHandler(
         val statusFlags = payload.readFixedLengthInteger(2)
         val capabilityFlags2 = payload.readFixedLengthInteger(2)
         val serverCapabilities: EnumSet<CapabilityFlag> = ((capabilityFlags1) or (capabilityFlags2 shl 16)).toEnumSet()
-        proxyContext.setServerCapabilities(serverCapabilities)
+        ctx.capabilities().setServerCapabilities(serverCapabilities)
         logger.trace { "Server Capabilities: $serverCapabilities" }
 
         val supportsClientPluginAuth = (serverCapabilities.contains(CapabilityFlag.CLIENT_PLUGIN_AUTH))
@@ -67,26 +66,12 @@ class InitialHandshakeRequestHandler(
         }
 
         payload.resetReaderIndex()
-        ctx.pipeline().remove(this)
-        proxyContext.downstream().apply {
-            pipeline().addBefore(
-                "relay-handler",
-                "initial-handshake-response-handler",
-                InitialHandshakeResponseHandler(proxyContext),
-            )
-            writeAndFlush(msg)
-        }
-    }
-
-    override fun handlerAdded(ctx: ChannelHandlerContext) {
-        logger.trace { this::class.simpleName + " added to pipeline" }
-    }
-
-    override fun handlerRemoved(ctx: ChannelHandlerContext) {
-        logger.trace { this::class.simpleName + " removed from pipeline" }
+        val downstream = ctx.channel().attr(GatewayAttributes.DOWNSTREAM_ATTR_KEY).get()
+        downstream.writeAndFlush(packet)
+        return HandshakeResponseState()
     }
 
     companion object {
-        private val logger = KotlinLogging.logger { }
+        private val logger = KotlinLogging.logger {}
     }
 }

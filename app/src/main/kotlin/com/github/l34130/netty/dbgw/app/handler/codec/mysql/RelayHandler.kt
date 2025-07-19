@@ -9,7 +9,6 @@ import io.netty.channel.ChannelInboundHandlerAdapter
 import io.netty.util.ReferenceCountUtil
 
 class RelayHandler(
-    private val proxyContext: ProxyContext,
     private val relayChannel: Channel,
     private val debugName: String? = null,
 ) : ChannelInboundHandlerAdapter() {

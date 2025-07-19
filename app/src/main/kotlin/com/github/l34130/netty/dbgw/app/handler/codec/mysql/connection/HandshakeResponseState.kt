@@ -1,45 +1,44 @@
 package com.github.l34130.netty.dbgw.app.handler.codec.mysql.connection
 
+import com.github.l34130.netty.dbgw.app.handler.codec.mysql.GatewayState
 import com.github.l34130.netty.dbgw.app.handler.codec.mysql.Packet
-import com.github.l34130.netty.dbgw.app.handler.codec.mysql.ProxyContext
+import com.github.l34130.netty.dbgw.app.handler.codec.mysql.capabilities
 import com.github.l34130.netty.dbgw.app.handler.codec.mysql.constant.CapabilityFlag
 import com.github.l34130.netty.dbgw.app.handler.codec.mysql.readFixedLengthInteger
 import com.github.l34130.netty.dbgw.app.handler.codec.mysql.readLenEncInteger
 import com.github.l34130.netty.dbgw.app.handler.codec.mysql.readLenEncString
 import com.github.l34130.netty.dbgw.app.handler.codec.mysql.readNullTerminatedString
+import com.github.l34130.netty.dbgw.app.handler.codec.mysql.upstream
 import com.github.l34130.netty.dbgw.utils.netty.closeOnFlush
 import com.github.l34130.netty.dbgw.utils.toEnumSet
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.buffer.Unpooled
 import io.netty.channel.ChannelHandlerContext
-import io.netty.channel.SimpleChannelInboundHandler
 import io.netty.handler.ssl.SslContextBuilder
 import io.netty.handler.ssl.SslHandler
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory
 import java.util.EnumSet
 
-class InitialHandshakeResponseHandler(
-    private val proxyContext: ProxyContext,
-) : SimpleChannelInboundHandler<Packet>() {
-    override fun channelRead0(
+class HandshakeResponseState : GatewayState {
+    override fun onDownstreamPacket(
         ctx: ChannelHandlerContext,
-        msg: Packet,
-    ) {
-        val payload = msg.payload
+        packet: Packet,
+    ): GatewayState? {
+        val payload = packet.payload
         payload.markReaderIndex()
 
         val clientFlag = payload.readFixedLengthInteger(4)
         val clientCapabilities: EnumSet<CapabilityFlag> = clientFlag.toEnumSet()
-        proxyContext.setClientCapabilities(clientCapabilities)
+        ctx.capabilities().setClientCapabilities(clientCapabilities)
         if (!clientCapabilities.contains(CapabilityFlag.CLIENT_PROTOCOL_41)) {
             logger.error { "Unsupported MySQL client protocol version: $clientFlag" }
             ctx.close()
-            return
+            TODO("Handle unsupported client protocol version")
         }
         logger.trace { "Client Capabilities: $clientCapabilities" }
-        logger.trace { "Server / Client Capabilities: ${proxyContext.capabilities()}" }
 
         val maxPacketSize = payload.readFixedLengthInteger(4)
+        logger.trace { "Max Packet Size: $maxPacketSize bytes" }
         val characterSet =
             when (val v = payload.readFixedLengthInteger(1).toInt()) {
                 1 -> "big5_chinese_ci"
@@ -59,12 +58,9 @@ class InitialHandshakeResponseHandler(
         logger.trace { "Character Set: $characterSet" }
         payload.skipBytes(23) // skip filler bytes
 
-        if (proxyContext.capabilities().contains(CapabilityFlag.CLIENT_SSL) && ctx.pipeline().get("ssl-handler") == null) {
-            logger.trace { "Client supports SSL" }
-
-            val downstream = proxyContext.downstream()
-            val upstream = proxyContext.upstream()
-
+        val downstream = ctx.channel()
+        val upstream = ctx.upstream()
+        if (ctx.capabilities().contains(CapabilityFlag.CLIENT_SSL) && downstream.pipeline().get("ssl-handler") == null) {
             // TODO: Singletonize SSL context creation
             val serverSslContext =
                 SslContextBuilder
@@ -82,48 +78,39 @@ class InitialHandshakeResponseHandler(
                     .build()
                     .newEngine(upstream.alloc())
 
-            payload.resetReaderIndex()
-            upstream.writeAndFlush(msg).addListener { future ->
-                if (!future.isSuccess) {
-                    logger.error(future.cause()) { "[Upstream] Failed to send initial handshake response." }
-                    proxyContext.downstream().closeOnFlush()
-                    return@addListener
-                }
-
-                downstream.pipeline().addFirst(
-                    "ssl-handler",
-                    SslHandler(serverSslContext).apply {
-                        handshakeFuture().addListener { future ->
-                            if (!future.isSuccess) {
-                                logger.error(future.cause()) { "[Downstream] SSL handshake failed." }
-                                proxyContext.downstream().closeOnFlush()
-                                return@addListener
-                            }
-
-                            logger.info { "[Downstream] SSL handshake completed successfully." }
-                            proxyContext.upstream().pipeline().addFirst(
-                                "ssl-handler",
-                                SslHandler(clientSslContext).apply {
-                                    handshakeFuture().addListener { future ->
-                                        if (!future.isSuccess) {
-                                            logger.error(future.cause()) { "[Upstream] SSL handshake failed." }
-                                            proxyContext.downstream().closeOnFlush()
-                                            return@addListener
-                                        }
-
-                                        logger.info { "[Upstream] SSL handshake completed successfully." }
-                                    }
-                                },
-                            )
-                            proxyContext.upstream().writeAndFlush(Unpooled.EMPTY_BUFFER) // Trigger the SSL handshake
+            upstream.writeAndFlush(packet)
+            upstream.pipeline().addFirst(
+                "ssl-handler",
+                SslHandler(clientSslContext).apply {
+                    handshakeFuture().addListener { future ->
+                        if (!future.isSuccess) {
+                            logger.error(future.cause()) { "[Upstream] SSL handshake failed." }
+                            downstream.closeOnFlush()
+                            return@addListener
                         }
-                    },
-                )
-            }
 
-            // If the server supports SSL, we should have already added the SslHandler
+                        logger.info { "[Upstream] SSL handshake completed successfully." }
+                    }
+                    upstream.writeAndFlush(Unpooled.EMPTY_BUFFER) // Trigger the SSL handshake
+                },
+            )
 
-            return
+            downstream.pipeline().addFirst(
+                "ssl-handler",
+                SslHandler(serverSslContext).apply {
+                    handshakeFuture().addListener { future ->
+                        if (!future.isSuccess) {
+                            logger.error(future.cause()) { "[Downstream] SSL handshake failed." }
+                            downstream.closeOnFlush()
+                            return@addListener
+                        }
+
+                        logger.info { "[Downstream] SSL handshake completed successfully." }
+                    }
+                },
+            )
+
+            return this // Wait for the HandshakeResponse packet again
         }
 
         // login username
@@ -152,7 +139,11 @@ class InitialHandshakeResponseHandler(
             } else {
                 null
             }
-        logger.trace { "Client Auth Plugin Name: ${clientPluginName?.toString(Charsets.UTF_8)}" }
+        logger.trace {
+            "Client Auth Plugin Name: ${clientPluginName?.toString(
+                Charsets.UTF_8,
+            )}"
+        }
 
         val clientConnectAttrs =
             if (clientCapabilities.contains(CapabilityFlag.CLIENT_CONNECT_ATTRS)) {
@@ -178,29 +169,14 @@ class InitialHandshakeResponseHandler(
             } else {
                 0
             }
+        logger.trace { "Zstd Compression Level: $zstdCompressionLevel" }
 
         payload.resetReaderIndex()
-
-        proxyContext.upstream().apply {
-            pipeline().addBefore(
-                "relay-handler",
-                "auth-switch-request-handler",
-                AuthSwitchRequestHandler(proxyContext),
-            )
-            writeAndFlush(msg)
-        }
-        ctx.pipeline().remove(this)
-    }
-
-    override fun handlerAdded(ctx: ChannelHandlerContext) {
-        logger.trace { this::class.simpleName + " added to pipeline" }
-    }
-
-    override fun handlerRemoved(ctx: ChannelHandlerContext) {
-        logger.trace { this::class.simpleName + " removed from pipeline" }
+        ctx.upstream().writeAndFlush(packet)
+        return AuthResultState()
     }
 
     companion object {
-        private val logger = KotlinLogging.logger { }
+        private val logger = KotlinLogging.logger {}
     }
 }

@@ -1,48 +1,110 @@
 package com.github.l34130.netty.dbgw.app.handler.codec.mysql
 
-import com.github.l34130.netty.dbgw.app.handler.codec.mysql.connection.InitialHandshakeRequestHandler
+import com.github.l34130.netty.dbgw.utils.netty.closeOnFlush
+import io.github.oshai.kotlinlogging.KotlinLogging
+import io.netty.bootstrap.Bootstrap
 import io.netty.channel.Channel
 import io.netty.channel.ChannelHandlerContext
-import io.netty.channel.ChannelInboundHandlerAdapter
 import io.netty.channel.ChannelInitializer
+import io.netty.channel.SimpleChannelInboundHandler
 
 class MySqlProxyChannelInitializer(
     private val upstreamProvider: () -> Pair<String, Int>,
 ) : ChannelInitializer<Channel>() {
     override fun initChannel(ch: Channel) {
         val downstream = ch
-        val proxyContext = ProxyContext(downstream)
+        val stateMachine = GatewayStateMachine()
 
         downstream
             .pipeline()
-            .addLast(ProxyDownstreamHandler(proxyContext, upstreamProvider))
+            .addFirst("packet-decoder", PacketDecoder())
+            .addFirst("packet-encoder", PacketEncoder())
+            .addLast(DownstreamConnectionHandler(stateMachine, upstreamProvider))
     }
 
-    class ProxyDownstreamHandler(
-        private val proxyContext: ProxyContext,
+    class DownstreamConnectionHandler(
+        private val stateMachine: GatewayStateMachine,
         private val upstreamProvider: () -> Pair<String, Int>,
-    ) : ChannelInboundHandlerAdapter() {
+    ) : SimpleChannelInboundHandler<Packet>() {
         override fun channelActive(ctx: ChannelHandlerContext) {
             val (inetHost, inetPort) = this.upstreamProvider()
-            proxyContext.connectUpstream(inetHost, inetPort)
-            ctx
+
+            val upstream =
+                Bootstrap()
+                    .group(ctx.channel().eventLoop())
+                    .channel(ctx.channel().javaClass)
+                    .handler(UpstreamConnectionHandler(stateMachine))
+                    .connect(inetHost, inetPort)
+                    .channel()
+
+            upstream
                 .pipeline()
-                .addLast("packet-encoder", PacketEncoder())
-                .addLast("packet-decoder", PacketDecoder())
-                .addLast("relay-handler", RelayHandler(proxyContext, proxyContext.upstream(), "downstream"))
+                .addFirst("packet-decoder", PacketDecoder())
+                .addFirst("packet-encoder", PacketEncoder())
+
+            val downstream = ctx.channel()
+            downstream.attr(GatewayAttributes.UPSTREAM_ATTR_KEY).set(upstream)
+            upstream.attr(GatewayAttributes.DOWNSTREAM_ATTR_KEY).set(downstream)
+
+            val capabilities = Capabilities()
+            downstream.attr(GatewayAttributes.CAPABILITIES_ATTR_KEY).set(capabilities)
+            upstream.attr(GatewayAttributes.CAPABILITIES_ATTR_KEY).set(capabilities)
+        }
+
+        override fun channelRead0(
+            ctx: ChannelHandlerContext,
+            msg: Packet,
+        ) {
+            stateMachine.processDownstream(ctx, msg)
+        }
+
+        override fun exceptionCaught(
+            ctx: ChannelHandlerContext,
+            cause: Throwable,
+        ) {
+            logger.error(cause) { "Exception caught in DownstreamConnectionHandler: ${cause.message}" }
+            ctx.close()
+        }
+
+        override fun channelInactive(ctx: ChannelHandlerContext) {
+            if (ctx.upstream().isActive) {
+                logger.info { "Downstream channel inactive, closing upstream() channel." }
+                ctx.upstream().closeOnFlush()
+            }
+        }
+
+        companion object {
+            private val logger = KotlinLogging.logger {}
         }
     }
 
-    class ProxyUpstreamHandler(
-        private val proxyContext: ProxyContext,
-    ) : ChannelInboundHandlerAdapter() {
-        override fun channelActive(ctx: ChannelHandlerContext) {
-            ctx
-                .pipeline()
-                .addLast("packet-encoder", PacketEncoder())
-                .addLast("packet-decoder", PacketDecoder())
-                .addLast("initial-handshake-request-handler", InitialHandshakeRequestHandler(proxyContext))
-                .addLast("relay-handler", RelayHandler(proxyContext, proxyContext.downstream(), "upstream"))
+    class UpstreamConnectionHandler(
+        private val stateMachine: GatewayStateMachine,
+    ) : SimpleChannelInboundHandler<Packet>() {
+        override fun channelRead0(
+            ctx: ChannelHandlerContext,
+            msg: Packet,
+        ) {
+            stateMachine.processUpstream(ctx, msg)
+        }
+
+        override fun exceptionCaught(
+            ctx: ChannelHandlerContext,
+            cause: Throwable,
+        ) {
+            logger.error(cause) { "Exception caught in UpstreamConnectionHandler: ${cause.message}" }
+            ctx.close()
+        }
+
+        override fun channelInactive(ctx: ChannelHandlerContext) {
+            if (ctx.downstream().isActive) {
+                logger.info { "Upstream channel inactive, closing downstream channel." }
+                ctx.downstream().closeOnFlush()
+            }
+        }
+
+        companion object {
+            private val logger = KotlinLogging.logger {}
         }
     }
 }

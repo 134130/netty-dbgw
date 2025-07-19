@@ -1,28 +1,28 @@
 package com.github.l34130.netty.dbgw.app.handler.codec.mysql.command
 
 import com.github.l34130.netty.dbgw.app.handler.codec.mysql.Packet
-import com.github.l34130.netty.dbgw.app.handler.codec.mysql.ProxyContext
+import com.github.l34130.netty.dbgw.app.handler.codec.mysql.capabilities
+import com.github.l34130.netty.dbgw.app.handler.codec.mysql.downstream
 import com.github.l34130.netty.dbgw.app.handler.codec.mysql.readFixedLengthInteger
+import com.github.l34130.netty.dbgw.app.handler.codec.mysql.upstream
 import com.github.l34130.netty.dbgw.utils.netty.peek
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.SimpleChannelInboundHandler
 
-class PingCommandHandler(
-    private val proxyContext: ProxyContext,
-) : SimpleChannelInboundHandler<Packet>() {
+class PingCommandHandler : SimpleChannelInboundHandler<Packet>() {
     override fun channelRead0(
         ctx: ChannelHandlerContext,
         msg: Packet,
     ) {
         if (msg.payload.peek { it.readFixedLengthInteger(1) } == 0x0EUL) {
             logger.trace { "Received COM_PING" }
-            proxyContext.upstream().pipeline().addBefore(
+            ctx.upstream().pipeline().addBefore(
                 "relay-handler",
                 "com-ping-response-handler",
-                PingCommandResponseHandler(proxyContext),
+                PingCommandResponseHandler(),
             )
-            proxyContext.upstream().writeAndFlush(msg)
+            ctx.upstream().writeAndFlush(msg)
         } else {
             ctx.fireChannelRead(msg)
         }
@@ -40,9 +40,7 @@ class PingCommandHandler(
         private val logger = KotlinLogging.logger { }
     }
 
-    private class PingCommandResponseHandler(
-        private val proxyContext: ProxyContext,
-    ) : SimpleChannelInboundHandler<Packet>() {
+    private class PingCommandResponseHandler : SimpleChannelInboundHandler<Packet>() {
         override fun channelRead0(
             ctx: ChannelHandlerContext,
             msg: Packet,
@@ -51,7 +49,7 @@ class PingCommandHandler(
                 msg.isOkPacket() -> {
                     logger.trace {
                         msg.payload.markReaderIndex()
-                        "Received COM_PING response: ${Packet.Ok.readFrom(msg.payload, proxyContext.capabilities())}"
+                        "Received COM_PING response: ${Packet.Ok.readFrom(msg.payload, ctx.capabilities().enumSet())}"
                         msg.payload.resetReaderIndex()
                     }
                 }
@@ -60,7 +58,7 @@ class PingCommandHandler(
                 }
             }
 
-            proxyContext.downstream().writeAndFlush(msg)
+            ctx.downstream().writeAndFlush(msg)
             ctx.pipeline().remove(this)
         }
 
