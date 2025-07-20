@@ -59,7 +59,7 @@ class HandshakeState : GatewayState {
 
         payload.skipBytes(10) // skip reserved bytes
 
-        val authPluginDataPart2 = payload.readBytes(max(13, authPluginDataLength - 8))
+        val authPluginDataPart2 = payload.readSlice(max(13, authPluginDataLength - 8))
         if (supportsClientPluginAuth) {
             val authPluginName = payload.readNullTerminatedString()
             logger.trace { "Server Auth Plugin Name: ${authPluginName.toString(Charsets.UTF_8)}" }
