@@ -1,6 +1,6 @@
 package com.github.l34130.netty.dbgw.protocol.mysql
 
-import com.github.l34130.netty.dbgw.config.GatewayConfig
+import com.github.l34130.netty.dbgw.core.config.GatewayConfig
 import io.netty.bootstrap.ServerBootstrap
 import io.netty.channel.ChannelFuture
 import io.netty.channel.MultiThreadIoEventLoopGroup

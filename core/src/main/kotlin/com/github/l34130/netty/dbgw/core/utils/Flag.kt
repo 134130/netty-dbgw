@@ -1,4 +1,4 @@
-package com.github.l34130.netty.dbgw.utils
+package com.github.l34130.netty.dbgw.core.utils
 
 import java.util.EnumSet
 

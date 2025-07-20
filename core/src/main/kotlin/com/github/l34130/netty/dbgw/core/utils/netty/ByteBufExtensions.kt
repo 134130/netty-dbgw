@@ -1,4 +1,4 @@
-package com.github.l34130.netty.dbgw.utils.netty
+package com.github.l34130.netty.dbgw.core.utils.netty
 
 import io.netty.buffer.ByteBuf
 import io.netty.buffer.Unpooled

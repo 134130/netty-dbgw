@@ -1,5 +1,6 @@
 package com.github.l34130.netty.dbgw.test.mysql
 
+import com.github.l34130.netty.dbgw.core.config.GatewayConfig
 import com.github.l34130.netty.dbgw.protocol.mysql.MySqlGateway
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -29,8 +30,14 @@ abstract class MySqlIntegrationTestBase(
     fun setup() {
         gateway =
             MySqlGateway(
-                port = gatewayPort,
-                upstream = mysqlContainer.host to mysqlContainer.getMappedPort(3306),
+                GatewayConfig(
+                    listenPort = gatewayPort,
+                    upstreamHost = mysqlContainer.host,
+                    upstreamPort = mysqlContainer.getMappedPort(3306),
+                    upstreamDatabaseType = GatewayConfig.UpstreamDatabaseType.MYSQL,
+                    restrictedSqlStatements = emptyList(),
+                    authenticationOverride = null,
+                ),
             )
         // Start the gateway before each test
         gateway.start()

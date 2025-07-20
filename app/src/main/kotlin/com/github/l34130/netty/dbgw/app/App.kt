@@ -1,7 +1,7 @@
 package com.github.l34130.netty.dbgw.app
 
-import com.github.l34130.netty.dbgw.config.GatewayConfig
-import com.github.l34130.netty.dbgw.config.GatewayConfigLoader
+import com.github.l34130.netty.dbgw.core.config.GatewayConfig
+import com.github.l34130.netty.dbgw.core.config.GatewayConfigLoader
 import com.github.l34130.netty.dbgw.protocol.mysql.MySqlGateway
 import com.xenomachina.argparser.ArgParser
 import com.xenomachina.argparser.ShowHelpException
@@ -70,7 +70,7 @@ fun main(args: Array<String>) {
                             upstreamPort = upstream.second,
                             upstreamDatabaseType = GatewayConfig.UpstreamDatabaseType.MYSQL,
                             restrictedSqlStatements = emptyList(),
-                            authentication = null, // No authentication by default
+                            authenticationOverride = null, // No authentication by default
                         )
                     }
                 }

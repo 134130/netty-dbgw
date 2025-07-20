@@ -1,5 +1,7 @@
 package com.github.l34130.netty.dbgw.protocol.mysql.connection
 
+import com.github.l34130.netty.dbgw.core.utils.netty.closeOnFlush
+import com.github.l34130.netty.dbgw.core.utils.toEnumSet
 import com.github.l34130.netty.dbgw.protocol.mysql.GatewayState
 import com.github.l34130.netty.dbgw.protocol.mysql.Packet
 import com.github.l34130.netty.dbgw.protocol.mysql.capabilities
@@ -9,8 +11,6 @@ import com.github.l34130.netty.dbgw.protocol.mysql.readLenEncInteger
 import com.github.l34130.netty.dbgw.protocol.mysql.readLenEncString
 import com.github.l34130.netty.dbgw.protocol.mysql.readNullTerminatedString
 import com.github.l34130.netty.dbgw.protocol.mysql.upstream
-import com.github.l34130.netty.dbgw.utils.netty.closeOnFlush
-import com.github.l34130.netty.dbgw.utils.toEnumSet
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.buffer.Unpooled
 import io.netty.channel.ChannelHandlerContext

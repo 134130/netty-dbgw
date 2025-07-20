@@ -1,4 +1,4 @@
-package com.github.l34130.netty.dbgw.config
+package com.github.l34130.netty.dbgw.core.config
 
 data class GatewayConfig(
     val listenPort: Int,
@@ -6,7 +6,7 @@ data class GatewayConfig(
     val upstreamPort: Int,
     val upstreamDatabaseType: UpstreamDatabaseType,
     val restrictedSqlStatements: List<String>,
-    val authentication: Authentication?,
+    val authenticationOverride: Authentication?,
 ) {
     override fun toString(): String =
         buildString {
@@ -18,10 +18,10 @@ data class GatewayConfig(
                     appendLine("      - $sql")
                 }
             }
-            if (authentication != null) {
-                appendLine("    Authentication: ${authentication.username}")
+            if (authenticationOverride != null) {
+                appendLine("    Authentication Override: ${authenticationOverride.username}")
             } else {
-                appendLine("    Authentication: None (user input will be bypassed)")
+                appendLine("    Authentication Override: None (user input will be used)")
             }
         }
 

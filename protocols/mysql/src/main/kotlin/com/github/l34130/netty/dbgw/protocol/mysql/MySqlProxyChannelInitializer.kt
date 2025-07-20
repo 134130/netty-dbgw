@@ -1,11 +1,11 @@
 package com.github.l34130.netty.dbgw.protocol.mysql
 
-import com.github.l34130.netty.dbgw.config.GatewayConfig
+import com.github.l34130.netty.dbgw.core.config.GatewayConfig
 import com.github.l34130.netty.dbgw.core.security.QueryPolicy
 import com.github.l34130.netty.dbgw.core.security.QueryPolicyEngine
 import com.github.l34130.netty.dbgw.core.security.QueryPolicyResult
+import com.github.l34130.netty.dbgw.core.utils.netty.closeOnFlush
 import com.github.l34130.netty.dbgw.protocol.mysql.command.PreparedStatement
-import com.github.l34130.netty.dbgw.utils.netty.closeOnFlush
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.bootstrap.Bootstrap
 import io.netty.channel.Channel
