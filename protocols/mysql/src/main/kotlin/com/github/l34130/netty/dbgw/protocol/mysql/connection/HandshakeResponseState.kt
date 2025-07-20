@@ -78,6 +78,7 @@ class HandshakeResponseState : GatewayState {
                     .build()
                     .newEngine(upstream.alloc())
 
+            payload.resetReaderIndex()
             upstream.writeAndFlush(packet)
             upstream.pipeline().addFirst(
                 "ssl-handler",
