@@ -87,6 +87,7 @@ class CommandPhaseState : GatewayState {
                         },
                     capabilities = ctx.capabilities().enumSet(),
                 )
+            payload.release() // release the payload buffer to avoid memory leaks
             ctx.writeAndFlush(errorPacket)
             return CommandPhaseState()
         }
