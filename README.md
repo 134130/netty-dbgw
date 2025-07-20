@@ -62,9 +62,9 @@ providing the capability to parse and handle protocol packets at a granular leve
         - [ ] COM_RESET_CONNECTION
         - [ ] COM_SET_OPTION
     - [ ] Prepared Statements 
-        - [ ] COM_STMT_PREPARE
-        - [ ] COM_STMT_EXECUTE
-        - [ ] COM_STMT_CLOSE
+        - [x] COM_STMT_PREPARE
+        - [x] COM_STMT_EXECUTE
+        - [x] COM_STMT_CLOSE
         - [ ] COM_STMT_RESET
         - [ ] COM_STMT_SEND_LONG_DATA
     - [ ] Stored Programs

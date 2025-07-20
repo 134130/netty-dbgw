@@ -229,13 +229,27 @@ abstract class MySqlIntegrationTestBase(
                 createConnection { props ->
                     props.setProperty("useServerPrepStmts", "true")
                 }.use { conn ->
-                    val stmt = conn.prepareStatement("SELECT CONCAT(?, ?) AS col1")
-                    stmt.setObject(1, 1)
-                    stmt.setObject(2, 2)
-                    val result = stmt.executeQuery()
-                    assertTrue(result.next(), "Result set should not be empty")
-                    assertEquals("12", result.getString("col1"), "Expected concatenated value to be '12'")
-                    stmt.close()
+                    conn.prepareStatement("SELECT CONCAT(?, ?) AS col1").use { stmt ->
+                        stmt.setObject(1, 1)
+                        stmt.setObject(2, 2)
+
+                        stmt.executeQuery().use { rs ->
+                            val table = rs.readAsTable()
+                            assertEquals(2, table.size, "Expected 2 rows in the result set")
+                            assertEquals("col1", table[0][0], "Expected column name to be 'col1'")
+                            assertEquals("12", table[1][0], "Expected concatenated value to be '12'")
+                        }
+
+                        stmt.setObject(1, "Hello")
+                        stmt.setObject(2, " World")
+
+                        stmt.executeQuery().use { rs ->
+                            val table = rs.readAsTable()
+                            assertEquals(2, table.size, "Expected 2 rows in the result set")
+                            assertEquals("col1", table[0][0], "Expected column name to be 'col1'")
+                            assertEquals("Hello World", table[1][0], "Expected concatenated value to be 'Hello World'")
+                        }
+                    }
                 }
             },
 //            dynamicTest("test callable statement") {
