@@ -15,7 +15,7 @@ class PacketEncoder : MessageToByteEncoder<Packet>() {
         if (msg.payload.readerIndex() != 0) {
             logger.warn {
                 "Packet payload reader index is not at 0, resetting it. " +
-                    "This may lead to unexpected behavior if the payload is not fully read." +
+                    "This may lead to unexpected behavior if the payload is not fully read. " +
                     "Check your packet handling logic."
             }
             msg.payload.readerIndex(0)

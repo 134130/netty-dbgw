@@ -4,11 +4,9 @@ import com.github.l34130.netty.dbgw.app.handler.codec.mysql.GatewayState
 import com.github.l34130.netty.dbgw.app.handler.codec.mysql.Packet
 import com.github.l34130.netty.dbgw.app.handler.codec.mysql.capabilities
 import com.github.l34130.netty.dbgw.app.handler.codec.mysql.constant.CapabilityFlag
-import com.github.l34130.netty.dbgw.app.handler.codec.mysql.constant.MySqlFieldType
 import com.github.l34130.netty.dbgw.app.handler.codec.mysql.constant.ServerStatusFlag
 import com.github.l34130.netty.dbgw.app.handler.codec.mysql.downstream
 import com.github.l34130.netty.dbgw.app.handler.codec.mysql.readFixedLengthInteger
-import com.github.l34130.netty.dbgw.app.handler.codec.mysql.readFixedLengthString
 import com.github.l34130.netty.dbgw.app.handler.codec.mysql.readLenEncInteger
 import com.github.l34130.netty.dbgw.app.handler.codec.mysql.readLenEncString
 import com.github.l34130.netty.dbgw.utils.netty.peek
@@ -109,26 +107,8 @@ class QueryCommandResponseState : GatewayState {
 
             // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_com_query_response_text_resultset_column_definition.html
             logger.trace {
-                val catalog = payload.readLenEncString().toString(Charsets.UTF_8) // always "def"
-                val schema = payload.readLenEncString().toString(Charsets.UTF_8)
-                val table = payload.readLenEncString().toString(Charsets.UTF_8) // virtual table name
-                val orgTable = payload.readLenEncString().toString(Charsets.UTF_8) // physical table name
-                val name = payload.readLenEncString().toString(Charsets.UTF_8) // virtual column name
-                val orgName = payload.readLenEncString().toString(Charsets.UTF_8) // physical column name
-                val lengthOfFixedLengthFields = payload.readLenEncInteger() // [0x0C]
-                val characterSet = payload.readFixedLengthInteger(2).toInt()
-                val columnLength = payload.readFixedLengthInteger(4).toInt() // maximum length of the field
-                val type = MySqlFieldType.of(payload.readFixedLengthInteger(1).toInt())
-                val flags = payload.readFixedLengthInteger(2).toInt()
-                val decimals = payload.readFixedLengthInteger(1).toInt() // max shown decimal digits
-                val reserved = payload.readFixedLengthString(2)
-
-                buildString {
-                    append("Column Definition(")
-                    append("catalog=$catalog, schema=$schema, table=$table, orgTable=$orgTable, ")
-                    append("name=$name, orgName=$orgName, characterSet=$characterSet, ")
-                    append("columnLength=$columnLength, type=$type, flags=$flags)")
-                }
+                val columnDefinition = ColumnDefinition41.readFrom(payload)
+                columnDefinition.toString()
             }
 
             state =

@@ -20,14 +20,18 @@ class CommandPhaseState : GatewayState {
         packet: Packet,
     ): GatewayState {
         val payload = packet.payload
-        val commandByte = payload.peek { it.readUnsignedByte().toUInt() }
-        return when (commandByte) {
-            COM_QUERY -> handleQueryCommand(ctx, packet)
-            COM_PING -> handlePingCommand(ctx, packet)
-            COM_QUIT -> handleQuitCommand(ctx, packet)
-            COM_DEBUG -> handleDebugCommand(ctx, packet)
-            COM_STMT_PREPARE -> handlePrepareStatementCommand(ctx, packet)
-            else -> TODO("Unhandled command byte: 0x${commandByte?.toString(16)?.uppercase()}")
+        val commandByte = payload.peek { it.readUnsignedByte().toUInt() } ?: error("Command byte is missing in the packet")
+        val commandType = CommandType.from(commandByte)
+        logger.debug { "Received $commandType" }
+        return when (commandType) {
+            CommandType.COM_QUERY -> handleQueryCommand(ctx, packet)
+            CommandType.COM_PING -> PingCommandState().onDownstreamPacket(ctx, packet)
+            CommandType.COM_QUIT -> QuitCommandState().onDownstreamPacket(ctx, packet)
+            CommandType.COM_DEBUG -> DebugCommandState().onDownstreamPacket(ctx, packet)
+            CommandType.COM_STMT_PREPARE -> PrepareStatementCommandState().onDownstreamPacket(ctx, packet)
+            CommandType.COM_STMT_EXECUTE -> ExecuteStatementCommandState().onDownstreamPacket(ctx, packet)
+            null -> throw IllegalArgumentException("Unknown command byte: 0x${commandByte.toString(16).uppercase()}")
+            else -> TODO("Unhandled command type: $commandType")
         }
     }
 
@@ -70,44 +74,26 @@ class CommandPhaseState : GatewayState {
         return QueryCommandResponseState()
     }
 
-    private fun handlePingCommand(
-        ctx: ChannelHandlerContext,
-        packet: Packet,
-    ): GatewayState {
-        logger.trace { "Received COM_PING" }
-        return PingCommandState().onDownstreamPacket(ctx, packet)
-    }
-
-    private fun handleQuitCommand(
-        ctx: ChannelHandlerContext,
-        packet: Packet,
-    ): GatewayState {
-        logger.trace { "Received COM_QUIT" }
-        return QuitCommandState().onDownstreamPacket(ctx, packet)
-    }
-
-    private fun handleDebugCommand(
-        ctx: ChannelHandlerContext,
-        packet: Packet,
-    ): GatewayState {
-        logger.trace { "Received COM_DEBUG" }
-        return DebugCommandState().onDownstreamPacket(ctx, packet)
-    }
-
-    private fun handlePrepareStatementCommand(
-        ctx: ChannelHandlerContext,
-        packet: Packet,
-    ): GatewayState {
-        logger.trace { "Received COM_STMT_PREPARE" }
-        return CommandPrepareStatementState().onDownstreamPacket(ctx, packet)
-    }
-
     companion object {
         private val logger = KotlinLogging.logger {}
-        private val COM_QUERY = 0x03u
-        private val COM_PING = 0x0Eu
-        private val COM_QUIT = 0x01u
-        private val COM_DEBUG = 0x0Du
-        private val COM_STMT_PREPARE = 0x16u
+    }
+
+    enum class CommandType(
+        val code: UInt,
+    ) {
+        COM_QUERY(0x03u),
+        COM_PING(0x0Eu),
+        COM_QUIT(0x01u),
+        COM_DEBUG(0x0Du),
+        COM_STMT_PREPARE(0x16u),
+        COM_STMT_EXECUTE(0x17u),
+        COM_STMT_CLOSE(0x19u),
+        ;
+
+        companion object {
+            private val map = entries.associateBy(CommandType::code)
+
+            fun from(code: UInt): CommandType? = map[code]
+        }
     }
 }

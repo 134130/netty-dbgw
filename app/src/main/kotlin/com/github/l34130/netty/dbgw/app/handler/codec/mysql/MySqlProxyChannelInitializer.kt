@@ -1,5 +1,6 @@
 package com.github.l34130.netty.dbgw.app.handler.codec.mysql
 
+import com.github.l34130.netty.dbgw.app.handler.codec.mysql.command.PreparedStatement
 import com.github.l34130.netty.dbgw.utils.netty.closeOnFlush
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.bootstrap.Bootstrap
@@ -49,6 +50,10 @@ class MySqlProxyChannelInitializer(
             val capabilities = Capabilities()
             downstream.attr(GatewayAttributes.CAPABILITIES_ATTR_KEY).set(capabilities)
             upstream.attr(GatewayAttributes.CAPABILITIES_ATTR_KEY).set(capabilities)
+
+            val preparedStatements = mutableMapOf<UInt, PreparedStatement>()
+            downstream.attr(GatewayAttributes.PREPARED_STATEMENTS_ATTR_KEY).set(preparedStatements)
+            upstream.attr(GatewayAttributes.PREPARED_STATEMENTS_ATTR_KEY).set(preparedStatements)
         }
 
         override fun channelRead0(
