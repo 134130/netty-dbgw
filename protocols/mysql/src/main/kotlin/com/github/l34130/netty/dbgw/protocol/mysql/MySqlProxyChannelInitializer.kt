@@ -1,7 +1,10 @@
 package com.github.l34130.netty.dbgw.protocol.mysql
 
-import com.github.l34130.netty.dbgw.protocol.mysql.command.PreparedStatement
+import com.github.l34130.netty.dbgw.config.GatewayConfig
+import com.github.l34130.netty.dbgw.core.security.QueryPolicy
 import com.github.l34130.netty.dbgw.core.security.QueryPolicyEngine
+import com.github.l34130.netty.dbgw.core.security.QueryPolicyResult
+import com.github.l34130.netty.dbgw.protocol.mysql.command.PreparedStatement
 import com.github.l34130.netty.dbgw.utils.netty.closeOnFlush
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.bootstrap.Bootstrap
@@ -11,8 +14,7 @@ import io.netty.channel.ChannelInitializer
 import io.netty.channel.SimpleChannelInboundHandler
 
 class MySqlProxyChannelInitializer(
-    private val upstreamProvider: () -> Pair<String, Int>,
-    private val queryPolicyEngine: QueryPolicyEngine = QueryPolicyEngine(emptyList()),
+    private val config: GatewayConfig,
 ) : ChannelInitializer<Channel>() {
     override fun initChannel(ch: Channel) {
         val downstream = ch
@@ -31,7 +33,7 @@ class MySqlProxyChannelInitializer(
         private val logger = KotlinLogging.logger {}
 
         override fun channelActive(ctx: ChannelHandlerContext) {
-            val (inetHost, inetPort) = upstreamProvider()
+            val (inetHost, inetPort) = config.upstreamHost to config.upstreamPort
 
             val upstream =
                 Bootstrap()
@@ -57,6 +59,21 @@ class MySqlProxyChannelInitializer(
             val preparedStatements = mutableMapOf<UInt, PreparedStatement>()
             downstream.attr(GatewayAttributes.PREPARED_STATEMENTS_ATTR_KEY).set(preparedStatements)
             upstream.attr(GatewayAttributes.PREPARED_STATEMENTS_ATTR_KEY).set(preparedStatements)
+
+            // TODO: Initialize QueryPolicyEngine with the appropriate configuration
+            val queryPolicyEngine =
+                config.restrictedSqlStatements
+                    .map { sql ->
+                        QueryPolicy { query: String ->
+                            if (query.contains(sql, ignoreCase = true)) {
+                                QueryPolicyResult(isAllowed = false, reason = "Access to restricted SQL statement: $sql")
+                            } else {
+                                QueryPolicyResult(isAllowed = true, null)
+                            }
+                        }
+                    }.let { policies ->
+                        QueryPolicyEngine(policies)
+                    }
 
             downstream.attr(GatewayAttributes.QUERY_POLICY_ENGINE_ATTR_KEY).set(queryPolicyEngine)
             upstream.attr(GatewayAttributes.QUERY_POLICY_ENGINE_ATTR_KEY).set(queryPolicyEngine)

@@ -1,8 +1,6 @@
 package com.github.l34130.netty.dbgw.protocol.mysql
 
-import com.github.l34130.netty.dbgw.core.security.QueryPolicy
-import com.github.l34130.netty.dbgw.core.security.QueryPolicyEngine
-import com.github.l34130.netty.dbgw.core.security.QueryPolicyResult
+import com.github.l34130.netty.dbgw.config.GatewayConfig
 import io.netty.bootstrap.ServerBootstrap
 import io.netty.channel.ChannelFuture
 import io.netty.channel.MultiThreadIoEventLoopGroup
@@ -12,8 +10,7 @@ import io.netty.handler.logging.LogLevel
 import io.netty.handler.logging.LoggingHandler
 
 class MySqlGateway(
-    private val port: Int,
-    private val upstream: Pair<String, Int>,
+    private val config: GatewayConfig,
 ) {
     private lateinit var f: ChannelFuture
 
@@ -27,25 +24,9 @@ class MySqlGateway(
                 .group(bossGroup, workerGroup)
                 .channel(NioServerSocketChannel::class.java)
                 .handler(LoggingHandler(LogLevel.INFO))
-                .childHandler(
-                    MySqlProxyChannelInitializer(
-                        upstreamProvider = { upstream },
-                        queryPolicyEngine =
-                            QueryPolicyEngine(
-                                listOf(
-                                    QueryPolicy { query: String ->
-                                        if (query.contains("SELECT * FROM actor")) {
-                                            QueryPolicyResult(isAllowed = false, reason = "Access to actor table is restricted.")
-                                        } else {
-                                            QueryPolicyResult(isAllowed = true, null)
-                                        }
-                                    },
-                                ),
-                            ),
-                    ),
-                )
+                .childHandler(MySqlProxyChannelInitializer(config))
 
-        f = b.bind(port).sync()
+        f = b.bind(config.listenPort).sync()
     }
 
     fun stop() {

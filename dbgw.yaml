@@ -1,0 +1,7 @@
+gateway:
+  listenPort: 3306
+  upstreamHost: mysql.querypie.io
+  upstreamPort: 3307
+  upstreamDatabaseType: MYSQL
+  restrictedSqlStatements:
+    - "SELECT * FROM"
