@@ -34,7 +34,7 @@ fun <T> ByteBuf.peek(action: (ByteBuf) -> T): T? {
  * If the block returns null or reads no bytes, the original ByteBuf is returned unchanged.
  * @return A new ByteBuf with the specified portion replaced, or the original ByteBuf
  */
-fun ByteBuf.replace(block: (ByteBuf) -> ByteBuf?): ByteBuf {
+fun ByteBuf.readAndReplace(block: (ByteBuf) -> ByteBuf?): ByteBuf {
     val duplicated = duplicate()
     val startIndex = duplicated.readerIndex()
 

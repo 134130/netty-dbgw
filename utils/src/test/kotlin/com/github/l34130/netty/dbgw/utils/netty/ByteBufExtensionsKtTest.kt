@@ -43,18 +43,18 @@ class ByteBufExtensionsKtTest {
         listOf(
             dynamicTest("replace returns original ByteBuf when block returns null") {
                 val buf = Unpooled.buffer().writeBytes(byteArrayOf(1, 2, 3))
-                val result = buf.replace { null }
+                val result = buf.readAndReplace { null }
                 assertEquals(buf, result, "Expected original ByteBuf when block returns null")
             },
             dynamicTest("replace returns original ByteBuf when block reads no bytes") {
                 val buf = Unpooled.buffer().writeBytes(byteArrayOf(1, 2, 3))
-                val result = buf.replace { Unpooled.buffer(0) }
+                val result = buf.readAndReplace { Unpooled.buffer(0) }
                 assertEquals(buf, result, "Expected original ByteBuf when block reads no bytes")
             },
             dynamicTest("replace replaces specified portion with new data") {
                 val buf = Unpooled.buffer().writeBytes(byteArrayOf(1, 2, 3, 4, 5))
                 val result =
-                    buf.replace {
+                    buf.readAndReplace {
                         it.readBytes(2)
                         Unpooled.wrappedBuffer(byteArrayOf(9, 9))
                     }
@@ -72,13 +72,13 @@ class ByteBufExtensionsKtTest {
             },
             dynamicTest("replace handles empty ByteBuf gracefully") {
                 val buf = Unpooled.buffer(0)
-                val result = buf.replace { Unpooled.wrappedBuffer(byteArrayOf(9)) }
+                val result = buf.readAndReplace { Unpooled.wrappedBuffer(byteArrayOf(9)) }
                 assertEquals(buf, result, "Expected original ByteBuf when ByteBuf is empty")
             },
             dynamicTest("replace throws IndexOutOfBoundsException when trying to read more bytes than available") {
                 val buf = Unpooled.buffer().writeBytes(byteArrayOf(1, 2, 3))
                 assertFailsWith<IndexOutOfBoundsException> {
-                    buf.replace {
+                    buf.readAndReplace {
                         it.readBytes(5) // Attempt to read more bytes than available
                     }
                 }
@@ -86,7 +86,7 @@ class ByteBufExtensionsKtTest {
             dynamicTest("replace allows writing more bytes than read") {
                 val buf = Unpooled.buffer().writeBytes(byteArrayOf(1, 2, 3))
                 val result =
-                    buf.replace {
+                    buf.readAndReplace {
                         it.skipBytes(3) // Read all bytes
                         Unpooled.buffer().writeBytes(byteArrayOf(1, 2, 3, 4, 5)) // Attempt to write more bytes than available
                     }
