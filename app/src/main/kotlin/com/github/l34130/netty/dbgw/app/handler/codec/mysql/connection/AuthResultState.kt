@@ -1,5 +1,6 @@
 package com.github.l34130.netty.dbgw.app.handler.codec.mysql.connection
 
+import com.github.l34130.netty.dbgw.app.handler.codec.mysql.ClosingConnectionException
 import com.github.l34130.netty.dbgw.app.handler.codec.mysql.GatewayState
 import com.github.l34130.netty.dbgw.app.handler.codec.mysql.Packet
 import com.github.l34130.netty.dbgw.app.handler.codec.mysql.capabilities
@@ -43,7 +44,7 @@ class AuthResultState : GatewayState {
             packet.payload.resetReaderIndex()
             ctx.downstream().writeAndFlush(packet)
             ctx.downstream().closeOnFlush()
-            TODO("Not yet implemented: handle authentication error")
+            throw ClosingConnectionException("Authentication failed")
         }
 
         if (packet.payload.peek { it.readUnsignedByte().toUInt() } == 0x1u) {

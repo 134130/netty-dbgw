@@ -67,7 +67,9 @@ class MySqlProxyChannelInitializer(
             ctx: ChannelHandlerContext,
             cause: Throwable,
         ) {
-            logger.error(cause) { "Exception caught in DownstreamConnectionHandler: ${cause.message}" }
+            if (cause !is ClosingConnectionException) {
+                logger.error(cause) { "Exception caught in DownstreamConnectionHandler: ${cause.message}" }
+            }
             ctx.close()
         }
 
@@ -103,7 +105,9 @@ class MySqlProxyChannelInitializer(
             ctx: ChannelHandlerContext,
             cause: Throwable,
         ) {
-            logger.error(cause) { "Exception caught in UpstreamConnectionHandler: ${cause.message}" }
+            if (cause !is ClosingConnectionException) {
+                logger.error(cause) { "Exception caught in UpstreamConnectionHandler: ${cause.message}" }
+            }
             ctx.close()
         }
 

@@ -12,12 +12,14 @@ import org.testcontainers.junit.jupiter.Testcontainers
 import java.sql.Connection
 import java.sql.Date
 import java.sql.DriverManager
+import java.sql.SQLException
 import java.sql.Time
 import java.time.LocalDateTime
 import java.util.Properties
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
+import kotlin.test.fail
 
 @Testcontainers
 abstract class MySqlIntegrationTestBase(
@@ -112,18 +114,16 @@ abstract class MySqlIntegrationTestBase(
                 }
             },
             dynamicTest("test invalid username/password") {
-                createConnection { props ->
-                    props.setProperty("user", "invalid_user")
-                    props.setProperty("password", "invalid_pass")
-                }.use { conn ->
-                    try {
-                        assertMySqlConnection(conn)
-                    } catch (e: Exception) {
-                        assertTrue(
-                            e.message?.contains("Access denied for user 'invalid_user'@") == true,
-                            "Expected access denied error, got ${e.message}",
-                        )
+                try {
+                    createConnection { props ->
+                        props.setProperty("user", "invalid_user")
+                        props.setProperty("password", "invalid_pass")
                     }
+                } catch (e: SQLException) {
+                    assertTrue(
+                        e.message?.contains("Access denied for user 'invalid_user'@") == true,
+                        "Expected access denied error, got ${e.message}",
+                    )
                 }
             },
         )
@@ -237,7 +237,36 @@ abstract class MySqlIntegrationTestBase(
                             val table = rs.readAsTable()
                             assertEquals(2, table.size, "Expected 2 rows in the result set")
                             assertEquals("col1", table[0][0], "Expected column name to be 'col1'")
-                            assertEquals("12", table[1][0], "Expected concatenated value to be '12'")
+                            val col1Value = table[1][0]
+                            when (col1Value) {
+                                is String -> assertEquals("12", col1Value, "Expected concatenated value to be '12'")
+                                is ByteArray ->
+                                    // MySQL 5.7 returns ByteArray for concatenated values
+                                    assertEquals("12", col1Value.toString(Charsets.US_ASCII), "Expected concatenated value to be '12'")
+                                else -> fail("Unexpected type for concatenated value: ${col1Value?.javaClass?.name}")
+                            }
+                        }
+
+                        stmt.setObject(1, "Hello")
+                        stmt.setObject(2, " World")
+
+                        stmt.executeQuery().use { rs ->
+                            val table = rs.readAsTable()
+                            assertEquals(2, table.size, "Expected 2 rows in the result set")
+                            assertEquals("col1", table[0][0], "Expected column name to be 'col1'")
+                            assertEquals("Hello World", table[1][0], "Expected concatenated value to be 'Hello World'")
+                        }
+                    }
+
+                    conn.prepareStatement("SELECT ? + ? AS col1").use { stmt ->
+                        stmt.setObject(1, 1)
+                        stmt.setObject(2, 2)
+
+                        stmt.executeQuery().use { rs ->
+                            val table = rs.readAsTable()
+                            assertEquals(2, table.size, "Expected 2 rows in the result set")
+                            assertEquals("col1", table[0][0], "Expected column name to be 'col1'")
+                            assertEquals(3.0, table[1][0], "Expected concatenated value to be 3")
                         }
 
                         stmt.setObject(1, "Hello")
