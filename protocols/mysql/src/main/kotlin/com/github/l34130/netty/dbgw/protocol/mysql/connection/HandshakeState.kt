@@ -38,7 +38,7 @@ class HandshakeState : GatewayState {
         logger.trace { "Thread ID: $threadId" }
 
         // scramble buffer
-        val authPluginDataPart1 = payload.readBytes(8)
+        val authPluginDataPart1 = payload.readSlice(8)
         payload.skipBytes(1) // skip filler byte
 
         val capabilityFlags1 = payload.readFixedLengthInteger(2)
