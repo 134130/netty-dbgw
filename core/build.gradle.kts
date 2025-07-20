@@ -9,10 +9,7 @@ plugins {
 dependencies {
     // Apply the kotlinx bundle of dependencies from the version catalog (`gradle/libs.versions.toml`).
     implementation(libs.bundles.kotlinxEcosystem)
-    implementation("io.netty:netty-buffer:4.2.2.Final")
-    implementation("io.netty:netty-transport:4.2.2.Final")
+    implementation("io.netty:netty-all:4.2.2.Final")
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.18.1")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.19.0")
-    implementation("io.github.oshai:kotlin-logging-jvm:7.0.7")
-    testImplementation(kotlin("test"))
 }

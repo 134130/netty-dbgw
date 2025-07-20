@@ -3,6 +3,7 @@ package com.github.l34130.netty.dbgw.app
 import com.github.l34130.netty.dbgw.core.config.GatewayConfig
 import com.github.l34130.netty.dbgw.core.config.GatewayConfigLoader
 import com.github.l34130.netty.dbgw.protocol.mysql.MySqlGateway
+import com.github.l34130.netty.dbgw.protocol.postgres.PostgresGateway
 import com.xenomachina.argparser.ArgParser
 import com.xenomachina.argparser.ShowHelpException
 import com.xenomachina.argparser.SystemExitException
@@ -86,7 +87,7 @@ fun main(args: Array<String>) {
                     MySqlGateway(config)
                 }
                 GatewayConfig.UpstreamDatabaseType.POSTGRESQL -> {
-                    throw UnsupportedOperationException("PostgreSQL support is not implemented yet.")
+                    PostgresGateway(config)
                 }
             }
 

@@ -14,6 +14,11 @@ kotlin {
     jvmToolchain(21)
 }
 
+dependencies {
+    implementation("io.github.oshai:kotlin-logging-jvm:7.0.7")
+    testImplementation(kotlin("test"))
+}
+
 tasks.withType<Test>().configureEach {
     // Configure all test Gradle tasks to use JUnitPlatform.
     useJUnitPlatform()
