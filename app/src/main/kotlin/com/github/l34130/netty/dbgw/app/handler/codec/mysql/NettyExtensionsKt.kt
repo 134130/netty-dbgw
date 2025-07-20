@@ -12,11 +12,8 @@ private val AVAILABLE_FIXED_LENGTH_INTEGER_LENGTHS = setOf(1, 2, 3, 4, 6, 8)
  *
  * https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_basic_dt_integers.html#sect_protocol_basic_dt_int_fixed
  */
-fun ByteBuf.readFixedLengthInteger(length: Int): ULong {
-    require(length in AVAILABLE_FIXED_LENGTH_INTEGER_LENGTHS) {
-        "Length must be one of ${AVAILABLE_FIXED_LENGTH_INTEGER_LENGTHS.joinToString(", ")}."
-    }
-    return when (length) {
+fun ByteBuf.readFixedLengthInteger(length: Int): ULong =
+    when (length) {
         1 -> readUnsignedByte().toULong()
         2 -> readUnsignedShortLE().toULong()
         3 -> readUnsignedMediumLE().toULong()
@@ -27,9 +24,10 @@ fun ByteBuf.readFixedLengthInteger(length: Int): ULong {
             (high shl 16) or low
         }
         8 -> readLongLE().toULong()
-        else -> throw IllegalArgumentException("Unsupported length: $length")
+        else -> throw IllegalArgumentException(
+            "Unsupported length: $length, must be one of ${AVAILABLE_FIXED_LENGTH_INTEGER_LENGTHS.joinToString(", ")}.",
+        )
     }
-}
 
 fun ByteBuf.writeFixedLengthInteger(
     length: Int,
