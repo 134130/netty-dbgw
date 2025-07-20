@@ -1,7 +1,6 @@
 package com.github.l34130.netty.dbgw.utils.netty
 
 import io.netty.buffer.ByteBuf
-import java.io.EOFException
 
 /**
  * Reads a slice of the ByteBuf without modifying the reader index.
@@ -17,8 +16,8 @@ fun <T> ByteBuf.peek(action: (ByteBuf) -> T): T? {
     return try {
         try {
             action(readSlice(readableBytes()))
-        } catch (e: EOFException) {
-            // Handle EOFException gracefully, return null if no data is available
+        } catch (e: IndexOutOfBoundsException) {
+            // Handle IndexOutOfBoundsException gracefully
             null
         }
     } finally {
