@@ -16,13 +16,19 @@ fun ByteBuf.readFixedLengthInteger(length: Int): ULong {
     require(length in AVAILABLE_FIXED_LENGTH_INTEGER_LENGTHS) {
         "Length must be one of ${AVAILABLE_FIXED_LENGTH_INTEGER_LENGTHS.joinToString(", ")}."
     }
-    var value = 0UL
-    val slice = readSlice(length)
-    for (i in 0 until length) {
-        val byte = slice.readUnsignedByte().toULong()
-        value = value or (byte shl (i * 8))
+    return when (length) {
+        1 -> readUnsignedByte().toULong()
+        2 -> readUnsignedShortLE().toULong()
+        3 -> readUnsignedMediumLE().toULong()
+        4 -> readUnsignedIntLE().toULong()
+        6 -> {
+            val low = readUnsignedShortLE().toULong()
+            val high = readUnsignedIntLE().toULong()
+            (high shl 16) or low
+        }
+        8 -> readLongLE().toULong()
+        else -> throw IllegalArgumentException("Unsupported length: $length")
     }
-    return value
 }
 
 fun ByteBuf.writeFixedLengthInteger(

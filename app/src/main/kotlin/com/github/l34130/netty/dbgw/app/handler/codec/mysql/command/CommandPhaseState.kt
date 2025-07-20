@@ -30,6 +30,7 @@ class CommandPhaseState : GatewayState {
             CommandType.COM_DEBUG -> DebugCommandState().onDownstreamPacket(ctx, packet)
             CommandType.COM_STMT_PREPARE -> PrepareStatementCommandState().onDownstreamPacket(ctx, packet)
             CommandType.COM_STMT_EXECUTE -> ExecuteStatementCommandState().onDownstreamPacket(ctx, packet)
+            CommandType.COM_STMT_CLOSE -> CloseStatementCommandState().onDownstreamPacket(ctx, packet)
             null -> throw IllegalArgumentException("Unknown command byte: 0x${commandByte.toString(16).uppercase()}")
             else -> TODO("Unhandled command type: $commandType")
         }
