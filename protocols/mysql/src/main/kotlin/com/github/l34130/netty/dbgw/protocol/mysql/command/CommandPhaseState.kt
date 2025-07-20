@@ -1,8 +1,9 @@
 package com.github.l34130.netty.dbgw.protocol.mysql.command
 
+import com.github.l34130.netty.dbgw.core.upstream
 import com.github.l34130.netty.dbgw.core.utils.netty.peek
-import com.github.l34130.netty.dbgw.protocol.mysql.GatewayAttributes
-import com.github.l34130.netty.dbgw.protocol.mysql.GatewayState
+import com.github.l34130.netty.dbgw.protocol.mysql.MySqlAttrs
+import com.github.l34130.netty.dbgw.protocol.mysql.MySqlGatewayState
 import com.github.l34130.netty.dbgw.protocol.mysql.Packet
 import com.github.l34130.netty.dbgw.protocol.mysql.capabilities
 import com.github.l34130.netty.dbgw.protocol.mysql.constant.CapabilityFlag
@@ -11,15 +12,14 @@ import com.github.l34130.netty.dbgw.protocol.mysql.readFixedLengthInteger
 import com.github.l34130.netty.dbgw.protocol.mysql.readLenEncInteger
 import com.github.l34130.netty.dbgw.protocol.mysql.readLenEncString
 import com.github.l34130.netty.dbgw.protocol.mysql.readRestOfPacketString
-import com.github.l34130.netty.dbgw.protocol.mysql.upstream
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.channel.ChannelHandlerContext
 
-class CommandPhaseState : GatewayState {
+internal class CommandPhaseState : MySqlGatewayState {
     override fun onDownstreamPacket(
         ctx: ChannelHandlerContext,
         packet: Packet,
-    ): GatewayState {
+    ): MySqlGatewayState {
         val payload = packet.payload
         val commandByte = payload.peek { it.readUnsignedByte().toUInt() } ?: error("Command byte is missing in the packet")
         val commandType = CommandType.from(commandByte)
@@ -40,7 +40,7 @@ class CommandPhaseState : GatewayState {
     private fun handleQueryCommand(
         ctx: ChannelHandlerContext,
         packet: Packet,
-    ): GatewayState {
+    ): MySqlGatewayState {
         val payload = packet.payload
         payload.markReaderIndex()
         payload.skipBytes(1) // skip command byte
@@ -70,7 +70,7 @@ class CommandPhaseState : GatewayState {
         val query = payload.readRestOfPacketString().toString(Charsets.UTF_8)
         logger.debug { "COM_QUERY: query='$query'" }
 
-        val engine = ctx.channel().attr(GatewayAttributes.QUERY_POLICY_ENGINE_ATTR_KEY).get()
+        val engine = ctx.channel().attr(MySqlAttrs.QUERY_POLICY_ENGINE_ATTR_KEY).get()
         val result = engine.evaluate(query)
         if (!result.isAllowed) {
             val errorPacket =

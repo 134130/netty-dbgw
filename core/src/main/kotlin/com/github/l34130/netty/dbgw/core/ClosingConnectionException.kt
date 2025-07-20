@@ -1,4 +1,4 @@
-package com.github.l34130.netty.dbgw.protocol.mysql
+package com.github.l34130.netty.dbgw.core
 
 class ClosingConnectionException(
     override val message: String,

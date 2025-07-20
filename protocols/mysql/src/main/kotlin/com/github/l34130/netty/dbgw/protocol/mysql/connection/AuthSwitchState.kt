@@ -1,21 +1,21 @@
 package com.github.l34130.netty.dbgw.protocol.mysql.connection
 
-import com.github.l34130.netty.dbgw.protocol.mysql.GatewayState
+import com.github.l34130.netty.dbgw.core.downstream
+import com.github.l34130.netty.dbgw.core.upstream
+import com.github.l34130.netty.dbgw.protocol.mysql.MySqlGatewayState
 import com.github.l34130.netty.dbgw.protocol.mysql.Packet
-import com.github.l34130.netty.dbgw.protocol.mysql.downstream
 import com.github.l34130.netty.dbgw.protocol.mysql.readNullTerminatedString
 import com.github.l34130.netty.dbgw.protocol.mysql.readRestOfPacketString
-import com.github.l34130.netty.dbgw.protocol.mysql.upstream
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.channel.ChannelHandlerContext
 
-class AuthSwitchState : GatewayState {
+internal class AuthSwitchState : MySqlGatewayState {
     private var state: State = State.WAITING_REQUEST
 
     override fun onDownstreamPacket(
         ctx: ChannelHandlerContext,
         packet: Packet,
-    ): GatewayState =
+    ): MySqlGatewayState =
         when (state) {
             State.WAITING_REQUEST -> error("Unexpected downstream packet in $state state")
             State.WAITING_RESPONSE -> handleAuthSwitchResponse(ctx, packet)
@@ -24,7 +24,7 @@ class AuthSwitchState : GatewayState {
     override fun onUpstreamPacket(
         ctx: ChannelHandlerContext,
         packet: Packet,
-    ): GatewayState =
+    ): MySqlGatewayState =
         when (state) {
             State.WAITING_REQUEST -> handleAuthSwitchRequest(ctx, packet)
             State.WAITING_RESPONSE -> error("Unexpected upstream packet in $state state")
@@ -33,7 +33,7 @@ class AuthSwitchState : GatewayState {
     private fun handleAuthSwitchRequest(
         ctx: ChannelHandlerContext,
         packet: Packet,
-    ): GatewayState {
+    ): MySqlGatewayState {
         val payload = packet.payload
         payload.markReaderIndex()
 
@@ -56,7 +56,7 @@ class AuthSwitchState : GatewayState {
     private fun handleAuthSwitchResponse(
         ctx: ChannelHandlerContext,
         packet: Packet,
-    ): GatewayState {
+    ): MySqlGatewayState {
         val payload = packet.payload
         payload.markReaderIndex()
 

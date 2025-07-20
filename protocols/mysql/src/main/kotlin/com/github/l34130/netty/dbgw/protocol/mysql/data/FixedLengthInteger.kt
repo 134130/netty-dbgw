@@ -5,7 +5,7 @@ import io.netty.buffer.ByteBuf
 /**
  * A fixed-length unsigned integer stores its value in a series of bytes with the least significant byte first.
  */
-class FixedLengthInteger(
+internal class FixedLengthInteger(
     val length: Int,
     val value: Long,
 ) {

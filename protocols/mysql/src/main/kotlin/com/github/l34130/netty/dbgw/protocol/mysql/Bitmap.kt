@@ -2,7 +2,7 @@ package com.github.l34130.netty.dbgw.protocol.mysql
 
 import io.netty.buffer.ByteBuf
 
-class Bitmap(
+internal class Bitmap(
     val bits: ByteArray,
 ) {
     fun get(index: Int): Boolean {

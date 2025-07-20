@@ -1,21 +1,21 @@
 package com.github.l34130.netty.dbgw.protocol.mysql.command
 
+import com.github.l34130.netty.dbgw.core.downstream
+import com.github.l34130.netty.dbgw.core.upstream
 import com.github.l34130.netty.dbgw.core.utils.netty.peek
-import com.github.l34130.netty.dbgw.protocol.mysql.GatewayState
+import com.github.l34130.netty.dbgw.protocol.mysql.MySqlGatewayState
 import com.github.l34130.netty.dbgw.protocol.mysql.Packet
 import com.github.l34130.netty.dbgw.protocol.mysql.capabilities
-import com.github.l34130.netty.dbgw.protocol.mysql.downstream
-import com.github.l34130.netty.dbgw.protocol.mysql.upstream
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.channel.ChannelHandlerContext
 
-class DebugCommandState : GatewayState {
+internal class DebugCommandState : MySqlGatewayState {
     private var requested = false
 
     override fun onDownstreamPacket(
         ctx: ChannelHandlerContext,
         packet: Packet,
-    ): GatewayState {
+    ): MySqlGatewayState {
         check(!requested) { "Duplicate COM_DEBUG request received." }
         requested = true
         ctx.upstream().writeAndFlush(packet)
@@ -25,7 +25,7 @@ class DebugCommandState : GatewayState {
     override fun onUpstreamPacket(
         ctx: ChannelHandlerContext,
         packet: Packet,
-    ): GatewayState {
+    ): MySqlGatewayState {
         check(requested) { "Received COM_DEBUG response without a prior request." }
         when {
             packet.isOkPacket() -> {

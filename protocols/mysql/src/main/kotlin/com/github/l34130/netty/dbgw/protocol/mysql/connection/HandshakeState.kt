@@ -1,8 +1,8 @@
 package com.github.l34130.netty.dbgw.protocol.mysql.connection
 
+import com.github.l34130.netty.dbgw.core.downstream
 import com.github.l34130.netty.dbgw.core.utils.toEnumSet
-import com.github.l34130.netty.dbgw.protocol.mysql.GatewayAttributes
-import com.github.l34130.netty.dbgw.protocol.mysql.GatewayState
+import com.github.l34130.netty.dbgw.protocol.mysql.MySqlGatewayState
 import com.github.l34130.netty.dbgw.protocol.mysql.Packet
 import com.github.l34130.netty.dbgw.protocol.mysql.capabilities
 import com.github.l34130.netty.dbgw.protocol.mysql.constant.CapabilityFlag
@@ -14,11 +14,11 @@ import java.util.EnumSet
 import kotlin.math.max
 
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_connection_phase_packets_protocol_handshake.html
-class HandshakeState : GatewayState {
+internal class HandshakeState : MySqlGatewayState {
     override fun onUpstreamPacket(
         ctx: ChannelHandlerContext,
         packet: Packet,
-    ): GatewayState {
+    ): MySqlGatewayState {
         val payload = packet.payload
         payload.markReaderIndex()
 
@@ -66,7 +66,7 @@ class HandshakeState : GatewayState {
         }
 
         payload.resetReaderIndex()
-        val downstream = ctx.channel().attr(GatewayAttributes.DOWNSTREAM_ATTR_KEY).get()
+        val downstream = ctx.downstream()
         downstream.writeAndFlush(packet)
         return HandshakeResponseState()
     }

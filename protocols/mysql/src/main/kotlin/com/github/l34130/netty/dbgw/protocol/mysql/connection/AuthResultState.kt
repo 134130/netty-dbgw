@@ -1,22 +1,22 @@
 package com.github.l34130.netty.dbgw.protocol.mysql.connection
 
+import com.github.l34130.netty.dbgw.core.ClosingConnectionException
+import com.github.l34130.netty.dbgw.core.downstream
 import com.github.l34130.netty.dbgw.core.utils.netty.closeOnFlush
 import com.github.l34130.netty.dbgw.core.utils.netty.peek
-import com.github.l34130.netty.dbgw.protocol.mysql.ClosingConnectionException
-import com.github.l34130.netty.dbgw.protocol.mysql.GatewayState
+import com.github.l34130.netty.dbgw.protocol.mysql.MySqlGatewayState
 import com.github.l34130.netty.dbgw.protocol.mysql.Packet
 import com.github.l34130.netty.dbgw.protocol.mysql.capabilities
 import com.github.l34130.netty.dbgw.protocol.mysql.command.CommandPhaseState
-import com.github.l34130.netty.dbgw.protocol.mysql.downstream
 import com.github.l34130.netty.dbgw.protocol.mysql.readNullTerminatedString
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.channel.ChannelHandlerContext
 
-class AuthResultState : GatewayState {
+internal class AuthResultState : MySqlGatewayState {
     override fun onUpstreamPacket(
         ctx: ChannelHandlerContext,
         packet: Packet,
-    ): GatewayState {
+    ): MySqlGatewayState {
         if (packet.isEofPacket()) {
             packet.payload.markReaderIndex()
             packet.payload.skipBytes(1) // Skip the first byte (EOF marker)

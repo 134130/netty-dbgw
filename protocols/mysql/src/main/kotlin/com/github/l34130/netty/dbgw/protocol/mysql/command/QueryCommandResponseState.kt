@@ -1,12 +1,12 @@
 package com.github.l34130.netty.dbgw.protocol.mysql.command
 
+import com.github.l34130.netty.dbgw.core.downstream
 import com.github.l34130.netty.dbgw.core.utils.netty.peek
-import com.github.l34130.netty.dbgw.protocol.mysql.GatewayState
+import com.github.l34130.netty.dbgw.protocol.mysql.MySqlGatewayState
 import com.github.l34130.netty.dbgw.protocol.mysql.Packet
 import com.github.l34130.netty.dbgw.protocol.mysql.capabilities
 import com.github.l34130.netty.dbgw.protocol.mysql.constant.CapabilityFlag
 import com.github.l34130.netty.dbgw.protocol.mysql.constant.ServerStatusFlag
-import com.github.l34130.netty.dbgw.protocol.mysql.downstream
 import com.github.l34130.netty.dbgw.protocol.mysql.readFixedLengthInteger
 import com.github.l34130.netty.dbgw.protocol.mysql.readLenEncInteger
 import com.github.l34130.netty.dbgw.protocol.mysql.readLenEncString
@@ -14,11 +14,11 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.buffer.ByteBuf
 import io.netty.channel.ChannelHandlerContext
 
-class QueryCommandResponseState : GatewayState {
+internal class QueryCommandResponseState : MySqlGatewayState {
     override fun onUpstreamPacket(
         ctx: ChannelHandlerContext,
         packet: Packet,
-    ): GatewayState {
+    ): MySqlGatewayState {
         val payload = packet.payload
         payload.markReaderIndex()
 
@@ -54,7 +54,7 @@ class QueryCommandResponseState : GatewayState {
         private val logger = KotlinLogging.logger {}
     }
 
-    private class TextResultsetState : GatewayState {
+    private class TextResultsetState : MySqlGatewayState {
         private var state: State = State.FIELD_COUNT
         private var columnCount: ULong = 0UL
         private var metadataFollows: Boolean = false
@@ -63,7 +63,7 @@ class QueryCommandResponseState : GatewayState {
         override fun onUpstreamPacket(
             ctx: ChannelHandlerContext,
             packet: Packet,
-        ): GatewayState {
+        ): MySqlGatewayState {
             logger.trace { "Processing TextResultSet: currentState='${state.name}'" }
 
             val nextState =
@@ -81,7 +81,7 @@ class QueryCommandResponseState : GatewayState {
         private fun handleFieldCountState(
             ctx: ChannelHandlerContext,
             packet: Packet,
-        ): GatewayState {
+        ): MySqlGatewayState {
             val payload = packet.payload
             payload.markReaderIndex()
 
@@ -101,7 +101,7 @@ class QueryCommandResponseState : GatewayState {
         private fun handleFieldState(
             ctx: ChannelHandlerContext,
             packet: Packet,
-        ): GatewayState {
+        ): MySqlGatewayState {
             val payload = packet.payload
             payload.markReaderIndex()
 
@@ -130,7 +130,7 @@ class QueryCommandResponseState : GatewayState {
         private fun handleEofState(
             ctx: ChannelHandlerContext,
             packet: Packet,
-        ): GatewayState {
+        ): MySqlGatewayState {
             logger.trace {
                 val eofPacket =
                     packet.payload.peek {
@@ -146,7 +146,7 @@ class QueryCommandResponseState : GatewayState {
         private fun handleRowState(
             ctx: ChannelHandlerContext,
             packet: Packet,
-        ): GatewayState {
+        ): MySqlGatewayState {
             val payload = packet.payload
             payload.markReaderIndex()
 
@@ -167,7 +167,7 @@ class QueryCommandResponseState : GatewayState {
         private fun handleTerminator(
             ctx: ChannelHandlerContext,
             packet: Packet,
-        ): GatewayState? {
+        ): MySqlGatewayState? {
             val payload = packet.payload
             payload.markReaderIndex()
 

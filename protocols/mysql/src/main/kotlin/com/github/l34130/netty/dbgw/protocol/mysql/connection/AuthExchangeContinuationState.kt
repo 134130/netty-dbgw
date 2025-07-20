@@ -1,19 +1,19 @@
 package com.github.l34130.netty.dbgw.protocol.mysql.connection
 
+import com.github.l34130.netty.dbgw.core.downstream
 import com.github.l34130.netty.dbgw.core.utils.netty.peek
-import com.github.l34130.netty.dbgw.protocol.mysql.GatewayState
+import com.github.l34130.netty.dbgw.protocol.mysql.MySqlGatewayState
 import com.github.l34130.netty.dbgw.protocol.mysql.Packet
 import com.github.l34130.netty.dbgw.protocol.mysql.capabilities
 import com.github.l34130.netty.dbgw.protocol.mysql.command.CommandPhaseState
-import com.github.l34130.netty.dbgw.protocol.mysql.downstream
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.channel.ChannelHandlerContext
 
-class AuthExchangeContinuationState : GatewayState {
+internal class AuthExchangeContinuationState : MySqlGatewayState {
     override fun onUpstreamPacket(
         ctx: ChannelHandlerContext,
         packet: Packet,
-    ): GatewayState {
+    ): MySqlGatewayState {
         val payload = packet.payload
 
         if (payload.peek { it.readUnsignedByte().toUInt() } == 0x01u) {

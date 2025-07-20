@@ -4,7 +4,7 @@ import io.netty.buffer.ByteBuf
 import io.netty.channel.ChannelHandlerContext
 import io.netty.handler.codec.ByteToMessageDecoder
 
-class PacketDecoder : ByteToMessageDecoder() {
+internal class PacketDecoder : ByteToMessageDecoder() {
     override fun decode(
         ctx: ChannelHandlerContext,
         `in`: ByteBuf,

@@ -3,7 +3,7 @@ package com.github.l34130.netty.dbgw.protocol.mysql
 import com.github.l34130.netty.dbgw.protocol.mysql.constant.CapabilityFlag
 import java.util.EnumSet
 
-class Capabilities {
+internal class Capabilities {
     private var clientCapabilities: EnumSet<CapabilityFlag>? = null
     private var serverCapabilities: EnumSet<CapabilityFlag>? = null
     private val interCapabilities: EnumSet<CapabilityFlag> by lazy {

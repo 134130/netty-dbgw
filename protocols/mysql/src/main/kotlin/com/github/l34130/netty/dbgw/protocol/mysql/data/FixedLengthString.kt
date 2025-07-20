@@ -1,6 +1,6 @@
 package com.github.l34130.netty.dbgw.protocol.mysql.data
 
-class FixedLengthString(
+internal class FixedLengthString(
     val length: Int,
     val value: String,
 ) : Comparable<FixedLengthString> {

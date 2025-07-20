@@ -8,7 +8,7 @@ import com.github.l34130.netty.dbgw.protocol.mysql.readLenEncString
 import io.netty.buffer.ByteBuf
 
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_com_query_response_text_resultset_column_definition.html
-class ColumnDefinition41(
+internal class ColumnDefinition41(
     val catalog: String, // always "def"
     val schema: String, // database name
     val table: String, // virtual table name

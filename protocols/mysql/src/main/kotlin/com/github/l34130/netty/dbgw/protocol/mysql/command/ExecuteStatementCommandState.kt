@@ -1,34 +1,34 @@
 package com.github.l34130.netty.dbgw.protocol.mysql.command
 
+import com.github.l34130.netty.dbgw.core.downstream
+import com.github.l34130.netty.dbgw.core.upstream
 import com.github.l34130.netty.dbgw.core.utils.netty.peek
 import com.github.l34130.netty.dbgw.core.utils.toEnumSet
 import com.github.l34130.netty.dbgw.protocol.mysql.Bitmap
-import com.github.l34130.netty.dbgw.protocol.mysql.GatewayState
+import com.github.l34130.netty.dbgw.protocol.mysql.MySqlGatewayState
 import com.github.l34130.netty.dbgw.protocol.mysql.Packet
 import com.github.l34130.netty.dbgw.protocol.mysql.capabilities
 import com.github.l34130.netty.dbgw.protocol.mysql.constant.CapabilityFlag
 import com.github.l34130.netty.dbgw.protocol.mysql.constant.CursorTypeFlag
 import com.github.l34130.netty.dbgw.protocol.mysql.constant.MySqlFieldType
-import com.github.l34130.netty.dbgw.protocol.mysql.downstream
 import com.github.l34130.netty.dbgw.protocol.mysql.preparedStatements
 import com.github.l34130.netty.dbgw.protocol.mysql.readFixedLengthInteger
 import com.github.l34130.netty.dbgw.protocol.mysql.readFixedLengthString
 import com.github.l34130.netty.dbgw.protocol.mysql.readLenEncInteger
 import com.github.l34130.netty.dbgw.protocol.mysql.readLenEncString
-import com.github.l34130.netty.dbgw.protocol.mysql.upstream
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.buffer.ByteBuf
 import io.netty.channel.ChannelHandlerContext
 import java.time.LocalDateTime
 
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_com_stmt_execute.html
-class ExecuteStatementCommandState : GatewayState {
+internal class ExecuteStatementCommandState : MySqlGatewayState {
     private var requested = false
 
     override fun onDownstreamPacket(
         ctx: ChannelHandlerContext,
         packet: Packet,
-    ): GatewayState {
+    ): MySqlGatewayState {
         check(!requested) { "Duplicate COM_STMT_EXECUTE request received" }
         requested = true
 
@@ -111,7 +111,7 @@ class ExecuteStatementCommandState : GatewayState {
     override fun onUpstreamPacket(
         ctx: ChannelHandlerContext,
         packet: Packet,
-    ): GatewayState {
+    ): MySqlGatewayState {
         check(requested) { "COM_STMT_EXECUTE response received without a prior request" }
 
         logger.trace { "Processing COM_STMT_EXECUTE Response" }
@@ -218,7 +218,7 @@ class ExecuteStatementCommandState : GatewayState {
         }
     }
 
-    private class BinaryProtocolResultsetState : GatewayState {
+    private class BinaryProtocolResultsetState : MySqlGatewayState {
         private var state: State = State.INITIAL
         private var columnCount: ULong = 0UL
         private val columnDefinitions = mutableListOf<ColumnDefinition41>()
@@ -226,7 +226,7 @@ class ExecuteStatementCommandState : GatewayState {
         override fun onUpstreamPacket(
             ctx: ChannelHandlerContext,
             packet: Packet,
-        ): GatewayState =
+        ): MySqlGatewayState =
             when (state) {
                 State.INITIAL -> handleInitialState(ctx, packet)
                 State.COLUMN_DEFINITION -> handleColumnDefinitionState(ctx, packet)
@@ -236,7 +236,7 @@ class ExecuteStatementCommandState : GatewayState {
         private fun handleInitialState(
             ctx: ChannelHandlerContext,
             packet: Packet,
-        ): GatewayState {
+        ): MySqlGatewayState {
             val payload = packet.payload
             payload.markReaderIndex()
 
@@ -255,7 +255,7 @@ class ExecuteStatementCommandState : GatewayState {
         private fun handleColumnDefinitionState(
             ctx: ChannelHandlerContext,
             packet: Packet,
-        ): GatewayState {
+        ): MySqlGatewayState {
             val payload = packet.payload
             payload.markReaderIndex()
 
@@ -279,7 +279,7 @@ class ExecuteStatementCommandState : GatewayState {
         private fun handleResultsetRow(
             ctx: ChannelHandlerContext,
             packet: Packet,
-        ): GatewayState {
+        ): MySqlGatewayState {
             val payload = packet.payload
             payload.markReaderIndex()
 

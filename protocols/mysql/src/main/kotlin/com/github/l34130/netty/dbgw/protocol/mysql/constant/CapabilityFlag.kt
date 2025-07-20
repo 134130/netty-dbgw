@@ -2,7 +2,7 @@ package com.github.l34130.netty.dbgw.protocol.mysql.constant
 
 import com.github.l34130.netty.dbgw.core.utils.Flag
 
-enum class CapabilityFlag(
+internal enum class CapabilityFlag(
     override val value: ULong,
 ) : Flag {
     CLIENT_CONNECT_WITH_DB(1UL shl 3),

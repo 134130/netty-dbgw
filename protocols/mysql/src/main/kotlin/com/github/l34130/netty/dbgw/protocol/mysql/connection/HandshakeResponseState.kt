@@ -1,8 +1,9 @@
 package com.github.l34130.netty.dbgw.protocol.mysql.connection
 
+import com.github.l34130.netty.dbgw.core.upstream
 import com.github.l34130.netty.dbgw.core.utils.netty.closeOnFlush
 import com.github.l34130.netty.dbgw.core.utils.toEnumSet
-import com.github.l34130.netty.dbgw.protocol.mysql.GatewayState
+import com.github.l34130.netty.dbgw.protocol.mysql.MySqlGatewayState
 import com.github.l34130.netty.dbgw.protocol.mysql.Packet
 import com.github.l34130.netty.dbgw.protocol.mysql.capabilities
 import com.github.l34130.netty.dbgw.protocol.mysql.constant.CapabilityFlag
@@ -10,7 +11,6 @@ import com.github.l34130.netty.dbgw.protocol.mysql.readFixedLengthInteger
 import com.github.l34130.netty.dbgw.protocol.mysql.readLenEncInteger
 import com.github.l34130.netty.dbgw.protocol.mysql.readLenEncString
 import com.github.l34130.netty.dbgw.protocol.mysql.readNullTerminatedString
-import com.github.l34130.netty.dbgw.protocol.mysql.upstream
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.buffer.Unpooled
 import io.netty.channel.ChannelHandlerContext
@@ -19,11 +19,11 @@ import io.netty.handler.ssl.SslHandler
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory
 import java.util.EnumSet
 
-class HandshakeResponseState : GatewayState {
+internal class HandshakeResponseState : MySqlGatewayState {
     override fun onDownstreamPacket(
         ctx: ChannelHandlerContext,
         packet: Packet,
-    ): GatewayState {
+    ): MySqlGatewayState {
         val payload = packet.payload
         payload.markReaderIndex()
 

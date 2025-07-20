@@ -1,20 +1,20 @@
 package com.github.l34130.netty.dbgw.protocol.mysql.command
 
+import com.github.l34130.netty.dbgw.core.downstream
+import com.github.l34130.netty.dbgw.core.upstream
 import com.github.l34130.netty.dbgw.core.utils.netty.peek
-import com.github.l34130.netty.dbgw.protocol.mysql.GatewayState
+import com.github.l34130.netty.dbgw.protocol.mysql.MySqlGatewayState
 import com.github.l34130.netty.dbgw.protocol.mysql.Packet
 import com.github.l34130.netty.dbgw.protocol.mysql.capabilities
 import com.github.l34130.netty.dbgw.protocol.mysql.constant.CapabilityFlag
-import com.github.l34130.netty.dbgw.protocol.mysql.downstream
 import com.github.l34130.netty.dbgw.protocol.mysql.preparedStatements
 import com.github.l34130.netty.dbgw.protocol.mysql.readFixedLengthInteger
 import com.github.l34130.netty.dbgw.protocol.mysql.readRestOfPacketString
-import com.github.l34130.netty.dbgw.protocol.mysql.upstream
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.channel.ChannelHandlerContext
 
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_com_stmt_prepare.html
-class PrepareStatementCommandState : GatewayState {
+internal class PrepareStatementCommandState : MySqlGatewayState {
     private var requested = false
     private var responseState: ResponseState = ResponseState.OK
 
@@ -30,7 +30,7 @@ class PrepareStatementCommandState : GatewayState {
     override fun onDownstreamPacket(
         ctx: ChannelHandlerContext,
         packet: Packet,
-    ): GatewayState {
+    ): MySqlGatewayState {
         check(!requested) { "Duplicate COM_STMT_PREPARE request received." }
         requested = true
 
@@ -50,7 +50,7 @@ class PrepareStatementCommandState : GatewayState {
     override fun onUpstreamPacket(
         ctx: ChannelHandlerContext,
         packet: Packet,
-    ): GatewayState {
+    ): MySqlGatewayState {
         check(requested) { "COM_STMT_PREPARE response received without a prior request" }
 
         logger.trace { "COM_STMT_PREPARE Response state: $responseState" }
@@ -75,7 +75,7 @@ class PrepareStatementCommandState : GatewayState {
     private fun handleFirstResponse(
         ctx: ChannelHandlerContext,
         packet: Packet,
-    ): GatewayState {
+    ): MySqlGatewayState {
         val payload = packet.payload
         payload.markReaderIndex()
 
@@ -127,7 +127,7 @@ class PrepareStatementCommandState : GatewayState {
     private fun handleParamsResponse(
         ctx: ChannelHandlerContext,
         packet: Packet,
-    ): GatewayState {
+    ): MySqlGatewayState {
         val payload = packet.payload
         payload.markReaderIndex()
 
@@ -160,7 +160,7 @@ class PrepareStatementCommandState : GatewayState {
     private fun handleColumnsResponse(
         ctx: ChannelHandlerContext,
         packet: Packet,
-    ): GatewayState {
+    ): MySqlGatewayState {
         val payload = packet.payload
         payload.markReaderIndex()
 
@@ -192,7 +192,7 @@ class PrepareStatementCommandState : GatewayState {
     private fun handleEofPacket(
         ctx: ChannelHandlerContext,
         packet: Packet,
-    ): GatewayState {
+    ): MySqlGatewayState {
         val payload = packet.payload
         payload.markReaderIndex()
 

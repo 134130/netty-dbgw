@@ -1,8 +1,12 @@
 package com.github.l34130.netty.dbgw.protocol.mysql
 
+import com.github.l34130.netty.dbgw.core.AbstractGatewayChannelInitializer
+import com.github.l34130.netty.dbgw.core.GatewayStateMachine
 import com.github.l34130.netty.dbgw.core.config.GatewayConfig
+import com.github.l34130.netty.dbgw.protocol.mysql.connection.HandshakeState
 import io.netty.bootstrap.ServerBootstrap
 import io.netty.channel.ChannelFuture
+import io.netty.channel.ChannelHandler
 import io.netty.channel.MultiThreadIoEventLoopGroup
 import io.netty.channel.nio.NioIoHandler
 import io.netty.channel.socket.nio.NioServerSocketChannel
@@ -24,7 +28,7 @@ class MySqlGateway(
                 .group(bossGroup, workerGroup)
                 .channel(NioServerSocketChannel::class.java)
                 .handler(LoggingHandler(LogLevel.INFO))
-                .childHandler(MySqlProxyChannelInitializer(config))
+                .childHandler(MySqlGatewayChannelInitializer(config))
 
         f = b.bind(config.listenPort).sync()
     }
@@ -54,4 +58,18 @@ class MySqlGateway(
             bossGroup.shutdownGracefully()
         }
     }
+
+    private class MySqlGatewayChannelInitializer(
+        config: GatewayConfig,
+    ) : AbstractGatewayChannelInitializer<Packet, MySqlGatewayStateMachine>(config) {
+        override fun createStateMachine(): MySqlGatewayStateMachine = MySqlGatewayStateMachine()
+
+        override fun createMessageDecoder(): ChannelHandler = PacketDecoder()
+
+        override fun createMessageEncoder(): ChannelHandler = PacketEncoder()
+    }
+
+    private class MySqlGatewayStateMachine(
+        initialState: MySqlGatewayState = HandshakeState(),
+    ) : GatewayStateMachine<Packet>(initialState)
 }

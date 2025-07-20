@@ -1,7 +1,7 @@
 package com.github.l34130.netty.dbgw.protocol.mysql.constant
 
 // https://dev.mysql.com/doc/dev/mysql-server/latest/field__types_8h.html
-enum class MySqlFieldType(
+internal enum class MySqlFieldType(
     val value: Int,
 ) {
     MYSQL_TYPE_DECIMAL(0x00),

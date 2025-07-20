@@ -1,6 +1,6 @@
 package com.github.l34130.netty.dbgw.protocol.mysql.command
 
-data class PreparedStatement(
+internal data class PreparedStatement(
     val query: String,
     val statementId: UInt,
     val columnDefinitions: List<ColumnDefinition41>,

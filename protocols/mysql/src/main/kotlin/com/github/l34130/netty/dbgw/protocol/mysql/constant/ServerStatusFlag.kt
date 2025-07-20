@@ -2,7 +2,7 @@ package com.github.l34130.netty.dbgw.protocol.mysql.constant
 
 import com.github.l34130.netty.dbgw.core.utils.Flag
 
-enum class ServerStatusFlag(
+internal enum class ServerStatusFlag(
     override val value: ULong,
 ) : Flag {
     SERVER_STATUS_IN_TRANS(1UL shl 0),

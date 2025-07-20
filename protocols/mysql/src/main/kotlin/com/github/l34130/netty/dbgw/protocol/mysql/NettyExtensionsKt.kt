@@ -12,7 +12,7 @@ private val AVAILABLE_FIXED_LENGTH_INTEGER_LENGTHS = setOf(1, 2, 3, 4, 6, 8)
  *
  * https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_basic_dt_integers.html#sect_protocol_basic_dt_int_fixed
  */
-fun ByteBuf.readFixedLengthInteger(length: Int): ULong =
+internal fun ByteBuf.readFixedLengthInteger(length: Int): ULong =
     when (length) {
         1 -> readUnsignedByte().toULong()
         2 -> readUnsignedShortLE().toULong()
@@ -29,7 +29,7 @@ fun ByteBuf.readFixedLengthInteger(length: Int): ULong =
         )
     }
 
-fun ByteBuf.writeFixedLengthInteger(
+internal fun ByteBuf.writeFixedLengthInteger(
     length: Int,
     value: ULong,
 ): ByteBuf {
@@ -47,7 +47,7 @@ fun ByteBuf.writeFixedLengthInteger(
 /**
  * Read an integer that consumes 1, 3, 4, or 9 bytes, depending on its numeric value
  */
-fun ByteBuf.readLenEncInteger(): ULong {
+internal fun ByteBuf.readLenEncInteger(): ULong {
     val firstByte = readUnsignedByte().toInt()
     return when {
         firstByte <= 0xFB -> firstByte.toULong()
@@ -59,9 +59,9 @@ fun ByteBuf.readLenEncInteger(): ULong {
 }
 
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_basic_dt_strings.html#sect_protocol_basic_dt_string_fix
-fun ByteBuf.readFixedLengthString(length: Int): String = readString(length, Charsets.UTF_8)
+internal fun ByteBuf.readFixedLengthString(length: Int): String = readString(length, Charsets.UTF_8)
 
-fun ByteBuf.writeFixedLengthString(
+internal fun ByteBuf.writeFixedLengthString(
     length: Int,
     value: String,
 ): ByteBuf {
@@ -77,7 +77,7 @@ fun ByteBuf.writeFixedLengthString(
 
 private val NULL_BYTE_BUF = Delimiters.nulDelimiter()[0]
 
-fun ByteBuf.readNullTerminatedString(): ByteBuf {
+internal fun ByteBuf.readNullTerminatedString(): ByteBuf {
     val index = ByteBufUtil.indexOf(NULL_BYTE_BUF, this)
     if (index < 0) {
         throw IndexOutOfBoundsException("No null terminator found in ByteBuf")
@@ -87,7 +87,7 @@ fun ByteBuf.readNullTerminatedString(): ByteBuf {
     return read
 }
 
-fun ByteBuf.readRestOfPacketString(): ByteBuf {
+internal fun ByteBuf.readRestOfPacketString(): ByteBuf {
     val length = readableBytes()
     return when {
         length <= 0 -> Unpooled.EMPTY_BUFFER
@@ -95,7 +95,7 @@ fun ByteBuf.readRestOfPacketString(): ByteBuf {
     }
 }
 
-fun ByteBuf.readLenEncString(): ByteBuf {
+internal fun ByteBuf.readLenEncString(): ByteBuf {
     val length = readLenEncInteger()
     return when {
         length <= 0UL -> Unpooled.EMPTY_BUFFER
