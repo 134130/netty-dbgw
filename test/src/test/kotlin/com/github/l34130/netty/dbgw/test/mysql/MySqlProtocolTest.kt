@@ -215,7 +215,7 @@ abstract class MySqlProtocolTest(
                             val table = rs.readAsTable()
                             assertEquals(2, table.size, "Expected 2 rows in the result set")
                             assertEquals("col1", table[0][0], "Expected column name to be 'col1'")
-                            assertEquals(3.0, table[1][0], "Expected concatenated value to be 3")
+                            assertEquals(3.0, table[1][0], "Expected concatenated value to be 3.0")
                         }
 
                         stmt.setObject(1, "Hello")

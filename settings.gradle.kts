@@ -17,7 +17,9 @@ plugins {
 }
 
 include(":app")
-include(":utils")
+include(":core")
+include(":protocols:mysql")
+include(":protocols:postgres")
 include(":test")
 
 rootProject.name = "netty-dbgw"

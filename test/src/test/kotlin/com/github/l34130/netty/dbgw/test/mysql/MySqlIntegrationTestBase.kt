@@ -1,6 +1,6 @@
 package com.github.l34130.netty.dbgw.test.mysql
 
-import com.github.l34130.netty.dbgw.app.handler.codec.mysql.MySqlGateway
+import com.github.l34130.netty.dbgw.protocol.mysql.MySqlGateway
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.testcontainers.containers.MySQLContainer

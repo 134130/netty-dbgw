@@ -6,8 +6,9 @@ plugins {
 
 dependencies {
     // Project "app" depends on project "utils". (Project paths are separated with ":", so ":utils" refers to the top-level "utils" project.)
-    implementation(project(":utils"))
+    implementation(project(":core"))
     implementation(project(":app"))
+    implementation(project(":protocols:mysql"))
     implementation("io.netty:netty-all:4.2.2.Final")
 
     implementation("ch.qos.logback:logback-classic:1.5.18")

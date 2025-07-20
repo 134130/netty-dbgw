@@ -1,6 +1,6 @@
 package com.github.l34130.netty.dbgw.app
 
-import com.github.l34130.netty.dbgw.app.handler.codec.mysql.MySqlGateway
+import com.github.l34130.netty.dbgw.protocol.mysql.MySqlGateway
 import com.xenomachina.argparser.ArgParser
 import com.xenomachina.argparser.ShowHelpException
 import com.xenomachina.argparser.SystemExitException
