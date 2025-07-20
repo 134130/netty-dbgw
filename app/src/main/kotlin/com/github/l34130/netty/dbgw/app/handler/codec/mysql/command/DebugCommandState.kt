@@ -26,21 +26,23 @@ class DebugCommandState : GatewayState {
         ctx: ChannelHandlerContext,
         packet: Packet,
     ): GatewayState {
-        check(requested) { "COM_DEBUG response received without a prior request." }
+        check(requested) { "Received COM_DEBUG response without a prior request." }
         when {
             packet.isOkPacket() -> {
                 logger.trace {
                     val okPacket = packet.payload.peek { Packet.Ok.readFrom(it, ctx.capabilities().enumSet()) }
-                    "Received COM_DEBUG response: $okPacket"
+                    "COM_DEBUG response: $okPacket"
                 }
             }
+
             packet.isErrorPacket() -> {
                 logger.trace {
                     val errorPacket = packet.payload.peek { Packet.Error.readFrom(it, ctx.capabilities().enumSet()) }
-                    "Received COM_DEBUG response: $errorPacket"
+                    "COM_DEBUG response: $errorPacket"
                 }
             }
-            else -> logger.warn { "Received unexpected COM_DEBUG response: $packet" }
+
+            else -> logger.warn { "Unexpected COM_DEBUG response: $packet" }
         }
 
         ctx.downstream().writeAndFlush(packet)

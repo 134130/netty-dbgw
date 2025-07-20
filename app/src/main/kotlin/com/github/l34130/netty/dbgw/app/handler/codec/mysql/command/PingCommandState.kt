@@ -23,8 +23,8 @@ class PingCommandState : GatewayState {
         ctx: ChannelHandlerContext,
         packet: Packet,
     ): GatewayState {
-        check(requested) { "COM_PING response received without a prior request." }
-        check(packet.isOkPacket()) { "Expected an OK packet for COM_PING, but received: $packet" }
+        check(requested) { "Received COM_PING response without a prior request." }
+        check(packet.isOkPacket()) { "Expected OK packet for COM_PING, but got: $packet" }
 
         ctx.downstream().writeAndFlush(packet)
         return CommandPhaseState()

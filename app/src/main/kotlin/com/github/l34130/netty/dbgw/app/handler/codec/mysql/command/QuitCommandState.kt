@@ -27,12 +27,12 @@ class QuitCommandState : GatewayState {
         ctx: ChannelHandlerContext,
         packet: Packet,
     ): GatewayState {
-        check(requested) { "COM_QUIT response received without a prior request." }
-        check(packet.isErrorPacket()) { "Expected an error packet for COM_QUIT, but received: $packet" }
+        check(requested) { "Received COM_QUIT response without a prior request." }
+        check(packet.isErrorPacket()) { "Expected an error packet for COM_QUIT, but got: $packet" }
 
         logger.trace {
             val errPacket = packet.payload.peek { Packet.Error.readFrom(it, ctx.capabilities().enumSet()) }
-            "Received COM_QUIT response: $errPacket"
+            "COM_QUIT response: $errPacket"
         }
 
         ctx.downstream().writeAndFlush(packet)

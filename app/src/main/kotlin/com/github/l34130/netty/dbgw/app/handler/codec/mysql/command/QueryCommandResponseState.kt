@@ -214,7 +214,7 @@ class QueryCommandResponseState : GatewayState {
 
             for (i in 0UL until columnCount) {
                 if (this.readableBytes() == 0) {
-                    logger.warn { "No more data to read for column $i, expected $columnCount columns" }
+                    logger.warn { "No more data to read for column $i (expected $columnCount columns)" }
                     return result
                 }
 

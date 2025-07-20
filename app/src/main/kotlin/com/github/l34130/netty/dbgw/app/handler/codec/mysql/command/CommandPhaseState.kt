@@ -43,18 +43,17 @@ class CommandPhaseState : GatewayState {
         val payload = packet.payload
         payload.markReaderIndex()
         payload.skipBytes(1) // skip command byte
-        logger.trace { "Received COM_QUERY" }
 
         if (ctx.capabilities().contains(CapabilityFlag.CLIENT_QUERY_ATTRIBUTES)) {
             val parameterCount = payload.readLenEncInteger().toInt()
             val parameterSetCount = payload.readLenEncInteger().toInt() // always 1 currently
-            logger.trace { "Parameter count: $parameterCount, Parameter set count: $parameterSetCount" }
+            logger.trace { "COM_QUERY: parameterCount=$parameterCount, parameterSetCount=$parameterSetCount" }
             if (parameterCount > 0) {
                 val nullBitmap = payload.readString((parameterCount + 7) / 8, Charsets.UTF_8)
                 val nextParamsBindFlag = payload.readFixedLengthInteger(1)
                 if (nextParamsBindFlag != 1UL) {
                     // malformed packet, unexpected nextParamsBindFlag
-                    logger.warn { "Unexpected nextParamsBindFlag: $nextParamsBindFlag. Malformed packet" }
+                    logger.warn { "Unexpected nextParamsBindFlag: $nextParamsBindFlag" }
                 }
                 val parameters = mutableListOf<Triple<MySqlFieldType, String, Any?>>()
                 (0 until parameterCount).forEach { i ->
@@ -63,12 +62,12 @@ class CommandPhaseState : GatewayState {
                     val parameterName = payload.readLenEncString()
                     parameters.add(Triple(type, parameterName.toString(Charsets.UTF_8), null))
                 }
-                logger.trace { "Parameters: $parameters" }
+                logger.trace { "COM_QUERY: parameters=$parameters" }
             }
         }
 
         val query = payload.readRestOfPacketString()
-        logger.debug { "Query: '${query.toString(Charsets.UTF_8)}'" }
+        logger.debug { "COM_QUERY: query='${query.toString(Charsets.UTF_8)}'" }
 
         payload.resetReaderIndex()
         ctx.upstream().writeAndFlush(packet)

@@ -29,9 +29,7 @@ class CloseStatementCommandState : GatewayState {
 
         statementId = payload.readFixedLengthInteger(4)
 
-        logger.trace {
-            "Received COM_STMT_CLOSE request for statement ID: $statementId"
-        }
+        logger.trace { "COM_STMT_CLOSE: statementId=$statementId" }
 
         payload.resetReaderIndex()
         ctx.upstream().writeAndFlush(packet)

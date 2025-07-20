@@ -308,7 +308,7 @@ class ExecuteStatementCommandState : GatewayState {
                     }
                 }
 
-            logger.trace { "Received Resultset Row: $values" }
+            logger.trace { "BinaryProtocolResultset row: $values" }
 
             payload.resetReaderIndex()
             ctx.downstream().writeAndFlush(packet)

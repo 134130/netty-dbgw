@@ -216,7 +216,7 @@ class PrepareStatementCommandState : GatewayState {
                 ResponseState.COLUMNS_EOF -> {
                     logger.trace {
                         val eofPacket = Packet.Eof.readFrom(payload, ctx.capabilities().enumSet())
-                        "Received EOF for columns: $eofPacket"
+                        "EOF for columns: $eofPacket"
                     }
                     CommandPhaseState() // All metadata processed, return to command phase
                 }
