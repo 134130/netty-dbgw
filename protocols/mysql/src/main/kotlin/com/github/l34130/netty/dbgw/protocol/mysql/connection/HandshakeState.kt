@@ -15,11 +15,11 @@ import kotlin.math.max
 
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_connection_phase_packets_protocol_handshake.html
 internal class HandshakeState : MySqlGatewayState {
-    override fun onUpstreamPacket(
+    override fun onUpstreamMessage(
         ctx: ChannelHandlerContext,
-        packet: Packet,
+        msg: Packet,
     ): MySqlGatewayState {
-        val payload = packet.payload
+        val payload = msg.payload
         payload.markReaderIndex()
 
         val protocolVersion = payload.readFixedLengthInteger(1)
@@ -67,7 +67,7 @@ internal class HandshakeState : MySqlGatewayState {
 
         payload.resetReaderIndex()
         val downstream = ctx.downstream()
-        downstream.writeAndFlush(packet)
+        downstream.writeAndFlush(msg)
         return HandshakeResponseState()
     }
 

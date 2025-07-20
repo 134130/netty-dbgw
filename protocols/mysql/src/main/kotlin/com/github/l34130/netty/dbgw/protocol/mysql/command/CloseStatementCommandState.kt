@@ -12,14 +12,14 @@ internal class CloseStatementCommandState : MySqlGatewayState {
     private var requested = false
     var statementId: ULong = 0UL
 
-    override fun onDownstreamPacket(
+    override fun onDownstreamMessage(
         ctx: ChannelHandlerContext,
-        packet: Packet,
+        msg: Packet,
     ): MySqlGatewayState {
         check(!requested) { "Duplicate COM_STMT_CLOSE request received." }
         requested = true
 
-        val payload = packet.payload
+        val payload = msg.payload
         payload.markReaderIndex()
 
         val commandType = CommandPhaseState.CommandType.from(payload.readUnsignedByte().toUInt())
@@ -32,7 +32,7 @@ internal class CloseStatementCommandState : MySqlGatewayState {
         logger.trace { "COM_STMT_CLOSE: statementId=$statementId" }
 
         payload.resetReaderIndex()
-        ctx.upstream().writeAndFlush(packet)
+        ctx.upstream().writeAndFlush(msg)
         return CommandPhaseState()
     }
 

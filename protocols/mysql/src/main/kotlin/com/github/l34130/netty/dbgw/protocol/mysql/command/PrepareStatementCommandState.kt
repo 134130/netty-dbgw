@@ -27,14 +27,14 @@ internal class PrepareStatementCommandState : MySqlGatewayState {
 
     private val preparedStatementBuilder = PreparedStatement.builder()
 
-    override fun onDownstreamPacket(
+    override fun onDownstreamMessage(
         ctx: ChannelHandlerContext,
-        packet: Packet,
+        msg: Packet,
     ): MySqlGatewayState {
         check(!requested) { "Duplicate COM_STMT_PREPARE request received." }
         requested = true
 
-        val payload = packet.payload
+        val payload = msg.payload
         payload.markReaderIndex()
 
         val query = payload.readRestOfPacketString().toString(Charsets.UTF_8)
@@ -43,13 +43,13 @@ internal class PrepareStatementCommandState : MySqlGatewayState {
         preparedStatementBuilder.query(query)
 
         payload.resetReaderIndex()
-        ctx.upstream().writeAndFlush(packet)
+        ctx.upstream().writeAndFlush(msg)
         return this
     }
 
-    override fun onUpstreamPacket(
+    override fun onUpstreamMessage(
         ctx: ChannelHandlerContext,
-        packet: Packet,
+        msg: Packet,
     ): MySqlGatewayState {
         check(requested) { "COM_STMT_PREPARE response received without a prior request" }
 
@@ -57,11 +57,11 @@ internal class PrepareStatementCommandState : MySqlGatewayState {
 
         val nextState =
             when (responseState) {
-                ResponseState.OK -> handleFirstResponse(ctx, packet)
-                ResponseState.PARAMS -> handleParamsResponse(ctx, packet)
-                ResponseState.PARAMS_EOF -> handleEofPacket(ctx, packet)
-                ResponseState.COLUMNS -> handleColumnsResponse(ctx, packet)
-                ResponseState.COLUMNS_EOF -> handleEofPacket(ctx, packet)
+                ResponseState.OK -> handleFirstResponse(ctx, msg)
+                ResponseState.PARAMS -> handleParamsResponse(ctx, msg)
+                ResponseState.PARAMS_EOF -> handleEofPacket(ctx, msg)
+                ResponseState.COLUMNS -> handleColumnsResponse(ctx, msg)
+                ResponseState.COLUMNS_EOF -> handleEofPacket(ctx, msg)
             }
 
         if (nextState is CommandPhaseState) {

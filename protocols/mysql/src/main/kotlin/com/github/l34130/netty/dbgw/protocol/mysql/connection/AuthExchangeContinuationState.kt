@@ -10,32 +10,32 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.channel.ChannelHandlerContext
 
 internal class AuthExchangeContinuationState : MySqlGatewayState {
-    override fun onUpstreamPacket(
+    override fun onUpstreamMessage(
         ctx: ChannelHandlerContext,
-        packet: Packet,
+        msg: Packet,
     ): MySqlGatewayState {
-        val payload = packet.payload
+        val payload = msg.payload
 
         if (payload.peek { it.readUnsignedByte().toUInt() } == 0x01u) {
             // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_connection_phase_packets_protocol_auth_more_data.html
             // Extra authentication data beyond the initial challenge
-            ctx.downstream().writeAndFlush(packet)
+            ctx.downstream().writeAndFlush(msg)
             return this
         }
 
-        if (packet.isOkPacket()) {
+        if (msg.isOkPacket()) {
             logger.trace { "Authentication succeeded" }
-            ctx.downstream().writeAndFlush(packet)
+            ctx.downstream().writeAndFlush(msg)
             return CommandPhaseState()
         }
 
-        if (packet.isErrorPacket()) {
-            packet.payload.markReaderIndex()
+        if (msg.isErrorPacket()) {
+            msg.payload.markReaderIndex()
             logger.trace {
-                "Authentication failed: ${Packet.Error.readFrom(packet.payload, ctx.capabilities().enumSet())}"
+                "Authentication failed: ${Packet.Error.readFrom(msg.payload, ctx.capabilities().enumSet())}"
             }
-            packet.payload.resetReaderIndex()
-            ctx.downstream().writeAndFlush(packet)
+            msg.payload.resetReaderIndex()
+            ctx.downstream().writeAndFlush(msg)
             TODO("Handle authentication error")
         }
 

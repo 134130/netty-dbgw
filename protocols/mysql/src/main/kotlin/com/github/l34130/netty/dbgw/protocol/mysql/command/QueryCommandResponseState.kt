@@ -15,39 +15,39 @@ import io.netty.buffer.ByteBuf
 import io.netty.channel.ChannelHandlerContext
 
 internal class QueryCommandResponseState : MySqlGatewayState {
-    override fun onUpstreamPacket(
+    override fun onUpstreamMessage(
         ctx: ChannelHandlerContext,
-        packet: Packet,
+        msg: Packet,
     ): MySqlGatewayState {
-        val payload = packet.payload
+        val payload = msg.payload
         payload.markReaderIndex()
 
-        if (packet.isOkPacket()) {
+        if (msg.isOkPacket()) {
             logger.trace {
                 val okPacket = Packet.Ok.readFrom(payload, ctx.capabilities().enumSet())
                 "Received COM_QUERY_RESPONSE: $okPacket"
             }
-            packet.payload.resetReaderIndex()
-            ctx.downstream().writeAndFlush(packet)
+            msg.payload.resetReaderIndex()
+            ctx.downstream().writeAndFlush(msg)
             return CommandPhaseState()
         }
 
-        if (packet.isErrorPacket()) {
+        if (msg.isErrorPacket()) {
             logger.trace {
                 val errorPacket = Packet.Error.readFrom(payload, ctx.capabilities().enumSet())
                 "Received COM_QUERY_RESPONSE: $errorPacket"
             }
-            packet.payload.resetReaderIndex()
-            ctx.downstream().writeAndFlush(packet)
+            msg.payload.resetReaderIndex()
+            ctx.downstream().writeAndFlush(msg)
             return CommandPhaseState()
         }
 
-        if (packet.payload.peek { it.readUnsignedByte().toUInt() } == 0xFBu) {
+        if (msg.payload.peek { it.readUnsignedByte().toUInt() } == 0xFBu) {
             TODO("Unhandled 0xFB byte in COM_QUERY_RESPONSE, this indicates a More Data packet.")
         }
 
-        packet.payload.resetReaderIndex()
-        return TextResultsetState().onUpstreamPacket(ctx, packet)
+        msg.payload.resetReaderIndex()
+        return TextResultsetState().onUpstreamMessage(ctx, msg)
     }
 
     companion object {
@@ -60,7 +60,7 @@ internal class QueryCommandResponseState : MySqlGatewayState {
         private var metadataFollows: Boolean = false
         private var columnDefinitionCount: ULong = 0UL
 
-        override fun onUpstreamPacket(
+        override fun onUpstreamMessage(
             ctx: ChannelHandlerContext,
             packet: Packet,
         ): MySqlGatewayState {

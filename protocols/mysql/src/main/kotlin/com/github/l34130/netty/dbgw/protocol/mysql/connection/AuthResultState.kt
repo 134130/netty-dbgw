@@ -13,47 +13,47 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.channel.ChannelHandlerContext
 
 internal class AuthResultState : MySqlGatewayState {
-    override fun onUpstreamPacket(
+    override fun onUpstreamMessage(
         ctx: ChannelHandlerContext,
-        packet: Packet,
+        msg: Packet,
     ): MySqlGatewayState {
-        if (packet.isEofPacket()) {
-            packet.payload.markReaderIndex()
-            packet.payload.skipBytes(1) // Skip the first byte (EOF marker)
+        if (msg.isEofPacket()) {
+            msg.payload.markReaderIndex()
+            msg.payload.skipBytes(1) // Skip the first byte (EOF marker)
 
             logger.trace {
-                val pluginName = packet.payload.readNullTerminatedString().toString(Charsets.US_ASCII)
+                val pluginName = msg.payload.readNullTerminatedString().toString(Charsets.US_ASCII)
                 "Received AuthSwitchRequest with plugin: $pluginName"
             }
 
-            packet.payload.resetReaderIndex()
-            return AuthSwitchState().onUpstreamPacket(ctx, packet)
+            msg.payload.resetReaderIndex()
+            return AuthSwitchState().onUpstreamMessage(ctx, msg)
         }
 
-        if (packet.isOkPacket()) {
+        if (msg.isOkPacket()) {
             logger.trace { "Authentication succeeded" }
-            ctx.downstream().writeAndFlush(packet)
+            ctx.downstream().writeAndFlush(msg)
             return CommandPhaseState()
         }
 
-        if (packet.isErrorPacket()) {
-            packet.payload.markReaderIndex()
+        if (msg.isErrorPacket()) {
+            msg.payload.markReaderIndex()
             logger.trace {
-                "Authentication failed: ${Packet.Error.readFrom(packet.payload, ctx.capabilities().enumSet())}"
+                "Authentication failed: ${Packet.Error.readFrom(msg.payload, ctx.capabilities().enumSet())}"
             }
-            packet.payload.resetReaderIndex()
-            ctx.downstream().writeAndFlush(packet)
+            msg.payload.resetReaderIndex()
+            ctx.downstream().writeAndFlush(msg)
             ctx.downstream().closeOnFlush()
             throw ClosingConnectionException("Authentication failed")
         }
 
-        if (packet.payload.peek { it.readUnsignedByte().toUInt() } == 0x1u) {
+        if (msg.payload.peek { it.readUnsignedByte().toUInt() } == 0x1u) {
             // AuthMoreData packet
             // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_connection_phase_packets_protocol_auth_more_data.html
-            return AuthExchangeContinuationState().onUpstreamPacket(ctx, packet)
+            return AuthExchangeContinuationState().onUpstreamMessage(ctx, msg)
         }
 
-        error("Unexpected packet type during authentication: ${packet.payload.peek { it.readUnsignedByte().toUInt() }}")
+        error("Unexpected packet type during authentication: ${msg.payload.peek { it.readUnsignedByte().toUInt() }}")
     }
 
     companion object {

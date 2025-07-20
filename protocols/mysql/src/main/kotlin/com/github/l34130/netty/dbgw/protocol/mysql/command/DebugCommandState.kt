@@ -12,40 +12,40 @@ import io.netty.channel.ChannelHandlerContext
 internal class DebugCommandState : MySqlGatewayState {
     private var requested = false
 
-    override fun onDownstreamPacket(
+    override fun onDownstreamMessage(
         ctx: ChannelHandlerContext,
-        packet: Packet,
+        msg: Packet,
     ): MySqlGatewayState {
         check(!requested) { "Duplicate COM_DEBUG request received." }
         requested = true
-        ctx.upstream().writeAndFlush(packet)
+        ctx.upstream().writeAndFlush(msg)
         return this
     }
 
-    override fun onUpstreamPacket(
+    override fun onUpstreamMessage(
         ctx: ChannelHandlerContext,
-        packet: Packet,
+        msg: Packet,
     ): MySqlGatewayState {
         check(requested) { "Received COM_DEBUG response without a prior request." }
         when {
-            packet.isOkPacket() -> {
+            msg.isOkPacket() -> {
                 logger.trace {
-                    val okPacket = packet.payload.peek { Packet.Ok.readFrom(it, ctx.capabilities().enumSet()) }
+                    val okPacket = msg.payload.peek { Packet.Ok.readFrom(it, ctx.capabilities().enumSet()) }
                     "COM_DEBUG response: $okPacket"
                 }
             }
 
-            packet.isErrorPacket() -> {
+            msg.isErrorPacket() -> {
                 logger.trace {
-                    val errorPacket = packet.payload.peek { Packet.Error.readFrom(it, ctx.capabilities().enumSet()) }
+                    val errorPacket = msg.payload.peek { Packet.Error.readFrom(it, ctx.capabilities().enumSet()) }
                     "COM_DEBUG response: $errorPacket"
                 }
             }
 
-            else -> logger.warn { "Unexpected COM_DEBUG response: $packet" }
+            else -> logger.warn { "Unexpected COM_DEBUG response: $msg" }
         }
 
-        ctx.downstream().writeAndFlush(packet)
+        ctx.downstream().writeAndFlush(msg)
         return CommandPhaseState()
     }
 

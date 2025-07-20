@@ -9,24 +9,24 @@ import io.netty.channel.ChannelHandlerContext
 internal class PingCommandState : MySqlGatewayState {
     private var requested = false
 
-    override fun onDownstreamPacket(
+    override fun onDownstreamMessage(
         ctx: ChannelHandlerContext,
-        packet: Packet,
+        msg: Packet,
     ): MySqlGatewayState {
         check(!requested) { "Duplicate COM_PING request received." }
         requested = true
-        ctx.upstream().writeAndFlush(packet)
+        ctx.upstream().writeAndFlush(msg)
         return this
     }
 
-    override fun onUpstreamPacket(
+    override fun onUpstreamMessage(
         ctx: ChannelHandlerContext,
-        packet: Packet,
+        msg: Packet,
     ): MySqlGatewayState {
         check(requested) { "Received COM_PING response without a prior request." }
-        check(packet.isOkPacket()) { "Expected OK packet for COM_PING, but got: $packet" }
+        check(msg.isOkPacket()) { "Expected OK packet for COM_PING, but got: $msg" }
 
-        ctx.downstream().writeAndFlush(packet)
+        ctx.downstream().writeAndFlush(msg)
         return CommandPhaseState()
     }
 }

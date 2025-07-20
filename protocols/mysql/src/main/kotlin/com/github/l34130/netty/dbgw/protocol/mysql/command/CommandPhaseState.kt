@@ -16,24 +16,23 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.channel.ChannelHandlerContext
 
 internal class CommandPhaseState : MySqlGatewayState {
-    override fun onDownstreamPacket(
+    override fun onDownstreamMessage(
         ctx: ChannelHandlerContext,
-        packet: Packet,
+        msg: Packet,
     ): MySqlGatewayState {
-        val payload = packet.payload
+        val payload = msg.payload
         val commandByte = payload.peek { it.readUnsignedByte().toUInt() } ?: error("Command byte is missing in the packet")
         val commandType = CommandType.from(commandByte)
         logger.debug { "Received $commandType" }
         return when (commandType) {
-            CommandType.COM_QUERY -> handleQueryCommand(ctx, packet)
-            CommandType.COM_PING -> PingCommandState().onDownstreamPacket(ctx, packet)
-            CommandType.COM_QUIT -> QuitCommandState().onDownstreamPacket(ctx, packet)
-            CommandType.COM_DEBUG -> DebugCommandState().onDownstreamPacket(ctx, packet)
-            CommandType.COM_STMT_PREPARE -> PrepareStatementCommandState().onDownstreamPacket(ctx, packet)
-            CommandType.COM_STMT_EXECUTE -> ExecuteStatementCommandState().onDownstreamPacket(ctx, packet)
-            CommandType.COM_STMT_CLOSE -> CloseStatementCommandState().onDownstreamPacket(ctx, packet)
+            CommandType.COM_QUERY -> handleQueryCommand(ctx, msg)
+            CommandType.COM_PING -> PingCommandState().onDownstreamMessage(ctx, msg)
+            CommandType.COM_QUIT -> QuitCommandState().onDownstreamMessage(ctx, msg)
+            CommandType.COM_DEBUG -> DebugCommandState().onDownstreamMessage(ctx, msg)
+            CommandType.COM_STMT_PREPARE -> PrepareStatementCommandState().onDownstreamMessage(ctx, msg)
+            CommandType.COM_STMT_EXECUTE -> ExecuteStatementCommandState().onDownstreamMessage(ctx, msg)
+            CommandType.COM_STMT_CLOSE -> CloseStatementCommandState().onDownstreamMessage(ctx, msg)
             null -> throw IllegalArgumentException("Unknown command byte: 0x${commandByte.toString(16).uppercase()}")
-            else -> TODO("Unhandled command type: $commandType")
         }
     }
 

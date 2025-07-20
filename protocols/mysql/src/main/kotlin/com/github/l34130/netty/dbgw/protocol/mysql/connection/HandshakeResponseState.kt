@@ -20,11 +20,11 @@ import io.netty.handler.ssl.util.InsecureTrustManagerFactory
 import java.util.EnumSet
 
 internal class HandshakeResponseState : MySqlGatewayState {
-    override fun onDownstreamPacket(
+    override fun onDownstreamMessage(
         ctx: ChannelHandlerContext,
-        packet: Packet,
+        msg: Packet,
     ): MySqlGatewayState {
-        val payload = packet.payload
+        val payload = msg.payload
         payload.markReaderIndex()
 
         val clientFlag = payload.readFixedLengthInteger(4)
@@ -79,7 +79,7 @@ internal class HandshakeResponseState : MySqlGatewayState {
                     .newEngine(upstream.alloc())
 
             payload.resetReaderIndex()
-            upstream.writeAndFlush(packet)
+            upstream.writeAndFlush(msg)
             upstream.pipeline().addFirst(
                 "ssl-handler",
                 SslHandler(clientSslContext).apply {
@@ -173,7 +173,7 @@ internal class HandshakeResponseState : MySqlGatewayState {
         logger.trace { "Zstd Compression Level: $zstdCompressionLevel" }
 
         payload.resetReaderIndex()
-        ctx.upstream().writeAndFlush(packet)
+        ctx.upstream().writeAndFlush(msg)
         return AuthResultState()
     }
 

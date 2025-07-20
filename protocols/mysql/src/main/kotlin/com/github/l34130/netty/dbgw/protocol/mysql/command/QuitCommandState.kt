@@ -13,29 +13,29 @@ import io.netty.channel.ChannelHandlerContext
 internal class QuitCommandState : MySqlGatewayState {
     private var requested = false
 
-    override fun onDownstreamPacket(
+    override fun onDownstreamMessage(
         ctx: ChannelHandlerContext,
-        packet: Packet,
+        msg: Packet,
     ): MySqlGatewayState {
         check(!requested) { "Duplicate COM_QUIT request received." }
         requested = true
-        ctx.upstream().writeAndFlush(packet)
+        ctx.upstream().writeAndFlush(msg)
         return this
     }
 
-    override fun onUpstreamPacket(
+    override fun onUpstreamMessage(
         ctx: ChannelHandlerContext,
-        packet: Packet,
+        msg: Packet,
     ): MySqlGatewayState {
         check(requested) { "Received COM_QUIT response without a prior request." }
-        check(packet.isErrorPacket()) { "Expected an error packet for COM_QUIT, but got: $packet" }
+        check(msg.isErrorPacket()) { "Expected an error packet for COM_QUIT, but got: $msg" }
 
         logger.trace {
-            val errPacket = packet.payload.peek { Packet.Error.readFrom(it, ctx.capabilities().enumSet()) }
+            val errPacket = msg.payload.peek { Packet.Error.readFrom(it, ctx.capabilities().enumSet()) }
             "COM_QUIT response: $errPacket"
         }
 
-        ctx.downstream().writeAndFlush(packet)
+        ctx.downstream().writeAndFlush(msg)
         ctx.downstream().closeOnFlush()
         return CommandPhaseState()
     }

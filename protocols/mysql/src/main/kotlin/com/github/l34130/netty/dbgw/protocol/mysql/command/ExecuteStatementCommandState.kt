@@ -25,14 +25,14 @@ import java.time.LocalDateTime
 internal class ExecuteStatementCommandState : MySqlGatewayState {
     private var requested = false
 
-    override fun onDownstreamPacket(
+    override fun onDownstreamMessage(
         ctx: ChannelHandlerContext,
-        packet: Packet,
+        msg: Packet,
     ): MySqlGatewayState {
         check(!requested) { "Duplicate COM_STMT_EXECUTE request received" }
         requested = true
 
-        val payload = packet.payload
+        val payload = msg.payload
         payload.markReaderIndex()
 
         val status = payload.readFixedLengthInteger(1).toUInt()
@@ -104,44 +104,44 @@ internal class ExecuteStatementCommandState : MySqlGatewayState {
 
         // Forward the packet to the upstream handler
         payload.resetReaderIndex()
-        ctx.upstream().writeAndFlush(packet)
+        ctx.upstream().writeAndFlush(msg)
         return this
     }
 
-    override fun onUpstreamPacket(
+    override fun onUpstreamMessage(
         ctx: ChannelHandlerContext,
-        packet: Packet,
+        msg: Packet,
     ): MySqlGatewayState {
         check(requested) { "COM_STMT_EXECUTE response received without a prior request" }
 
         logger.trace { "Processing COM_STMT_EXECUTE Response" }
 
-        val payload = packet.payload
+        val payload = msg.payload
         payload.markReaderIndex()
 
-        if (packet.isErrorPacket()) {
+        if (msg.isErrorPacket()) {
             logger.trace {
                 val errPacket = payload.peek { Packet.Error.readFrom(it, ctx.capabilities().enumSet()) }
                 "Received COM_STMT_EXECUTE error response: $errPacket"
             }
 
             payload.resetReaderIndex()
-            ctx.downstream().writeAndFlush(packet)
+            ctx.downstream().writeAndFlush(msg)
             return CommandPhaseState()
         }
 
-        if (packet.isOkPacket()) {
+        if (msg.isOkPacket()) {
             logger.trace { "Received COM_STMT_EXECUTE OK response" }
-            packet.payload.resetReaderIndex()
+            msg.payload.resetReaderIndex()
 
             payload.resetReaderIndex()
-            ctx.downstream().writeAndFlush(packet)
+            ctx.downstream().writeAndFlush(msg)
             return CommandPhaseState()
         }
 
         // If the response is not an error or OK packet, it must be a result set.
         // The BinaryProtocolResultsetState will handle the result set packets.
-        return BinaryProtocolResultsetState().onUpstreamPacket(ctx, packet)
+        return BinaryProtocolResultsetState().onUpstreamMessage(ctx, msg)
     }
 
     companion object {
@@ -223,14 +223,14 @@ internal class ExecuteStatementCommandState : MySqlGatewayState {
         private var columnCount: ULong = 0UL
         private val columnDefinitions = mutableListOf<ColumnDefinition41>()
 
-        override fun onUpstreamPacket(
+        override fun onUpstreamMessage(
             ctx: ChannelHandlerContext,
-            packet: Packet,
+            msg: Packet,
         ): MySqlGatewayState =
             when (state) {
-                State.INITIAL -> handleInitialState(ctx, packet)
-                State.COLUMN_DEFINITION -> handleColumnDefinitionState(ctx, packet)
-                State.RESULTSET_ROW -> handleResultsetRow(ctx, packet)
+                State.INITIAL -> handleInitialState(ctx, msg)
+                State.COLUMN_DEFINITION -> handleColumnDefinitionState(ctx, msg)
+                State.RESULTSET_ROW -> handleResultsetRow(ctx, msg)
             }
 
         private fun handleInitialState(
