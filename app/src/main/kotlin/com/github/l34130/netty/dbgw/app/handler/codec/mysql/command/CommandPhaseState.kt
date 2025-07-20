@@ -1,5 +1,6 @@
 package com.github.l34130.netty.dbgw.app.handler.codec.mysql.command
 
+import com.github.l34130.netty.dbgw.app.handler.codec.mysql.GatewayAttributes
 import com.github.l34130.netty.dbgw.app.handler.codec.mysql.GatewayState
 import com.github.l34130.netty.dbgw.app.handler.codec.mysql.Packet
 import com.github.l34130.netty.dbgw.app.handler.codec.mysql.capabilities
@@ -66,8 +67,29 @@ class CommandPhaseState : GatewayState {
             }
         }
 
-        val query = payload.readRestOfPacketString()
-        logger.debug { "COM_QUERY: query='${query.toString(Charsets.UTF_8)}'" }
+        val query = payload.readRestOfPacketString().toString(Charsets.UTF_8)
+        logger.debug { "COM_QUERY: query='$query'" }
+
+        val engine = ctx.channel().attr(GatewayAttributes.QUERY_POLICY_ENGINE_ATTR_KEY).get()
+        val result = engine.evaluate(query)
+        if (!result.isAllowed) {
+            val errorPacket =
+                Packet.Error.of(
+                    sequenceId = packet.sequenceId + 1,
+                    errorCode = 1U,
+                    sqlState = "DBGW_",
+                    message =
+                        buildString {
+                            append("Access denied")
+                            if (!result.reason.isNullOrBlank()) {
+                                append(": ${result.reason}")
+                            }
+                        },
+                    capabilities = ctx.capabilities().enumSet(),
+                )
+            ctx.writeAndFlush(errorPacket)
+            return CommandPhaseState()
+        }
 
         payload.resetReaderIndex()
         ctx.upstream().writeAndFlush(packet)

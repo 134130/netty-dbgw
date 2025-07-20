@@ -1,5 +1,8 @@
 package com.github.l34130.netty.dbgw.app.handler.codec.mysql
 
+import com.github.l34130.netty.dbgw.app.security.QueryPolicy
+import com.github.l34130.netty.dbgw.app.security.QueryPolicyEngine
+import com.github.l34130.netty.dbgw.app.security.QueryPolicyResult
 import io.netty.bootstrap.ServerBootstrap
 import io.netty.channel.ChannelFuture
 import io.netty.channel.MultiThreadIoEventLoopGroup
@@ -24,7 +27,23 @@ class MySqlGateway(
                 .group(bossGroup, workerGroup)
                 .channel(NioServerSocketChannel::class.java)
                 .handler(LoggingHandler(LogLevel.INFO))
-                .childHandler(MySqlProxyChannelInitializer { upstream })
+                .childHandler(
+                    MySqlProxyChannelInitializer(
+                        upstreamProvider = { upstream },
+                        queryPolicyEngine =
+                            QueryPolicyEngine(
+                                listOf(
+                                    QueryPolicy { query: String ->
+                                        if (query.contains("SELECT * FROM actor")) {
+                                            QueryPolicyResult(isAllowed = false, reason = "Access to actor table is restricted.")
+                                        } else {
+                                            QueryPolicyResult(isAllowed = true, null)
+                                        }
+                                    },
+                                ),
+                            ),
+                    ),
+                )
 
         f = b.bind(port).sync()
     }

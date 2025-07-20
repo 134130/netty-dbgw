@@ -1,6 +1,7 @@
 package com.github.l34130.netty.dbgw.app.handler.codec.mysql
 
 import com.github.l34130.netty.dbgw.app.handler.codec.mysql.command.PreparedStatement
+import com.github.l34130.netty.dbgw.app.security.QueryPolicyEngine
 import io.netty.channel.Channel
 import io.netty.channel.ChannelHandlerContext
 import io.netty.util.AttributeKey
@@ -11,6 +12,7 @@ object GatewayAttributes {
     val CAPABILITIES_ATTR_KEY: AttributeKey<Capabilities> = AttributeKey.valueOf("capabilities")
     val PREPARED_STATEMENTS_ATTR_KEY: AttributeKey<MutableMap<UInt, PreparedStatement>> =
         AttributeKey.valueOf("prepared_statements")
+    val QUERY_POLICY_ENGINE_ATTR_KEY: AttributeKey<QueryPolicyEngine> = AttributeKey.valueOf("query_policy_engine")
 }
 
 fun ChannelHandlerContext.downstream(): Channel = this.channel().attr(GatewayAttributes.DOWNSTREAM_ATTR_KEY).get()

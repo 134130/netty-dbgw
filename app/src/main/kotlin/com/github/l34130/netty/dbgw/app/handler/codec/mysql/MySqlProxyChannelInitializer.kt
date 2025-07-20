@@ -1,6 +1,7 @@
 package com.github.l34130.netty.dbgw.app.handler.codec.mysql
 
 import com.github.l34130.netty.dbgw.app.handler.codec.mysql.command.PreparedStatement
+import com.github.l34130.netty.dbgw.app.security.QueryPolicyEngine
 import com.github.l34130.netty.dbgw.utils.netty.closeOnFlush
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.bootstrap.Bootstrap
@@ -11,6 +12,7 @@ import io.netty.channel.SimpleChannelInboundHandler
 
 class MySqlProxyChannelInitializer(
     private val upstreamProvider: () -> Pair<String, Int>,
+    private val queryPolicyEngine: QueryPolicyEngine = QueryPolicyEngine(emptyList()),
 ) : ChannelInitializer<Channel>() {
     override fun initChannel(ch: Channel) {
         val downstream = ch
@@ -20,15 +22,16 @@ class MySqlProxyChannelInitializer(
             .pipeline()
             .addFirst("packet-decoder", PacketDecoder())
             .addFirst("packet-encoder", PacketEncoder())
-            .addLast(DownstreamConnectionHandler(stateMachine, upstreamProvider))
+            .addLast(DownstreamConnectionHandler(stateMachine))
     }
 
-    class DownstreamConnectionHandler(
+    inner class DownstreamConnectionHandler(
         private val stateMachine: GatewayStateMachine,
-        private val upstreamProvider: () -> Pair<String, Int>,
     ) : SimpleChannelInboundHandler<Packet>() {
+        private val logger = KotlinLogging.logger {}
+
         override fun channelActive(ctx: ChannelHandlerContext) {
-            val (inetHost, inetPort) = this.upstreamProvider()
+            val (inetHost, inetPort) = upstreamProvider()
 
             val upstream =
                 Bootstrap()
@@ -54,6 +57,9 @@ class MySqlProxyChannelInitializer(
             val preparedStatements = mutableMapOf<UInt, PreparedStatement>()
             downstream.attr(GatewayAttributes.PREPARED_STATEMENTS_ATTR_KEY).set(preparedStatements)
             upstream.attr(GatewayAttributes.PREPARED_STATEMENTS_ATTR_KEY).set(preparedStatements)
+
+            downstream.attr(GatewayAttributes.QUERY_POLICY_ENGINE_ATTR_KEY).set(queryPolicyEngine)
+            upstream.attr(GatewayAttributes.QUERY_POLICY_ENGINE_ATTR_KEY).set(queryPolicyEngine)
         }
 
         override fun channelRead0(
@@ -84,10 +90,6 @@ class MySqlProxyChannelInitializer(
             val canWrite = ctx.channel().isWritable
             ctx.upstream().config().isAutoRead = canWrite
             ctx.fireChannelWritabilityChanged()
-        }
-
-        companion object {
-            private val logger = KotlinLogging.logger {}
         }
     }
 

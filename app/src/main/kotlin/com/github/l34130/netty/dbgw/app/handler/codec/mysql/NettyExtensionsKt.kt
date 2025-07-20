@@ -31,11 +31,10 @@ fun ByteBuf.readFixedLengthInteger(length: Int): ULong =
 
 fun ByteBuf.writeFixedLengthInteger(
     length: Int,
-    value: Long,
+    value: ULong,
 ): ByteBuf {
     require(length in 1..8) { "Length must be between 1 and 8." }
-    require(value >= 0) { "Value must be a non-negative integer." }
-    require(value < (1L shl (length * 8))) { "Value exceeds the maximum for the specified length." }
+    require(value < (1UL shl (length * 8))) { "Value exceeds the maximum for the specified length." }
 
     for (i in 0 until length) {
         writeByte((value shr (i * 8)).toInt() and 0xFF)

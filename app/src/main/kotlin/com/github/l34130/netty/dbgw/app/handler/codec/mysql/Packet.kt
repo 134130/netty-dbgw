@@ -7,6 +7,7 @@ import com.github.l34130.netty.dbgw.app.handler.codec.mysql.constant.ServerStatu
 import com.github.l34130.netty.dbgw.utils.netty.peek
 import com.github.l34130.netty.dbgw.utils.toEnumSet
 import io.netty.buffer.ByteBuf
+import io.netty.buffer.Unpooled
 import java.util.EnumSet
 
 class Packet(
@@ -29,6 +30,17 @@ class Packet(
     fun isEofPacket(): Boolean {
         val firstByte = payload.peek { it.readFixedLengthInteger(1) }
         return firstByte == 0xFEUL
+    }
+
+    companion object {
+        fun of(
+            sequenceId: Int,
+            payload: ByteBuf,
+        ): Packet =
+            Packet(
+                sequenceId = sequenceId,
+                payload = payload,
+            )
     }
 
     // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_basic_eof_packet.html
@@ -95,6 +107,26 @@ class Packet(
                     sqlState = sqlState,
                     message = message,
                 )
+            }
+
+            fun of(
+                sequenceId: Int,
+                errorCode: UShort,
+                sqlState: String? = null,
+                message: String,
+                capabilities: EnumSet<CapabilityFlag>,
+            ): Packet {
+                sqlState?.let { require(sqlState.length == 5) { "SQL state must be exactly 5 characters long." } }
+
+                val byteBuf = Unpooled.buffer()
+                byteBuf.writeFixedLengthInteger(1, 0xFFUL) // First byte for error packet
+                byteBuf.writeFixedLengthInteger(2, errorCode.toULong())
+                if (capabilities.contains(CapabilityFlag.CLIENT_PROTOCOL_41) && sqlState != null) {
+                    byteBuf.writeFixedLengthString(1, "#") // SQL state marker
+                    byteBuf.writeFixedLengthString(5, sqlState)
+                }
+                byteBuf.writeCharSequence(message, Charsets.UTF_8)
+                return of(sequenceId, byteBuf)
             }
         }
     }
