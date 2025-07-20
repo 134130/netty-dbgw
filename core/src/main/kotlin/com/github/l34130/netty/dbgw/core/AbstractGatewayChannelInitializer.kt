@@ -11,7 +11,7 @@ import io.netty.channel.ChannelInitializer
 import io.netty.channel.SimpleChannelInboundHandler
 
 abstract class AbstractGatewayChannelInitializer<T, K : GatewayStateMachine<T>>(
-    private val config: GatewayConfig,
+    val config: GatewayConfig,
 ) : ChannelInitializer<Channel>() {
     override fun initChannel(ch: Channel) {
         val downstream = ch
@@ -31,6 +31,10 @@ abstract class AbstractGatewayChannelInitializer<T, K : GatewayStateMachine<T>>(
     protected abstract fun createMessageDecoder(): ChannelHandler
 
     protected abstract fun createMessageEncoder(): ChannelHandler
+
+    protected abstract fun downstreamChannelActive(channel: Channel)
+
+    protected abstract fun upstreamChannelActive(channel: Channel)
 
     private inner class DownstreamConnectionHandler(
         private val stateMachine: K,
@@ -57,6 +61,9 @@ abstract class AbstractGatewayChannelInitializer<T, K : GatewayStateMachine<T>>(
 
             downstream.attr(GatewayAttrs.GATEWAY_CONFIG_ATTR_KEY).set(config)
             upstream.attr(GatewayAttrs.GATEWAY_CONFIG_ATTR_KEY).set(config)
+
+            downstreamChannelActive(downstream)
+            upstreamChannelActive(upstream)
         }
 
         override fun channelRead0(
