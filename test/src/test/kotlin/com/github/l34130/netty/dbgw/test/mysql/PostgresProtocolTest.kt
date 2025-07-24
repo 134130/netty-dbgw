@@ -74,8 +74,8 @@ abstract class PostgresProtocolTest(
                     val result = conn.executeQuery("SELECT 1 AS col1 UNION SELECT 2 AS col1")
                     assertEquals(2, result.size - 1, "Expected 2 rows in the result set")
                     assertEquals("col1", result[0][0], "Expected column name to be 'col1'")
-                    assertEquals(1L, result[1][0], "Expected first row value to be 1")
-                    assertEquals(2L, result[2][0], "Expected second row value to be 2")
+                    assertEquals(1, result[1][0], "Expected first row value to be 1")
+                    assertEquals(2, result[2][0], "Expected second row value to be 2")
                 }
             },
             dynamicTest("test invalid query") {
@@ -84,7 +84,7 @@ abstract class PostgresProtocolTest(
                         conn.executeQuery("SELECT * FROM non_existent_table")
                     } catch (e: Exception) {
                         assertTrue(
-                            e.message?.contains("Table 'testdb.non_existent_table' doesn't exist") == true,
+                            e.message?.contains("relation \"non_existent_table\" does not exist") == true,
                             "Expected table not found error, got ${e.message}",
                         )
                     }
