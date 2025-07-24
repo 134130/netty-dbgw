@@ -2,6 +2,7 @@ package com.github.l34130.netty.dbgw.core
 
 import io.netty.channel.ChannelHandlerContext
 
+@Deprecated("Use DatabaseGatewayState instead")
 interface GatewayState<T> {
     fun onDownstreamMessage(
         ctx: ChannelHandlerContext,

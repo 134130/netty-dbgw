@@ -10,6 +10,7 @@ import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.ChannelInitializer
 import io.netty.channel.SimpleChannelInboundHandler
 
+@Deprecated("")
 abstract class AbstractGatewayChannelInitializer<T, K : GatewayStateMachine<T, GatewayState<T>>>(
     val config: GatewayConfig,
 ) : ChannelInitializer<Channel>() {

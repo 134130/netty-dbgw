@@ -10,6 +10,7 @@ import io.netty.channel.socket.nio.NioServerSocketChannel
 import io.netty.handler.logging.LogLevel
 import io.netty.handler.logging.LoggingHandler
 
+@Deprecated("")
 abstract class AbstractGateway(
     private val config: GatewayConfig,
 ) {

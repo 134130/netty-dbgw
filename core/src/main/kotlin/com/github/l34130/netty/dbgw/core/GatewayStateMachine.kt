@@ -3,6 +3,7 @@ package com.github.l34130.netty.dbgw.core
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.channel.ChannelHandlerContext
 
+@Deprecated("Use DatabaseGatewayState instead")
 abstract class GatewayStateMachine<T, S : GatewayState<T>>(
     initialState: S,
 ) {
