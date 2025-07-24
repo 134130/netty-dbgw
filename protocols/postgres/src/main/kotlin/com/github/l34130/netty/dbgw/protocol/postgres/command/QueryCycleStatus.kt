@@ -85,7 +85,7 @@ class QueryCycleStatus : DatabaseGatewayState<Message, Message>() {
             }
             ErrorResponse.TYPE -> {
                 val errorResponse = ErrorResponse.readFrom(msg)
-                logger.error { "Error response: $errorResponse" }
+                logger.trace { "Error response: $errorResponse" }
                 return StateResult(
                     nextState = this,
                     action = MessageAction.Forward,
