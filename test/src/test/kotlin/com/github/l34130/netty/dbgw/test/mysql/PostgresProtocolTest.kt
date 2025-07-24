@@ -66,7 +66,7 @@ abstract class PostgresProtocolTest(
                 createConnection().use { conn ->
                     val result = conn.executeQuery("SELECT 1 AS col1")
                     assertEquals("col1", result[0][0], "Expected column name to be 'col1'")
-                    assertEquals(1L, result[1][0], "Expected value to be 1, got $result")
+                    assertEquals(1, result[1][0], "Expected value to be 1, got ${result[1][0]}")
                 }
             },
             dynamicTest("test multiple rows") {
