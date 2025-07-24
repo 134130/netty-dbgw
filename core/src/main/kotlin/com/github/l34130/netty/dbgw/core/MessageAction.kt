@@ -12,9 +12,9 @@ sealed class MessageAction {
     }
 
     data class Intercept(
-        val response: Any,
+        val msg: Any,
     ) : MessageAction() {
-        override fun toString(): String = "Intercept(response=$response)"
+        override fun toString(): String = "Intercept(msg=$msg)"
     }
 
     data class Terminate(

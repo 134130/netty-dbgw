@@ -1,8 +1,6 @@
 package com.github.l34130.netty.dbgw.protocol.mysql.connection
 
-import com.github.l34130.netty.dbgw.core.ClosingConnectionException
-import com.github.l34130.netty.dbgw.core.downstream
-import com.github.l34130.netty.dbgw.core.utils.netty.closeOnFlush
+import com.github.l34130.netty.dbgw.core.MessageAction
 import com.github.l34130.netty.dbgw.core.utils.netty.peek
 import com.github.l34130.netty.dbgw.protocol.mysql.MySqlGatewayState
 import com.github.l34130.netty.dbgw.protocol.mysql.Packet
@@ -12,11 +10,11 @@ import com.github.l34130.netty.dbgw.protocol.mysql.readNullTerminatedString
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.channel.ChannelHandlerContext
 
-internal class AuthResultState : MySqlGatewayState {
+internal class AuthResultState : MySqlGatewayState() {
     override fun onUpstreamMessage(
         ctx: ChannelHandlerContext,
         msg: Packet,
-    ): MySqlGatewayState {
+    ): StateResult {
         if (msg.isEofPacket()) {
             msg.payload.markReaderIndex()
             msg.payload.skipBytes(1) // Skip the first byte (EOF marker)
@@ -32,19 +30,19 @@ internal class AuthResultState : MySqlGatewayState {
 
         if (msg.isOkPacket()) {
             logger.trace { "Authentication succeeded" }
-            ctx.downstream().writeAndFlush(msg)
-            return CommandPhaseState()
+            return StateResult(
+                nextState = CommandPhaseState(),
+                action = MessageAction.Forward,
+            )
         }
 
         if (msg.isErrorPacket()) {
-            msg.payload.markReaderIndex()
-            logger.trace {
-                "Authentication failed: ${Packet.Error.readFrom(msg.payload, ctx.capabilities().enumSet())}"
-            }
-            msg.payload.resetReaderIndex()
-            ctx.downstream().writeAndFlush(msg)
-            ctx.downstream().closeOnFlush()
-            throw ClosingConnectionException("Authentication failed")
+            val error = Packet.Error.readFrom(msg.payload, ctx.capabilities().enumSet())
+            logger.trace { "Authentication failed: $error" }
+            return StateResult(
+                nextState = this,
+                action = MessageAction.Terminate(reason = "Authentication failed: $error"),
+            )
         }
 
         if (msg.payload.peek { it.readUnsignedByte().toUInt() } == 0x1u) {

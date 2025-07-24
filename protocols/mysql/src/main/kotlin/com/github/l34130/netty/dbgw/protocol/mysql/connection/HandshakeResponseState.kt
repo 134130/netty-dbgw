@@ -1,5 +1,6 @@
 package com.github.l34130.netty.dbgw.protocol.mysql.connection
 
+import com.github.l34130.netty.dbgw.core.MessageAction
 import com.github.l34130.netty.dbgw.core.upstream
 import com.github.l34130.netty.dbgw.core.utils.netty.closeOnFlush
 import com.github.l34130.netty.dbgw.core.utils.toEnumSet
@@ -19,11 +20,11 @@ import io.netty.handler.ssl.SslHandler
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory
 import java.util.EnumSet
 
-internal class HandshakeResponseState : MySqlGatewayState {
+internal class HandshakeResponseState : MySqlGatewayState() {
     override fun onDownstreamMessage(
         ctx: ChannelHandlerContext,
         msg: Packet,
-    ): MySqlGatewayState {
+    ): StateResult {
         val payload = msg.payload
         payload.markReaderIndex()
 
@@ -111,7 +112,10 @@ internal class HandshakeResponseState : MySqlGatewayState {
                 },
             )
 
-            return this // Wait for the HandshakeResponse packet again
+            return StateResult(
+                nextState = this, // Wait for the HandshakeResponse packet again
+                action = MessageAction.Forward,
+            )
         }
 
         // login username
@@ -172,9 +176,10 @@ internal class HandshakeResponseState : MySqlGatewayState {
             }
         logger.trace { "Zstd Compression Level: $zstdCompressionLevel" }
 
-        payload.resetReaderIndex()
-        ctx.upstream().writeAndFlush(msg)
-        return AuthResultState()
+        return StateResult(
+            nextState = AuthResultState(),
+            action = MessageAction.Forward,
+        )
     }
 
     companion object {

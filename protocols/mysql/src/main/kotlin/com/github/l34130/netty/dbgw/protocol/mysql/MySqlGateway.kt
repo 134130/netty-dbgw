@@ -1,26 +1,31 @@
 package com.github.l34130.netty.dbgw.protocol.mysql
 
-import com.github.l34130.netty.dbgw.core.AbstractGateway
-import com.github.l34130.netty.dbgw.core.AbstractGatewayChannelInitializer
-import com.github.l34130.netty.dbgw.core.GatewayState
-import com.github.l34130.netty.dbgw.core.GatewayStateMachine
+import com.github.l34130.netty.dbgw.core.AbstractDatabaseGateway
+import com.github.l34130.netty.dbgw.core.DatabaseStateMachine
 import com.github.l34130.netty.dbgw.core.config.GatewayConfig
+import com.github.l34130.netty.dbgw.core.downstream
 import com.github.l34130.netty.dbgw.core.security.QueryPolicy
 import com.github.l34130.netty.dbgw.core.security.QueryPolicyEngine
 import com.github.l34130.netty.dbgw.core.security.QueryPolicyResult
 import com.github.l34130.netty.dbgw.protocol.mysql.command.PreparedStatement
 import com.github.l34130.netty.dbgw.protocol.mysql.connection.HandshakeState
-import io.netty.channel.Channel
 import io.netty.channel.ChannelHandler
+import io.netty.channel.ChannelHandlerContext
+import io.netty.channel.ChannelInboundHandlerAdapter
 
 class MySqlGateway(
-    private val config: GatewayConfig,
-) : AbstractGateway(config) {
-    override fun createChannelInitializer(): ChannelHandler = MySqlGatewayChannelInitializer(config)
+    config: GatewayConfig,
+) : AbstractDatabaseGateway(config) {
+    override fun createDownstreamHandlers(): List<ChannelHandler> = listOf(PacketEncoder(), PacketDecoder())
 
-    private class MySqlGatewayChannelInitializer(
+    override fun createUpstreamHandlers(): List<ChannelHandler> =
+        listOf(MySqlChannelInitialHandler(config), PacketEncoder(), PacketDecoder())
+
+    override fun createStateMachine(): DatabaseStateMachine = DatabaseStateMachine(HandshakeState())
+
+    private inner class MySqlChannelInitialHandler(
         config: GatewayConfig,
-    ) : AbstractGatewayChannelInitializer<Packet, MySqlGatewayStateMachine>(config) {
+    ) : ChannelInboundHandlerAdapter() {
         private val capabilities = Capabilities()
         private val preparedStatements: MutableMap<UInt, PreparedStatement> = mutableMapOf()
         private val queryPolicyEngine =
@@ -40,26 +45,22 @@ class MySqlGateway(
                     QueryPolicyEngine(it)
                 }
 
-        override fun createStateMachine(): MySqlGatewayStateMachine = MySqlGatewayStateMachine()
+        override fun channelRead(
+            ctx: ChannelHandlerContext,
+            msg: Any,
+        ) {
+            ctx.channel().attr(MySqlAttrs.CAPABILITIES_ATTR_KEY).set(capabilities)
+            ctx.channel().attr(MySqlAttrs.PREPARED_STATEMENTS_ATTR_KEY).set(preparedStatements)
+            ctx.channel().attr(MySqlAttrs.QUERY_POLICY_ENGINE_ATTR_KEY).set(queryPolicyEngine)
 
-        override fun createMessageDecoder(): ChannelHandler = PacketDecoder()
+            ctx.downstream().apply {
+                attr(MySqlAttrs.CAPABILITIES_ATTR_KEY).set(capabilities)
+                attr(MySqlAttrs.PREPARED_STATEMENTS_ATTR_KEY).set(preparedStatements)
+                attr(MySqlAttrs.QUERY_POLICY_ENGINE_ATTR_KEY).set(queryPolicyEngine)
+            }
 
-        override fun createMessageEncoder(): ChannelHandler = PacketEncoder()
-
-        override fun downstreamChannelActive(channel: Channel) {
-            channel.attr(MySqlAttrs.CAPABILITIES_ATTR_KEY).set(capabilities)
-            channel.attr(MySqlAttrs.PREPARED_STATEMENTS_ATTR_KEY).set(preparedStatements)
-            channel.attr(MySqlAttrs.QUERY_POLICY_ENGINE_ATTR_KEY).set(queryPolicyEngine)
-        }
-
-        override fun upstreamChannelActive(channel: Channel) {
-            channel.attr(MySqlAttrs.CAPABILITIES_ATTR_KEY).set(capabilities)
-            channel.attr(MySqlAttrs.PREPARED_STATEMENTS_ATTR_KEY).set(preparedStatements)
-            channel.attr(MySqlAttrs.QUERY_POLICY_ENGINE_ATTR_KEY).set(queryPolicyEngine)
+            ctx.pipeline().remove(this)
+            ctx.fireChannelRead(msg)
         }
     }
-
-    private class MySqlGatewayStateMachine(
-        initialState: MySqlGatewayState = HandshakeState(),
-    ) : GatewayStateMachine<Packet, GatewayState<Packet>>(initialState)
 }

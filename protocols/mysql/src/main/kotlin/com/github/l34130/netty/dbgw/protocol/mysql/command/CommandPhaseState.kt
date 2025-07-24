@@ -1,6 +1,6 @@
 package com.github.l34130.netty.dbgw.protocol.mysql.command
 
-import com.github.l34130.netty.dbgw.core.upstream
+import com.github.l34130.netty.dbgw.core.MessageAction
 import com.github.l34130.netty.dbgw.core.utils.netty.peek
 import com.github.l34130.netty.dbgw.protocol.mysql.MySqlAttrs
 import com.github.l34130.netty.dbgw.protocol.mysql.MySqlGatewayState
@@ -15,11 +15,11 @@ import com.github.l34130.netty.dbgw.protocol.mysql.readRestOfPacketString
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.channel.ChannelHandlerContext
 
-internal class CommandPhaseState : MySqlGatewayState {
+internal class CommandPhaseState : MySqlGatewayState() {
     override fun onDownstreamMessage(
         ctx: ChannelHandlerContext,
         msg: Packet,
-    ): MySqlGatewayState {
+    ): StateResult {
         val payload = msg.payload
         val commandByte = payload.peek { it.readUnsignedByte().toUInt() } ?: error("Command byte is missing in the packet")
         val commandType = CommandType.from(commandByte)
@@ -39,9 +39,8 @@ internal class CommandPhaseState : MySqlGatewayState {
     private fun handleQueryCommand(
         ctx: ChannelHandlerContext,
         packet: Packet,
-    ): MySqlGatewayState {
+    ): StateResult {
         val payload = packet.payload
-        payload.markReaderIndex()
         payload.skipBytes(1) // skip command byte
 
         if (ctx.capabilities().contains(CapabilityFlag.CLIENT_QUERY_ATTRIBUTES)) {
@@ -86,14 +85,17 @@ internal class CommandPhaseState : MySqlGatewayState {
                         },
                     capabilities = ctx.capabilities().enumSet(),
                 )
-            payload.release() // release the payload buffer to avoid memory leaks
-            ctx.writeAndFlush(errorPacket)
-            return CommandPhaseState()
+
+            return StateResult(
+                nextState = CommandPhaseState(),
+                action = MessageAction.Intercept(msg = errorPacket),
+            )
         }
 
-        payload.resetReaderIndex()
-        ctx.upstream().writeAndFlush(packet)
-        return QueryCommandResponseState()
+        return StateResult(
+            nextState = QueryCommandResponseState(),
+            action = MessageAction.Forward,
+        )
     }
 
     companion object {

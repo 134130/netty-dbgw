@@ -1,7 +1,6 @@
 package com.github.l34130.netty.dbgw.protocol.mysql.connection
 
-import com.github.l34130.netty.dbgw.core.downstream
-import com.github.l34130.netty.dbgw.core.upstream
+import com.github.l34130.netty.dbgw.core.MessageAction
 import com.github.l34130.netty.dbgw.protocol.mysql.MySqlGatewayState
 import com.github.l34130.netty.dbgw.protocol.mysql.Packet
 import com.github.l34130.netty.dbgw.protocol.mysql.readNullTerminatedString
@@ -9,13 +8,13 @@ import com.github.l34130.netty.dbgw.protocol.mysql.readRestOfPacketString
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.channel.ChannelHandlerContext
 
-internal class AuthSwitchState : MySqlGatewayState {
+internal class AuthSwitchState : MySqlGatewayState() {
     private var state: State = State.WAITING_REQUEST
 
     override fun onDownstreamMessage(
         ctx: ChannelHandlerContext,
         msg: Packet,
-    ): MySqlGatewayState =
+    ): StateResult =
         when (state) {
             State.WAITING_REQUEST -> error("Unexpected downstream packet in $state state")
             State.WAITING_RESPONSE -> handleAuthSwitchResponse(ctx, msg)
@@ -24,7 +23,7 @@ internal class AuthSwitchState : MySqlGatewayState {
     override fun onUpstreamMessage(
         ctx: ChannelHandlerContext,
         msg: Packet,
-    ): MySqlGatewayState =
+    ): StateResult =
         when (state) {
             State.WAITING_REQUEST -> handleAuthSwitchRequest(ctx, msg)
             State.WAITING_RESPONSE -> error("Unexpected upstream packet in $state state")
@@ -33,9 +32,8 @@ internal class AuthSwitchState : MySqlGatewayState {
     private fun handleAuthSwitchRequest(
         ctx: ChannelHandlerContext,
         packet: Packet,
-    ): MySqlGatewayState {
+    ): StateResult {
         val payload = packet.payload
-        payload.markReaderIndex()
 
         val firstByte = payload.readUnsignedByte().toUInt()
         if (firstByte != 0xFE.toUInt()) {
@@ -46,19 +44,18 @@ internal class AuthSwitchState : MySqlGatewayState {
         logger.trace { "Received AuthSwitchRequest with plugin: $pluginName" }
         val pluginProvidedData = payload.readRestOfPacketString().toString(Charsets.UTF_8)
 
-        payload.resetReaderIndex()
-        ctx.downstream().writeAndFlush(packet)
-
         state = State.WAITING_RESPONSE
-        return this
+        return StateResult(
+            nextState = this,
+            action = MessageAction.Forward,
+        )
     }
 
     private fun handleAuthSwitchResponse(
         ctx: ChannelHandlerContext,
         packet: Packet,
-    ): MySqlGatewayState {
+    ): StateResult {
         val payload = packet.payload
-        payload.markReaderIndex()
 
         if (payload.readableBytes() < 1) {
             throw IllegalStateException("Received AuthSwitchResponse with no data")
@@ -67,10 +64,10 @@ internal class AuthSwitchState : MySqlGatewayState {
         val responseData = payload.readRestOfPacketString().toString(Charsets.UTF_8)
         logger.trace { "Received AuthSwitchResponse with data: $responseData" }
 
-        payload.resetReaderIndex()
-        ctx.upstream().writeAndFlush(packet)
-
-        return AuthExchangeContinuationState()
+        return StateResult(
+            nextState = AuthExchangeContinuationState(),
+            action = MessageAction.Forward,
+        )
     }
 
     companion object {

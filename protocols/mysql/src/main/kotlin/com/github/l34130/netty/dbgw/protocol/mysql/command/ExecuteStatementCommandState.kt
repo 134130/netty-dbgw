@@ -1,7 +1,6 @@
 package com.github.l34130.netty.dbgw.protocol.mysql.command
 
-import com.github.l34130.netty.dbgw.core.downstream
-import com.github.l34130.netty.dbgw.core.upstream
+import com.github.l34130.netty.dbgw.core.MessageAction
 import com.github.l34130.netty.dbgw.core.utils.netty.peek
 import com.github.l34130.netty.dbgw.core.utils.toEnumSet
 import com.github.l34130.netty.dbgw.protocol.mysql.Bitmap
@@ -22,19 +21,17 @@ import io.netty.channel.ChannelHandlerContext
 import java.time.LocalDateTime
 
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_com_stmt_execute.html
-internal class ExecuteStatementCommandState : MySqlGatewayState {
+internal class ExecuteStatementCommandState : MySqlGatewayState() {
     private var requested = false
 
     override fun onDownstreamMessage(
         ctx: ChannelHandlerContext,
         msg: Packet,
-    ): MySqlGatewayState {
+    ): StateResult {
         check(!requested) { "Duplicate COM_STMT_EXECUTE request received" }
         requested = true
 
         val payload = msg.payload
-        payload.markReaderIndex()
-
         val status = payload.readFixedLengthInteger(1).toUInt()
         val commandType = CommandPhaseState.CommandType.from(status)
         require(commandType == CommandPhaseState.CommandType.COM_STMT_EXECUTE) {
@@ -103,40 +100,39 @@ internal class ExecuteStatementCommandState : MySqlGatewayState {
         }
 
         // Forward the packet to the upstream handler
-        payload.resetReaderIndex()
-        ctx.upstream().writeAndFlush(msg)
-        return this
+        return StateResult(
+            nextState = this,
+            action = MessageAction.Forward,
+        )
     }
 
     override fun onUpstreamMessage(
         ctx: ChannelHandlerContext,
         msg: Packet,
-    ): MySqlGatewayState {
+    ): StateResult {
         check(requested) { "COM_STMT_EXECUTE response received without a prior request" }
 
         logger.trace { "Processing COM_STMT_EXECUTE Response" }
 
         val payload = msg.payload
-        payload.markReaderIndex()
-
         if (msg.isErrorPacket()) {
             logger.trace {
                 val errPacket = payload.peek { Packet.Error.readFrom(it, ctx.capabilities().enumSet()) }
                 "Received COM_STMT_EXECUTE error response: $errPacket"
             }
 
-            payload.resetReaderIndex()
-            ctx.downstream().writeAndFlush(msg)
-            return CommandPhaseState()
+            return StateResult(
+                nextState = CommandPhaseState(),
+                action = MessageAction.Forward,
+            )
         }
 
         if (msg.isOkPacket()) {
             logger.trace { "Received COM_STMT_EXECUTE OK response" }
-            msg.payload.resetReaderIndex()
-
-            payload.resetReaderIndex()
-            ctx.downstream().writeAndFlush(msg)
-            return CommandPhaseState()
+            return StateResult(
+                nextState = CommandPhaseState(),
+                action = MessageAction.Forward,
+            )
         }
 
         // If the response is not an error or OK packet, it must be a result set.
@@ -218,7 +214,7 @@ internal class ExecuteStatementCommandState : MySqlGatewayState {
         }
     }
 
-    private class BinaryProtocolResultsetState : MySqlGatewayState {
+    private class BinaryProtocolResultsetState : MySqlGatewayState() {
         private var state: State = State.INITIAL
         private var columnCount: ULong = 0UL
         private val columnDefinitions = mutableListOf<ColumnDefinition41>()
@@ -226,7 +222,7 @@ internal class ExecuteStatementCommandState : MySqlGatewayState {
         override fun onUpstreamMessage(
             ctx: ChannelHandlerContext,
             msg: Packet,
-        ): MySqlGatewayState =
+        ): StateResult =
             when (state) {
                 State.INITIAL -> handleInitialState(ctx, msg)
                 State.COLUMN_DEFINITION -> handleColumnDefinitionState(ctx, msg)
@@ -236,9 +232,8 @@ internal class ExecuteStatementCommandState : MySqlGatewayState {
         private fun handleInitialState(
             ctx: ChannelHandlerContext,
             packet: Packet,
-        ): MySqlGatewayState {
+        ): StateResult {
             val payload = packet.payload
-            payload.markReaderIndex()
 
             columnCount = payload.readLenEncInteger()
             logger.trace { "Column Count: $columnCount" }
@@ -246,19 +241,16 @@ internal class ExecuteStatementCommandState : MySqlGatewayState {
             check(columnCount > 0UL) { "Column count must be greater than 0, but was $columnCount" }
 
             state = State.COLUMN_DEFINITION
-
-            payload.resetReaderIndex()
-            ctx.downstream().writeAndFlush(packet)
-            return this
+            return StateResult(
+                nextState = this,
+                action = MessageAction.Forward,
+            )
         }
 
         private fun handleColumnDefinitionState(
             ctx: ChannelHandlerContext,
             packet: Packet,
-        ): MySqlGatewayState {
-            val payload = packet.payload
-            payload.markReaderIndex()
-
+        ): StateResult {
             val columnDef = ColumnDefinition41.readFrom(packet.payload)
             logger.trace { "Received Column Definition: $columnDef" }
 
@@ -271,17 +263,17 @@ internal class ExecuteStatementCommandState : MySqlGatewayState {
                     State.COLUMN_DEFINITION
                 }
 
-            payload.resetReaderIndex()
-            ctx.downstream().writeAndFlush(packet)
-            return this
+            return StateResult(
+                nextState = this,
+                action = MessageAction.Forward,
+            )
         }
 
         private fun handleResultsetRow(
             ctx: ChannelHandlerContext,
             packet: Packet,
-        ): MySqlGatewayState {
+        ): StateResult {
             val payload = packet.payload
-            payload.markReaderIndex()
 
             // TODO: Handle OK Packet if CLIENT_DEPRECATE_EOF is set
             if (packet.isEofPacket()) {
@@ -290,9 +282,10 @@ internal class ExecuteStatementCommandState : MySqlGatewayState {
                     "Received Resultset EOF: $packet"
                 }
 
-                payload.resetReaderIndex()
-                ctx.downstream().writeAndFlush(packet)
-                return CommandPhaseState()
+                return StateResult(
+                    nextState = CommandPhaseState(),
+                    action = MessageAction.Forward,
+                )
             }
 
             val packetHeader = payload.readFixedLengthInteger(1).toUInt()
@@ -314,9 +307,10 @@ internal class ExecuteStatementCommandState : MySqlGatewayState {
 
             logger.trace { "BinaryProtocolResultset row: $values" }
 
-            payload.resetReaderIndex()
-            ctx.downstream().writeAndFlush(packet)
-            return this
+            return StateResult(
+                nextState = this,
+                action = MessageAction.Forward,
+            )
         }
 
         companion object {

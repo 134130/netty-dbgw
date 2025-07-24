@@ -1,5 +1,5 @@
 package com.github.l34130.netty.dbgw.protocol.mysql
 
-import com.github.l34130.netty.dbgw.core.GatewayState
+import com.github.l34130.netty.dbgw.core.BidirectionalDatabaseGatewayState
 
-internal interface MySqlGatewayState : GatewayState<Packet>
+internal abstract class MySqlGatewayState : BidirectionalDatabaseGatewayState<Packet>()

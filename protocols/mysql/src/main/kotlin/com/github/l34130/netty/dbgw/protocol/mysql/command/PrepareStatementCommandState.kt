@@ -1,7 +1,6 @@
 package com.github.l34130.netty.dbgw.protocol.mysql.command
 
-import com.github.l34130.netty.dbgw.core.downstream
-import com.github.l34130.netty.dbgw.core.upstream
+import com.github.l34130.netty.dbgw.core.MessageAction
 import com.github.l34130.netty.dbgw.core.utils.netty.peek
 import com.github.l34130.netty.dbgw.protocol.mysql.MySqlGatewayState
 import com.github.l34130.netty.dbgw.protocol.mysql.Packet
@@ -14,7 +13,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.channel.ChannelHandlerContext
 
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_com_stmt_prepare.html
-internal class PrepareStatementCommandState : MySqlGatewayState {
+internal class PrepareStatementCommandState : MySqlGatewayState() {
     private var requested = false
     private var responseState: ResponseState = ResponseState.OK
 
@@ -30,27 +29,26 @@ internal class PrepareStatementCommandState : MySqlGatewayState {
     override fun onDownstreamMessage(
         ctx: ChannelHandlerContext,
         msg: Packet,
-    ): MySqlGatewayState {
+    ): StateResult {
         check(!requested) { "Duplicate COM_STMT_PREPARE request received." }
         requested = true
 
         val payload = msg.payload
-        payload.markReaderIndex()
-
         val query = payload.readRestOfPacketString().toString(Charsets.UTF_8)
         logger.trace { "Received COM_STMT_PREPARE request for query: $query" }
 
         preparedStatementBuilder.query(query)
 
-        payload.resetReaderIndex()
-        ctx.upstream().writeAndFlush(msg)
-        return this
+        return StateResult(
+            nextState = this,
+            action = MessageAction.Forward,
+        )
     }
 
     override fun onUpstreamMessage(
         ctx: ChannelHandlerContext,
         msg: Packet,
-    ): MySqlGatewayState {
+    ): StateResult {
         check(requested) { "COM_STMT_PREPARE response received without a prior request" }
 
         logger.trace { "COM_STMT_PREPARE Response state: $responseState" }
@@ -64,7 +62,7 @@ internal class PrepareStatementCommandState : MySqlGatewayState {
                 ResponseState.COLUMNS_EOF -> handleEofPacket(ctx, msg)
             }
 
-        if (nextState is CommandPhaseState) {
+        if (nextState.nextState is CommandPhaseState) {
             val preparedStatement = preparedStatementBuilder.build()
             ctx.preparedStatements().put(preparedStatement.statementId, preparedStatement)
         }
@@ -75,18 +73,18 @@ internal class PrepareStatementCommandState : MySqlGatewayState {
     private fun handleFirstResponse(
         ctx: ChannelHandlerContext,
         packet: Packet,
-    ): MySqlGatewayState {
+    ): StateResult {
         val payload = packet.payload
-        payload.markReaderIndex()
-
         if (packet.isErrorPacket()) {
             logger.trace {
                 val errPacket = payload.peek { Packet.Error.readFrom(it, ctx.capabilities().enumSet()) }
                 "Received COM_STMT_PREPARE error response: $errPacket"
             }
-            payload.resetReaderIndex()
-            ctx.downstream().writeAndFlush(packet)
-            return CommandPhaseState()
+
+            return StateResult(
+                nextState = CommandPhaseState(),
+                action = MessageAction.Forward,
+            )
         }
 
         // Read the first response packet
@@ -110,64 +108,65 @@ internal class PrepareStatementCommandState : MySqlGatewayState {
             "COM_STMT_PREPARE Response: statementId=$statementId, numColumns=$numColumns, numParams=$numParams, warningCount=$warningCount, metadataFollows=$metadataFollows"
         }
 
-        payload.resetReaderIndex()
-        ctx.downstream().writeAndFlush(packet)
-
-        return if (numParams > 0U || metadataFollows) {
-            responseState = ResponseState.PARAMS
-            this // Wait for parameter metadata packets
-        } else if (numColumns > 0U) {
-            responseState = ResponseState.COLUMNS
-            this // Wait for column metadata packets
-        } else {
-            CommandPhaseState() // No parameters, proceed to command phase
-        }
+        val nextState =
+            if (numParams > 0U || metadataFollows) {
+                responseState = ResponseState.PARAMS
+                this // Wait for parameter metadata packets
+            } else if (numColumns > 0U) {
+                responseState = ResponseState.COLUMNS
+                this // Wait for column metadata packets
+            } else {
+                CommandPhaseState() // No parameters, proceed to command phase
+            }
+        return StateResult(
+            nextState = nextState,
+            action = MessageAction.Forward,
+        )
     }
 
     private fun handleParamsResponse(
         ctx: ChannelHandlerContext,
         packet: Packet,
-    ): MySqlGatewayState {
-        val payload = packet.payload
-        payload.markReaderIndex()
-
+    ): StateResult {
         check(++parameterDefinitionCount <= numParams) {
             "Received more parameter definitions than expected: $parameterDefinitionCount > $numParams"
         }
 
+        val payload = packet.payload
         val columnDef = ColumnDefinition41.readFrom(payload)
         preparedStatementBuilder.addParameterDefinition(columnDef)
         logger.trace { "Received parameter definition: $columnDef" }
 
-        payload.resetReaderIndex()
-        ctx.downstream().writeAndFlush(packet)
-
-        if (parameterDefinitionCount == numParams) {
-            if (!ctx.capabilities().contains(CapabilityFlag.CLIENT_DEPRECATE_EOF)) {
-                responseState = ResponseState.PARAMS_EOF
-                return this // Wait for EOF packet
-            } else if (numColumns > 0U || metadataFollows) {
-                responseState = ResponseState.COLUMNS
-                return this // Wait for column definitions
+        val nextState =
+            if (parameterDefinitionCount == numParams) {
+                if (!ctx.capabilities().contains(CapabilityFlag.CLIENT_DEPRECATE_EOF)) {
+                    responseState = ResponseState.PARAMS_EOF
+                    this // Wait for EOF packet
+                } else if (numColumns > 0U || metadataFollows) {
+                    responseState = ResponseState.COLUMNS
+                    this // Wait for column definitions
+                } else {
+                    CommandPhaseState() // No columns, return to command phase
+                }
             } else {
-                return CommandPhaseState() // No columns, return to command phase
+                this // Wait next parameter definition or EOF packet
             }
-        }
 
-        return this // Wait next parameter definition or EOF packet
+        return StateResult(
+            nextState = nextState,
+            action = MessageAction.Forward,
+        )
     }
 
     private fun handleColumnsResponse(
         ctx: ChannelHandlerContext,
         packet: Packet,
-    ): MySqlGatewayState {
-        val payload = packet.payload
-        payload.markReaderIndex()
-
+    ): StateResult {
         check(++columnDefinitionCount <= numColumns) {
             "Received more column definitions than expected: $columnDefinitionCount > $numColumns"
         }
 
+        val payload = packet.payload
         val columnDef = ColumnDefinition41.readFrom(payload)
         preparedStatementBuilder.addColumnDefinition(columnDef)
         logger.trace { "Received column definition: $columnDef" }
@@ -184,20 +183,19 @@ internal class PrepareStatementCommandState : MySqlGatewayState {
                 this // Continue to next column definition
             }
 
-        payload.resetReaderIndex()
-        ctx.downstream().writeAndFlush(packet)
-        return nextState
+        return StateResult(
+            nextState = nextState,
+            action = MessageAction.Forward,
+        )
     }
 
     private fun handleEofPacket(
         ctx: ChannelHandlerContext,
         packet: Packet,
-    ): MySqlGatewayState {
-        val payload = packet.payload
-        payload.markReaderIndex()
-
+    ): StateResult {
         check(packet.isEofPacket()) { "Expected EOF packet, but received: $packet" }
 
+        val payload = packet.payload
         val nextState =
             when (responseState) {
                 ResponseState.PARAMS_EOF -> {
@@ -225,9 +223,10 @@ internal class PrepareStatementCommandState : MySqlGatewayState {
                 }
             }
 
-        payload.resetReaderIndex()
-        ctx.downstream().writeAndFlush(packet)
-        return nextState
+        return StateResult(
+            nextState = nextState,
+            action = MessageAction.Forward,
+        )
     }
 
     companion object {

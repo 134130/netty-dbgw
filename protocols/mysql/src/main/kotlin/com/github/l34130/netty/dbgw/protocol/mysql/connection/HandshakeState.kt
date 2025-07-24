@@ -1,6 +1,6 @@
 package com.github.l34130.netty.dbgw.protocol.mysql.connection
 
-import com.github.l34130.netty.dbgw.core.downstream
+import com.github.l34130.netty.dbgw.core.MessageAction
 import com.github.l34130.netty.dbgw.core.utils.toEnumSet
 import com.github.l34130.netty.dbgw.protocol.mysql.MySqlGatewayState
 import com.github.l34130.netty.dbgw.protocol.mysql.Packet
@@ -14,14 +14,12 @@ import java.util.EnumSet
 import kotlin.math.max
 
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_connection_phase_packets_protocol_handshake.html
-internal class HandshakeState : MySqlGatewayState {
+internal class HandshakeState : MySqlGatewayState() {
     override fun onUpstreamMessage(
         ctx: ChannelHandlerContext,
         msg: Packet,
-    ): MySqlGatewayState {
+    ): StateResult {
         val payload = msg.payload
-        payload.markReaderIndex()
-
         val protocolVersion = payload.readFixedLengthInteger(1)
         if (protocolVersion != 10UL) {
             logger.error { "Unsupported MySQL protocol version: $protocolVersion" }
@@ -65,10 +63,10 @@ internal class HandshakeState : MySqlGatewayState {
             logger.trace { "Server Auth Plugin Name: ${authPluginName.toString(Charsets.UTF_8)}" }
         }
 
-        payload.resetReaderIndex()
-        val downstream = ctx.downstream()
-        downstream.writeAndFlush(msg)
-        return HandshakeResponseState()
+        return StateResult(
+            nextState = HandshakeResponseState(),
+            action = MessageAction.Forward,
+        )
     }
 
     companion object {

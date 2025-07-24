@@ -1,6 +1,6 @@
 package com.github.l34130.netty.dbgw.protocol.mysql.connection
 
-import com.github.l34130.netty.dbgw.core.downstream
+import com.github.l34130.netty.dbgw.core.MessageAction
 import com.github.l34130.netty.dbgw.core.utils.netty.peek
 import com.github.l34130.netty.dbgw.protocol.mysql.MySqlGatewayState
 import com.github.l34130.netty.dbgw.protocol.mysql.Packet
@@ -9,33 +9,34 @@ import com.github.l34130.netty.dbgw.protocol.mysql.command.CommandPhaseState
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.channel.ChannelHandlerContext
 
-internal class AuthExchangeContinuationState : MySqlGatewayState {
+internal class AuthExchangeContinuationState : MySqlGatewayState() {
     override fun onUpstreamMessage(
         ctx: ChannelHandlerContext,
         msg: Packet,
-    ): MySqlGatewayState {
+    ): StateResult {
         val payload = msg.payload
 
         if (payload.peek { it.readUnsignedByte().toUInt() } == 0x01u) {
             // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_connection_phase_packets_protocol_auth_more_data.html
             // Extra authentication data beyond the initial challenge
-            ctx.downstream().writeAndFlush(msg)
-            return this
+            return StateResult(
+                nextState = this,
+                action = MessageAction.Forward,
+            )
         }
 
         if (msg.isOkPacket()) {
             logger.trace { "Authentication succeeded" }
-            ctx.downstream().writeAndFlush(msg)
-            return CommandPhaseState()
+            return StateResult(
+                nextState = CommandPhaseState(),
+                action = MessageAction.Forward,
+            )
         }
 
         if (msg.isErrorPacket()) {
-            msg.payload.markReaderIndex()
             logger.trace {
                 "Authentication failed: ${Packet.Error.readFrom(msg.payload, ctx.capabilities().enumSet())}"
             }
-            msg.payload.resetReaderIndex()
-            ctx.downstream().writeAndFlush(msg)
             TODO("Handle authentication error")
         }
 

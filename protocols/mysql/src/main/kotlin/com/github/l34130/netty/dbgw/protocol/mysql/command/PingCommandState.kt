@@ -1,32 +1,35 @@
 package com.github.l34130.netty.dbgw.protocol.mysql.command
 
-import com.github.l34130.netty.dbgw.core.downstream
-import com.github.l34130.netty.dbgw.core.upstream
+import com.github.l34130.netty.dbgw.core.MessageAction
 import com.github.l34130.netty.dbgw.protocol.mysql.MySqlGatewayState
 import com.github.l34130.netty.dbgw.protocol.mysql.Packet
 import io.netty.channel.ChannelHandlerContext
 
-internal class PingCommandState : MySqlGatewayState {
+internal class PingCommandState : MySqlGatewayState() {
     private var requested = false
 
     override fun onDownstreamMessage(
         ctx: ChannelHandlerContext,
         msg: Packet,
-    ): MySqlGatewayState {
+    ): StateResult {
         check(!requested) { "Duplicate COM_PING request received." }
         requested = true
-        ctx.upstream().writeAndFlush(msg)
-        return this
+        return StateResult(
+            nextState = this,
+            action = MessageAction.Forward,
+        )
     }
 
     override fun onUpstreamMessage(
         ctx: ChannelHandlerContext,
         msg: Packet,
-    ): MySqlGatewayState {
+    ): StateResult {
         check(requested) { "Received COM_PING response without a prior request." }
         check(msg.isOkPacket()) { "Expected OK packet for COM_PING, but got: $msg" }
 
-        ctx.downstream().writeAndFlush(msg)
-        return CommandPhaseState()
+        return StateResult(
+            nextState = CommandPhaseState(),
+            action = MessageAction.Forward,
+        )
     }
 }

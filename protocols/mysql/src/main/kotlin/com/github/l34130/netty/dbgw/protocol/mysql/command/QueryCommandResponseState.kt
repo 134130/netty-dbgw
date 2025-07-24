@@ -1,6 +1,6 @@
 package com.github.l34130.netty.dbgw.protocol.mysql.command
 
-import com.github.l34130.netty.dbgw.core.downstream
+import com.github.l34130.netty.dbgw.core.MessageAction
 import com.github.l34130.netty.dbgw.core.utils.netty.peek
 import com.github.l34130.netty.dbgw.protocol.mysql.MySqlGatewayState
 import com.github.l34130.netty.dbgw.protocol.mysql.Packet
@@ -14,22 +14,22 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.buffer.ByteBuf
 import io.netty.channel.ChannelHandlerContext
 
-internal class QueryCommandResponseState : MySqlGatewayState {
+internal class QueryCommandResponseState : MySqlGatewayState() {
     override fun onUpstreamMessage(
         ctx: ChannelHandlerContext,
         msg: Packet,
-    ): MySqlGatewayState {
+    ): StateResult {
         val payload = msg.payload
-        payload.markReaderIndex()
 
         if (msg.isOkPacket()) {
             logger.trace {
                 val okPacket = Packet.Ok.readFrom(payload, ctx.capabilities().enumSet())
                 "Received COM_QUERY_RESPONSE: $okPacket"
             }
-            msg.payload.resetReaderIndex()
-            ctx.downstream().writeAndFlush(msg)
-            return CommandPhaseState()
+            return StateResult(
+                nextState = CommandPhaseState(),
+                action = MessageAction.Forward,
+            )
         }
 
         if (msg.isErrorPacket()) {
@@ -37,16 +37,15 @@ internal class QueryCommandResponseState : MySqlGatewayState {
                 val errorPacket = Packet.Error.readFrom(payload, ctx.capabilities().enumSet())
                 "Received COM_QUERY_RESPONSE: $errorPacket"
             }
-            msg.payload.resetReaderIndex()
-            ctx.downstream().writeAndFlush(msg)
-            return CommandPhaseState()
+            return StateResult(
+                nextState = CommandPhaseState(),
+                action = MessageAction.Forward,
+            )
         }
 
         if (msg.payload.peek { it.readUnsignedByte().toUInt() } == 0xFBu) {
             TODO("Unhandled 0xFB byte in COM_QUERY_RESPONSE, this indicates a More Data packet.")
         }
-
-        msg.payload.resetReaderIndex()
         return TextResultsetState().onUpstreamMessage(ctx, msg)
     }
 
@@ -54,7 +53,7 @@ internal class QueryCommandResponseState : MySqlGatewayState {
         private val logger = KotlinLogging.logger {}
     }
 
-    private class TextResultsetState : MySqlGatewayState {
+    private class TextResultsetState : MySqlGatewayState() {
         private var state: State = State.FIELD_COUNT
         private var columnCount: ULong = 0UL
         private var metadataFollows: Boolean = false
@@ -63,7 +62,7 @@ internal class QueryCommandResponseState : MySqlGatewayState {
         override fun onUpstreamMessage(
             ctx: ChannelHandlerContext,
             packet: Packet,
-        ): MySqlGatewayState {
+        ): StateResult {
             logger.trace { "Processing TextResultSet: currentState='${state.name}'" }
 
             val nextState =
@@ -81,29 +80,26 @@ internal class QueryCommandResponseState : MySqlGatewayState {
         private fun handleFieldCountState(
             ctx: ChannelHandlerContext,
             packet: Packet,
-        ): MySqlGatewayState {
+        ): StateResult {
             val payload = packet.payload
-            payload.markReaderIndex()
-
             if (ctx.capabilities().contains(CapabilityFlag.CLIENT_OPTIONAL_RESULTSET_METADATA)) {
                 metadataFollows = payload.readFixedLengthInteger(1) == 1UL
             }
             this.columnCount = payload.readLenEncInteger()
             logger.trace { "Received column count: $columnCount, metadataFollows: $metadataFollows" }
 
-            payload.resetReaderIndex()
-            ctx.downstream().writeAndFlush(packet)
-
             this.state = State.FIELD
-            return this
+            return StateResult(
+                nextState = this,
+                action = MessageAction.Forward,
+            )
         }
 
         private fun handleFieldState(
             ctx: ChannelHandlerContext,
             packet: Packet,
-        ): MySqlGatewayState {
+        ): StateResult {
             val payload = packet.payload
-            payload.markReaderIndex()
 
             // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_com_query_response_text_resultset_column_definition.html
             logger.trace {
@@ -122,15 +118,16 @@ internal class QueryCommandResponseState : MySqlGatewayState {
                 this.state = State.ROW
             }
 
-            payload.resetReaderIndex()
-            ctx.downstream().writeAndFlush(packet)
-            return this
+            return StateResult(
+                nextState = this,
+                action = MessageAction.Forward,
+            )
         }
 
         private fun handleEofState(
             ctx: ChannelHandlerContext,
             packet: Packet,
-        ): MySqlGatewayState {
+        ): StateResult {
             logger.trace {
                 val eofPacket =
                     packet.payload.peek {
@@ -139,16 +136,17 @@ internal class QueryCommandResponseState : MySqlGatewayState {
                 "End of metadata reached: $eofPacket"
             }
             state = State.ROW
-            ctx.downstream().writeAndFlush(packet)
-            return this
+            return StateResult(
+                nextState = this,
+                action = MessageAction.Forward,
+            )
         }
 
         private fun handleRowState(
             ctx: ChannelHandlerContext,
             packet: Packet,
-        ): MySqlGatewayState {
+        ): StateResult {
             val payload = packet.payload
-            payload.markReaderIndex()
 
             handleTerminator(ctx, packet)?.let { nextState ->
                 return nextState // If terminator was handled, return the next state
@@ -159,27 +157,27 @@ internal class QueryCommandResponseState : MySqlGatewayState {
                 "Row Data: $rowData"
             }
 
-            payload.resetReaderIndex()
-            ctx.downstream().writeAndFlush(packet)
-            return this // Continue in the same state for more rows
+            return StateResult(
+                nextState = this,
+                action = MessageAction.Forward,
+            ) // Continue in the same state for more rows
         }
 
         private fun handleTerminator(
             ctx: ChannelHandlerContext,
             packet: Packet,
-        ): MySqlGatewayState? {
+        ): StateResult? {
             val payload = packet.payload
-            payload.markReaderIndex()
-
             val capabilities = ctx.capabilities()
 
             if (packet.isErrorPacket()) {
                 val errPacket = Packet.Error.readFrom(payload, capabilities.enumSet())
                 logger.debug { "Text Resultset terminated: $errPacket" }
 
-                payload.resetReaderIndex()
-                ctx.downstream().writeAndFlush(errPacket)
-                return CommandPhaseState() // Return to command phase
+                return StateResult(
+                    nextState = CommandPhaseState(), // Return to command phase
+                    action = MessageAction.Forward,
+                )
             }
 
             val moreResultsExists =
@@ -203,9 +201,10 @@ internal class QueryCommandResponseState : MySqlGatewayState {
                     CommandPhaseState() // No more results, return to command phase
                 }
 
-            payload.resetReaderIndex()
-            ctx.downstream().writeAndFlush(packet)
-            return nextState
+            return StateResult(
+                nextState = nextState,
+                action = MessageAction.Forward,
+            )
         }
 
         // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_com_query_response_text_resultset_row.html

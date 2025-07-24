@@ -34,7 +34,7 @@ class StateMachineHandler(
                 }
                 is MessageAction.Intercept -> {
                     ReferenceCountUtil.release(msg) // Release the original message as we are intercepting it.
-                    ctx.writeAndFlush(action.response) // Write the intercepted response back to the channel.
+                    ctx.writeAndFlush(action.msg) // Write the intercepted response back to the channel.
                 }
                 is MessageAction.Terminate -> {
                     ReferenceCountUtil.release(msg) // Release the original message as we are terminating the processing.
