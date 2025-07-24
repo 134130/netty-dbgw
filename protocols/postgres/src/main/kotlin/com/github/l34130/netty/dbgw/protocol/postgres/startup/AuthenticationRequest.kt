@@ -17,7 +17,7 @@ sealed class AuthenticationRequest {
             return when (type) {
                 0 -> AuthenticationOk
                 5 -> {
-                    val salt = ByteBufUtil.getBytes(msg.content.readSlice(4))
+                    val salt = ByteBufUtil.getBytes(content.readSlice(4))
                     AuthenticationMD5Password(salt)
                 }
                 10 -> {
