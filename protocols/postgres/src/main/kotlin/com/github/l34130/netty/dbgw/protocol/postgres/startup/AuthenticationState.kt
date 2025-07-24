@@ -4,6 +4,7 @@ import com.github.l34130.netty.dbgw.core.DatabaseGatewayState
 import com.github.l34130.netty.dbgw.core.MessageAction
 import com.github.l34130.netty.dbgw.protocol.postgres.Message
 import com.github.l34130.netty.dbgw.protocol.postgres.MessageEncoder
+import com.github.l34130.netty.dbgw.protocol.postgres.message.ErrorResponse
 import com.github.l34130.netty.dbgw.protocol.postgres.message.ParameterStatusMessage
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.channel.ChannelHandlerContext
@@ -61,44 +62,52 @@ class AuthenticationState : DatabaseGatewayState<Message, Message>() {
             }
         }
 
-        if (msg.type == 'R') {
-            authenticationRequest = AuthenticationRequest.readFrom(msg)
+        return when (msg.type) {
+            'R' -> {
+                authenticationRequest = AuthenticationRequest.readFrom(msg)
 
-            return when (authenticationRequest) {
-                is AuthenticationRequest.AuthenticationOk -> {
-                    logger.trace { "Authentication successful: $authenticationRequest" }
-                    StateResult(
-                        nextState = AuthenticationResultState(),
-                        action = MessageAction.Forward,
-                    )
-                }
-                is AuthenticationRequest.AuthenticationSASLFinal -> {
-                    logger.trace { "Final SASL authentication request: $authenticationRequest" }
-                    StateResult(
-                        nextState = AuthenticationResultState(),
-                        action = MessageAction.Forward,
-                    )
-                }
-                else -> {
-                    logger.trace { "Authentication request: $authenticationRequest" }
-                    StateResult(
-                        nextState = this,
-                        action = MessageAction.Forward,
-                    )
+                when (authenticationRequest) {
+                    is AuthenticationRequest.AuthenticationOk -> {
+                        logger.trace { "Authentication successful: $authenticationRequest" }
+                        StateResult(
+                            nextState = AuthenticationResultState(),
+                            action = MessageAction.Forward,
+                        )
+                    }
+                    is AuthenticationRequest.AuthenticationSASLFinal -> {
+                        logger.trace { "Final SASL authentication request: $authenticationRequest" }
+                        StateResult(
+                            nextState = AuthenticationResultState(),
+                            action = MessageAction.Forward,
+                        )
+                    }
+                    else -> {
+                        logger.trace { "Authentication request: $authenticationRequest" }
+                        StateResult(
+                            nextState = this,
+                            action = MessageAction.Forward,
+                        )
+                    }
                 }
             }
+            'S' -> {
+                val paramStatusMsg = ParameterStatusMessage.readFrom(msg)
+                logger.trace { "Parameter: ${paramStatusMsg.parameterName} = ${paramStatusMsg.parameterValue}" }
+                StateResult(
+                    nextState = this,
+                    action = MessageAction.Forward,
+                )
+            }
+            'E' -> {
+                val errorResp = ErrorResponse.readFrom(msg)
+                logger.trace { "Error response: $errorResp" }
+                StateResult(
+                    nextState = this,
+                    action = MessageAction.Forward,
+                )
+            }
+            else -> TODO("Unsupported message type: ${msg.type}")
         }
-
-        if (msg.type == 'S') {
-            val paramStatusMsg = ParameterStatusMessage.readFrom(msg)
-            logger.trace { "Parameter: ${paramStatusMsg.parameterName} = ${paramStatusMsg.parameterValue}" }
-            return StateResult(
-                nextState = this,
-                action = MessageAction.Forward,
-            )
-        }
-
-        TODO()
     }
 
     companion object {

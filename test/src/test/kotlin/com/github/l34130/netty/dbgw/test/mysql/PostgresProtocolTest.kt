@@ -53,7 +53,7 @@ abstract class PostgresProtocolTest(
             }
         } catch (e: SQLException) {
             assertTrue(
-                e.message?.contains("Access denied for user 'invalid_user'@") == true,
+                e.message?.contains("password authentication failed for user \"invalid_user\"") == true,
                 "Expected access denied error, got ${e.message}",
             )
         }
