@@ -111,14 +111,14 @@ abstract class PostgresProtocolTest(
             },
             dynamicTest("test date data type") {
                 createConnection().use { conn ->
-                    val result = conn.executeQuery("SELECT CURDATE() AS date_value")
+                    val result = conn.executeQuery("SELECT CURRENT_DATE() AS date_value")
                     assertEquals("date_value", result[0][0], "Expected column name to be 'date_value'")
                     assertIs<Date>(result[1][0], "Expected date value to be a string")
                 }
             },
             dynamicTest("test time data type") {
                 createConnection().use { conn ->
-                    val result = conn.executeQuery("SELECT CURTIME() AS time_value")
+                    val result = conn.executeQuery("SELECT CURRENT_TIME() AS time_value")
                     assertEquals("time_value", result[0][0], "Expected column name to be 'time_value'")
                     assertIs<Time>(result[1][0], "Expected time value to be a string")
                 }
@@ -134,7 +134,7 @@ abstract class PostgresProtocolTest(
                 createConnection().use { conn ->
                     val result = conn.executeQuery("SELECT TRUE AS bool_value")
                     assertEquals("bool_value", result[0][0], "Expected column name to be 'bool_value'")
-                    assertEquals(1L, result[1][0], "Expected boolean value to be true")
+                    assertEquals(true, result[1][0], "Expected boolean value to be true")
                 }
             },
             dynamicTest("test float data type") {
@@ -146,7 +146,7 @@ abstract class PostgresProtocolTest(
             },
             dynamicTest("test json data type") {
                 createConnection().use { conn ->
-                    val result = conn.executeQuery("SELECT JSON_OBJECT('key', 'value') AS json_value")
+                    val result = conn.executeQuery("SELECT '{\"key\": \"value\"}'::json AS json_value")
                     assertEquals("json_value", result[0][0], "Expected column name to be 'json_value'")
                     assertEquals("{\"key\": \"value\"}", result[1][0], "Expected JSON value to be {\"key\": \"value\"}")
                 }

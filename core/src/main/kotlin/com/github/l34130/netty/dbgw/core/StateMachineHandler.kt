@@ -18,13 +18,12 @@ class StateMachineHandler(
         ctx: ChannelHandlerContext,
         msg: Any,
     ) {
+        val relay = getRelayChannel(ctx)
         val action =
             when (direction) {
                 MessageDirection.DOWNSTREAM -> stateMachine.processDownstreamMessage(ctx, msg)
                 MessageDirection.UPSTREAM -> stateMachine.processUpstreamMessage(ctx, msg)
             }
-
-        val relay = getRelayChannel(ctx)
 
         val channelFuture =
             when (action) {

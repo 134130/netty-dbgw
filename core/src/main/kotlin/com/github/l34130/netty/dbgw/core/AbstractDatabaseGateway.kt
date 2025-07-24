@@ -66,14 +66,20 @@ abstract class AbstractDatabaseGateway(
 
     private inner class DatabaseGatewayChannelInitializer : ChannelInitializer<Channel>() {
         override fun initChannel(ch: Channel) {
-            ch.pipeline().addLast(
-                ProxyConnectionHandler(
-                    config = config,
-                    downstreamHandlers = createDownstreamHandlers(),
-                    upstreamHandlers = createUpstreamHandlers(),
-                    stateMachine = createStateMachine(),
-                ),
-            )
+            val downstream = ch
+
+            downstream.config().isAutoRead = false
+
+            downstream
+                .pipeline()
+                .addLast(
+                    ProxyConnectionHandler(
+                        config = config,
+                        downstreamHandlers = createDownstreamHandlers(),
+                        upstreamHandlers = createUpstreamHandlers(),
+                        stateMachine = createStateMachine(),
+                    ),
+                )
         }
     }
 }
