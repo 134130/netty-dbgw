@@ -17,6 +17,10 @@ sealed class MessageAction {
         override fun toString(): String = "Intercept(msg=$msg)"
     }
 
+    object Drop : MessageAction() {
+        override fun toString(): String = "Drop"
+    }
+
     data class Terminate(
         val reason: String?,
     ) : MessageAction() {

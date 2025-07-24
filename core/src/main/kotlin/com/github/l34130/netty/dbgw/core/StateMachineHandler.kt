@@ -36,6 +36,10 @@ class StateMachineHandler(
                     ReferenceCountUtil.release(msg) // Release the original message as we are intercepting it.
                     ctx.writeAndFlush(action.msg) // Write the intercepted response back to the channel.
                 }
+                MessageAction.Drop -> {
+                    ReferenceCountUtil.release(msg) // Release the original message as we are dropping it.
+                    ctx.newSucceededFuture()
+                }
                 is MessageAction.Terminate -> {
                     ReferenceCountUtil.release(msg) // Release the original message as we are terminating the processing.
                     logger.info { "Terminating processing: ${action.reason ?: "no reason provided"}" }

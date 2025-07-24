@@ -114,7 +114,7 @@ internal class HandshakeResponseState : MySqlGatewayState() {
 
             return StateResult(
                 nextState = this, // Wait for the HandshakeResponse packet again
-                action = MessageAction.Forward,
+                action = MessageAction.Drop, // Drop the original packet as we are handled it with SSL
             )
         }
 
