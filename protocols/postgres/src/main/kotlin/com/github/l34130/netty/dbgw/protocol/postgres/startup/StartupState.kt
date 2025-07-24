@@ -20,6 +20,7 @@ class StartupState : DatabaseGatewayState<ByteBuf, Message>() {
         val startupMsg = StartupMessage.readFrom(msg)
         logger.debug { "$startupMsg" }
 
+        // Need to reset the reader index because this does not reset the reader index by MessageDecoder
         msg.resetReaderIndex()
 
         ctx.pipeline().also {

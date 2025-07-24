@@ -43,27 +43,31 @@ abstract class AbstractGatewayChannelInitializer<T, K : GatewayStateMachine<T, G
 
         override fun channelActive(ctx: ChannelHandlerContext) {
             val (inetHost, inetPort) = config.upstreamHost to config.upstreamPort
+            val downstream = ctx.channel()
 
-            val upstream =
+            val upstreamFuture =
                 Bootstrap()
                     .group(ctx.channel().eventLoop())
                     .channel(ctx.channel().javaClass)
                     .handler(UpstreamConnectionHandler(stateMachine))
                     .connect(inetHost, inetPort)
-                    .channel()
-                    .apply {
-                        pipeline().addFirst(createMessageDecoder(), createMessageEncoder())
-                    }
 
-            val downstream = ctx.channel()
-            downstream.attr(GatewayAttrs.UPSTREAM_ATTR_KEY).set(upstream)
-            upstream.attr(GatewayAttrs.DOWNSTREAM_ATTR_KEY).set(downstream)
+            upstreamFuture
+                .addListener { future ->
+                    val upstream = upstreamFuture.channel()
+                    upstream
+                        .pipeline()
+                        .addFirst(createMessageDecoder(), createMessageEncoder())
 
-            downstream.attr(GatewayAttrs.GATEWAY_CONFIG_ATTR_KEY).set(config)
-            upstream.attr(GatewayAttrs.GATEWAY_CONFIG_ATTR_KEY).set(config)
+                    downstream.attr(GatewayAttrs.UPSTREAM_ATTR_KEY).set(upstream)
+                    upstream.attr(GatewayAttrs.DOWNSTREAM_ATTR_KEY).set(downstream)
 
-            downstreamChannelActive(downstream)
-            upstreamChannelActive(upstream)
+                    downstream.attr(GatewayAttrs.GATEWAY_CONFIG_ATTR_KEY).set(config)
+                    upstream.attr(GatewayAttrs.GATEWAY_CONFIG_ATTR_KEY).set(config)
+
+                    downstreamChannelActive(downstream)
+                    upstreamChannelActive(upstream)
+                }
         }
 
         override fun channelRead0(

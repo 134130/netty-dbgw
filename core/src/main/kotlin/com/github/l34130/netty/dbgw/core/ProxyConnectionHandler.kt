@@ -1,6 +1,7 @@
 package com.github.l34130.netty.dbgw.core
 
 import com.github.l34130.netty.dbgw.core.config.GatewayConfig
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.bootstrap.Bootstrap
 import io.netty.channel.Channel
 import io.netty.channel.ChannelHandler
@@ -16,7 +17,10 @@ class ProxyConnectionHandler(
 ) : ChannelInboundHandlerAdapter() {
     override fun channelActive(ctx: ChannelHandlerContext) {
         val downstream = ctx.channel()
-        val upstream =
+
+        logger.debug { "Connected from downstream: ${downstream.remoteAddress()}" }
+
+        val upstreamFuture =
             Bootstrap()
                 .group(downstream.eventLoop())
                 .channel(downstream.javaClass)
@@ -35,10 +39,18 @@ class ProxyConnectionHandler(
                         }
                     },
                 ).connect(config.upstreamHost, config.upstreamPort)
-                .channel()
 
-        downstream.attr(GatewayAttrs.UPSTREAM_ATTR_KEY).set(upstream)
-        upstream.attr(GatewayAttrs.DOWNSTREAM_ATTR_KEY).set(downstream)
+        upstreamFuture.addListener { future ->
+            val upstream = upstreamFuture.channel()
+
+            logger.debug { "Connected to upstream: ${upstream.remoteAddress()}" }
+
+            downstream.attr(GatewayAttrs.UPSTREAM_ATTR_KEY).set(upstream)
+            upstream.attr(GatewayAttrs.DOWNSTREAM_ATTR_KEY).set(downstream)
+
+            downstream.config().isAutoRead = true
+            downstream.read()
+        }
 
         downstream.pipeline().addLast(
             *downstreamHandlers.toTypedArray(),
@@ -51,5 +63,9 @@ class ProxyConnectionHandler(
         }
 
         downstream.pipeline().remove(this)
+    }
+
+    companion object {
+        private val logger = KotlinLogging.logger { }
     }
 }

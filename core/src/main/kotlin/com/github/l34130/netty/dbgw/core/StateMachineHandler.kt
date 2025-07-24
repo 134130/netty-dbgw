@@ -26,20 +26,28 @@ class StateMachineHandler(
 
         val relay = getRelayChannel(ctx)
 
-        when (action) {
-            MessageAction.Forward -> relay.writeAndFlush(msg) // Forward the message as is.
-            is MessageAction.Transform -> {
-                ReferenceCountUtil.release(msg) // Release the original message as we are replacing it with a new one.
-                relay.writeAndFlush(action.newMsg) // Forward the transformed message.
+        val channelFuture =
+            when (action) {
+                MessageAction.Forward -> relay.writeAndFlush(msg) // Forward the message as is.
+                is MessageAction.Transform -> {
+                    ReferenceCountUtil.release(msg) // Release the original message as we are replacing it with a new one.
+                    relay.writeAndFlush(action.newMsg) // Forward the transformed message.
+                }
+                is MessageAction.Intercept -> {
+                    ReferenceCountUtil.release(msg) // Release the original message as we are intercepting it.
+                    ctx.writeAndFlush(action.response) // Write the intercepted response back to the channel.
+                }
+                is MessageAction.Terminate -> {
+                    ReferenceCountUtil.release(msg) // Release the original message as we are terminating the processing.
+                    logger.info { "Terminating processing: ${action.reason ?: "no reason provided"}" }
+                    ctx.channel().closeOnFlush() // Close the channel on flush.
+                }
             }
-            is MessageAction.Intercept -> {
-                ReferenceCountUtil.release(msg) // Release the original message as we are intercepting it.
-                ctx.writeAndFlush(action.response) // Write the intercepted response back to the channel.
-            }
-            is MessageAction.Terminate -> {
-                ReferenceCountUtil.release(msg) // Release the original message as we are terminating the processing.
-                logger.info { "Terminating processing: ${action.reason ?: "no reason provided"}" }
-                ctx.channel().closeOnFlush() // Close the channel on flush.
+
+        channelFuture.addListener { future ->
+            if (!future.isSuccess) {
+                logger.error(future.cause()) { "Failed to process message in ${direction.name.lowercase()} direction" }
+                ctx.close()
             }
         }
     }
