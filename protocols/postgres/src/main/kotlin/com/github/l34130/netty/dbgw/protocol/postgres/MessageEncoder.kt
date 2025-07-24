@@ -15,5 +15,7 @@ class MessageEncoder : MessageToByteEncoder<Message>() {
         out.writeByte(msg.type.code) // Write the message type byte.
         out.writeInt(msg.content.readableBytes() + 4) // Length includes the 4-byte length field itself.
         out.writeBytes(msg.content)
+
+        msg.content.release() // Release the ByteBuf after writing to avoid memory leaks.
     }
 }
