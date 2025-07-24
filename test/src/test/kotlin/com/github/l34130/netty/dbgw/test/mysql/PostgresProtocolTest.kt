@@ -7,7 +7,7 @@ import java.sql.Connection
 import java.sql.Date
 import java.sql.SQLException
 import java.sql.Time
-import java.time.LocalDateTime
+import java.sql.Timestamp
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -111,23 +111,23 @@ abstract class PostgresProtocolTest(
             },
             dynamicTest("test date data type") {
                 createConnection().use { conn ->
-                    val result = conn.executeQuery("SELECT CURRENT_DATE() AS date_value")
+                    val result = conn.executeQuery("SELECT CURRENT_DATE AS date_value")
                     assertEquals("date_value", result[0][0], "Expected column name to be 'date_value'")
-                    assertIs<Date>(result[1][0], "Expected date value to be a string")
+                    assertIs<Date>(result[1][0], "Expected date value to be a Date")
                 }
             },
             dynamicTest("test time data type") {
                 createConnection().use { conn ->
-                    val result = conn.executeQuery("SELECT CURRENT_TIME() AS time_value")
+                    val result = conn.executeQuery("SELECT CURRENT_TIME AS time_value")
                     assertEquals("time_value", result[0][0], "Expected column name to be 'time_value'")
-                    assertIs<Time>(result[1][0], "Expected time value to be a string")
+                    assertIs<Time>(result[1][0], "Expected time value to be a Time")
                 }
             },
             dynamicTest("test timestamp data type") {
                 createConnection().use { conn ->
-                    val result = conn.executeQuery("SELECT CURRENT_TIMESTAMP() AS timestamp_value")
+                    val result = conn.executeQuery("SELECT CURRENT_TIMESTAMP AS timestamp_value")
                     assertEquals("timestamp_value", result[0][0], "Expected column name to be 'timestamp_value'")
-                    assertIs<LocalDateTime>(result[1][0], "Expected timestamp value to be a string")
+                    assertIs<Timestamp>(result[1][0], "Expected timestamp value to be a Timestamp")
                 }
             },
             dynamicTest("test boolean data type") {
@@ -148,7 +148,8 @@ abstract class PostgresProtocolTest(
                 createConnection().use { conn ->
                     val result = conn.executeQuery("SELECT '{\"key\": \"value\"}'::json AS json_value")
                     assertEquals("json_value", result[0][0], "Expected column name to be 'json_value'")
-                    assertEquals("{\"key\": \"value\"}", result[1][0], "Expected JSON value to be {\"key\": \"value\"}")
+                    // result[1][0] will be PGobject
+                    assertEquals("{\"key\": \"value\"}", result[1][0].toString(), "Expected JSON value to be {\"key\": \"value\"}")
                 }
             },
         )

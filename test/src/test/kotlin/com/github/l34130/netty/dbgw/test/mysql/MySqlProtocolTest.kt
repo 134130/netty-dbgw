@@ -131,28 +131,28 @@ abstract class MySqlProtocolTest(
                 createConnection().use { conn ->
                     val result = conn.executeQuery("SELECT CURDATE() AS date_value")
                     assertEquals("date_value", result[0][0], "Expected column name to be 'date_value'")
-                    assertIs<Date>(result[1][0], "Expected date value to be a string")
+                    assertIs<Date>(result[1][0], "Expected date value to be a Date")
                 }
             },
             dynamicTest("test time data type") {
                 createConnection().use { conn ->
                     val result = conn.executeQuery("SELECT CURTIME() AS time_value")
                     assertEquals("time_value", result[0][0], "Expected column name to be 'time_value'")
-                    assertIs<Time>(result[1][0], "Expected time value to be a string")
+                    assertIs<Time>(result[1][0], "Expected time value to be a Time")
                 }
             },
             dynamicTest("test timestamp data type") {
                 createConnection().use { conn ->
                     val result = conn.executeQuery("SELECT CURRENT_TIMESTAMP() AS timestamp_value")
                     assertEquals("timestamp_value", result[0][0], "Expected column name to be 'timestamp_value'")
-                    assertIs<LocalDateTime>(result[1][0], "Expected timestamp value to be a string")
+                    assertIs<LocalDateTime>(result[1][0], "Expected timestamp value to be a LocalDateTime")
                 }
             },
             dynamicTest("test boolean data type") {
                 createConnection().use { conn ->
                     val result = conn.executeQuery("SELECT TRUE AS bool_value")
                     assertEquals("bool_value", result[0][0], "Expected column name to be 'bool_value'")
-                    assertEquals(1L, result[1][0], "Expected boolean value to be true")
+                    assertEquals(1L, result[1][0], "Expected boolean value to be 1L")
                 }
             },
             dynamicTest("test float data type") {
