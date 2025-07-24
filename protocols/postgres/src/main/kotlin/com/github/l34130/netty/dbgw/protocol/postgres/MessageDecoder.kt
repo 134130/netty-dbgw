@@ -24,7 +24,7 @@ class MessageDecoder : ByteToMessageDecoder() {
             return
         }
 
-        val messageContent = `in`.readBytes(length)
+        val messageContent = `in`.readRetainedSlice(length)
         out += Message(messageType, messageContent)
     }
 }
