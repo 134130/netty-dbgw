@@ -15,6 +15,8 @@ class MessageDecoder : ByteToMessageDecoder() {
             return
         }
 
+        `in`.markReaderIndex()
+
         val messageType = `in`.readByte().toInt().toChar()
 
         val length = `in`.readInt() - 4 // Subtract 4 for the length field itself.
