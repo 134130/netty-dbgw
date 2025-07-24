@@ -38,7 +38,7 @@ internal class ExecuteStatementCommandState : MySqlGatewayState {
         val status = payload.readFixedLengthInteger(1).toUInt()
         val commandType = CommandPhaseState.CommandType.from(status)
         require(commandType == CommandPhaseState.CommandType.COM_STMT_EXECUTE) {
-            "Expected COM_STMT_EXECUTE command type, but received: ${commandType ?: "0x${status.toString(16)}"}"
+            "Expected COM_STMT_EXECUTE command type, but received: ${commandType ?: "0x${"%02x".format(status).uppercase()}"}"
         }
 
         val statementId = payload.readFixedLengthInteger(4).toUInt()
@@ -296,7 +296,9 @@ internal class ExecuteStatementCommandState : MySqlGatewayState {
             }
 
             val packetHeader = payload.readFixedLengthInteger(1).toUInt()
-            check(packetHeader == 0x00U) { "Expected column definition packet header 0x00, but received: 0x${packetHeader.toString(16)}" }
+            check(packetHeader == 0x00U) {
+                "Expected column definition packet header 0x00, but received: 0x${"%02x".format(packetHeader).uppercase()}"
+            }
 
             val nullBitmapLength = (columnCount + 7U + 2U) / 8U
             val nullBitmap = Bitmap.readFrom(payload, nullBitmapLength.toInt())

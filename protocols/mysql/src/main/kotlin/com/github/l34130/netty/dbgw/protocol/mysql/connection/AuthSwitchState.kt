@@ -39,7 +39,7 @@ internal class AuthSwitchState : MySqlGatewayState {
 
         val firstByte = payload.readUnsignedByte().toUInt()
         if (firstByte != 0xFE.toUInt()) {
-            throw IllegalStateException("Expected AuthSwitchRequest packet, but received: ${firstByte.toString(16)}")
+            throw IllegalStateException("Expected AuthSwitchRequest packet, but received: ${"%02x".format(firstByte).uppercase()}")
         }
 
         val pluginName = payload.readNullTerminatedString().toString(Charsets.US_ASCII)

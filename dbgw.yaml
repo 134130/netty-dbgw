@@ -1,7 +1,7 @@
 gateway:
-  listenPort: 3306
-  upstreamHost: mysql.querypie.io
-  upstreamPort: 3307
-  upstreamDatabaseType: MYSQL
+  listenPort: 5432
+  upstreamHost: pgsql.querypie.io
+  upstreamPort: 5432
+  upstreamDatabaseType: POSTGRESQL
   restrictedSqlStatements:
     - "SELECT * FROM"

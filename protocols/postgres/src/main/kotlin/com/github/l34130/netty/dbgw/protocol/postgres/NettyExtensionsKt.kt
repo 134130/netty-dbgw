@@ -20,7 +20,7 @@ internal fun ByteBuf.readUntil(
     delimiter: Byte,
     escape: Byte? = null,
 ): String {
-    val sb = StringBuilder()
+    val sb = mutableListOf<Byte>()
     var escaped = false
     while (isReadable) {
         val byte = readByte()
@@ -31,8 +31,8 @@ internal fun ByteBuf.readUntil(
         if (byte == delimiter && !escaped) {
             break
         }
-        sb.append(byte)
+        sb.add(byte)
         escaped = false
     }
-    return sb.toString()
+    return sb.toByteArray().toString(Charsets.UTF_8)
 }

@@ -32,7 +32,7 @@ internal class CommandPhaseState : MySqlGatewayState {
             CommandType.COM_STMT_PREPARE -> PrepareStatementCommandState().onDownstreamMessage(ctx, msg)
             CommandType.COM_STMT_EXECUTE -> ExecuteStatementCommandState().onDownstreamMessage(ctx, msg)
             CommandType.COM_STMT_CLOSE -> CloseStatementCommandState().onDownstreamMessage(ctx, msg)
-            null -> throw IllegalArgumentException("Unknown command byte: 0x${commandByte.toString(16).uppercase()}")
+            null -> throw IllegalArgumentException("Unknown command byte: 0x${"%02x".format(commandByte).uppercase()}")
         }
     }
 

@@ -11,8 +11,14 @@ object GatewayAttrs {
     val GATEWAY_CONFIG_ATTR_KEY: AttributeKey<GatewayConfig> = AttributeKey.valueOf("config")
 }
 
-fun ChannelHandlerContext.downstream(): Channel = this.channel().attr(GatewayAttrs.DOWNSTREAM_ATTR_KEY).get()
+fun ChannelHandlerContext.downstream(): Channel =
+    checkNotNull(this.channel().attr(GatewayAttrs.DOWNSTREAM_ATTR_KEY).get()) {
+        "Downstream channel is not set in the context. Maybe trying to access already in the downstream handler?"
+    }
 
-fun ChannelHandlerContext.upstream(): Channel = this.channel().attr(GatewayAttrs.UPSTREAM_ATTR_KEY).get()
+fun ChannelHandlerContext.upstream(): Channel =
+    checkNotNull(this.channel().attr(GatewayAttrs.UPSTREAM_ATTR_KEY).get()) {
+        "Upstream channel is not set in the context. Maybe trying to access already in the upstream handler?"
+    }
 
 fun ChannelHandlerContext.gwConfig(): GatewayConfig = this.channel().attr(GatewayAttrs.GATEWAY_CONFIG_ATTR_KEY).get()

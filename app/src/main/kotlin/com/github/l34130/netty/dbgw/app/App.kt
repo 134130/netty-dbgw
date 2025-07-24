@@ -81,20 +81,23 @@ fun main(args: Array<String>) {
             "Starting gateway with configuration: $config"
         }
 
-        val gateway =
-            when (config.upstreamDatabaseType) {
-                GatewayConfig.UpstreamDatabaseType.MYSQL -> {
-                    MySqlGateway(config)
-                }
-                GatewayConfig.UpstreamDatabaseType.POSTGRESQL -> {
-                    PostgresGateway(config)
+        when (config.upstreamDatabaseType) {
+            GatewayConfig.UpstreamDatabaseType.MYSQL -> {
+                val gateway = MySqlGateway(config)
+                try {
+                    gateway.start()
+                } finally {
+                    gateway.shutdown()
                 }
             }
-
-        try {
-            gateway.start()
-        } finally {
-            gateway.shutdown()
+            GatewayConfig.UpstreamDatabaseType.POSTGRESQL -> {
+                val gateway = PostgresGateway(config)
+                try {
+                    gateway.start()
+                } finally {
+                    gateway.shutdown()
+                }
+            }
         }
     }
 }
