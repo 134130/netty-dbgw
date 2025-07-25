@@ -1,5 +1,6 @@
 package com.github.l34130.netty.dbgw.protocol.mysql.command
 
+import com.github.l34130.netty.dbgw.core.BusinessLogicAware
 import com.github.l34130.netty.dbgw.core.MessageAction
 import com.github.l34130.netty.dbgw.core.gatewayConfig
 import com.github.l34130.netty.dbgw.core.utils.netty.peek
@@ -20,7 +21,9 @@ import com.github.l34130.netty.dbgw.protocol.mysql.readRestOfPacketString
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.channel.ChannelHandlerContext
 
-internal class CommandPhaseState : MySqlGatewayState() {
+internal class CommandPhaseState :
+    MySqlGatewayState(),
+    BusinessLogicAware {
     override fun onDownstreamMessage(
         ctx: ChannelHandlerContext,
         msg: Packet,
