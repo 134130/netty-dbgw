@@ -2,6 +2,8 @@ package com.github.l34130.netty.dbgw.core
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.channel.ChannelHandlerContext
+import io.netty.util.NettyRuntime
+import io.netty.util.concurrent.DefaultEventExecutorGroup
 import io.netty.util.concurrent.EventExecutorGroup
 import io.netty.util.concurrent.Promise
 import io.netty.util.internal.TypeParameterMatcher
@@ -13,6 +15,10 @@ class DatabaseStateMachine(
     private var state: DatabaseGatewayState<*, *> = initialState
     private val logger = KotlinLogging.logger { }
 
+    private val businessEventExecutorChooser =
+        ChannelBasedEventExecutorChooser(
+            executors = DefaultEventExecutorGroup(NettyRuntime.availableProcessors()).toList().toTypedArray(),
+        )
     private val isInterceptorsBusinessLogicAware: Boolean = interceptors.any { it is BusinessLogicAware }
     private val isBusinessLogicAware
         get() = isInterceptorsBusinessLogicAware || state is BusinessLogicAware
@@ -22,7 +28,8 @@ class DatabaseStateMachine(
         msg: Any,
     ): Promise<MessageAction> {
         val promise: Promise<MessageAction> = ctx.executor().newPromise()
-        val executor: EventExecutorGroup = if (isBusinessLogicAware) ctx.businessEventExecutorGroup() else ctx.executor()
+        val executor: EventExecutorGroup =
+            if (isBusinessLogicAware) businessEventExecutorChooser.choose(ctx.channel()) else ctx.executor()
 
         executor.submit {
             val result = processDownstreamMessageInternal(ctx, msg)
@@ -37,7 +44,8 @@ class DatabaseStateMachine(
         msg: Any,
     ): Promise<MessageAction> {
         val promise: Promise<MessageAction> = ctx.executor().newPromise()
-        val executor: EventExecutorGroup = if (isBusinessLogicAware) ctx.businessEventExecutorGroup() else ctx.executor()
+        val executor: EventExecutorGroup =
+            if (isBusinessLogicAware) businessEventExecutorChooser.choose(ctx.channel()) else ctx.executor()
 
         executor.submit {
             val result = processUpstreamMessageInternal(ctx, msg)

@@ -1,5 +1,6 @@
 package com.github.l34130.netty.dbgw.protocol.postgres.command
 
+import com.github.l34130.netty.dbgw.core.BusinessLogicAware
 import com.github.l34130.netty.dbgw.core.DatabaseGatewayState
 import com.github.l34130.netty.dbgw.core.MessageAction
 import com.github.l34130.netty.dbgw.protocol.postgres.Message
@@ -8,7 +9,9 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.channel.ChannelHandlerContext
 
 // TODO: Handle the state more restrictively, e.g., by checking if the query is in progress or not
-class QueryCycleStatus : DatabaseGatewayState<Message, Message>() {
+class QueryCycleStatus :
+    DatabaseGatewayState<Message, Message>(),
+    BusinessLogicAware {
     override fun onDownstreamMessage(
         ctx: ChannelHandlerContext,
         msg: Message,

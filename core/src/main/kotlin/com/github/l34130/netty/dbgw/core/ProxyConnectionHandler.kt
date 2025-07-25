@@ -8,8 +8,6 @@ import io.netty.channel.ChannelHandler
 import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.ChannelInboundHandlerAdapter
 import io.netty.channel.ChannelInitializer
-import io.netty.util.NettyRuntime
-import io.netty.util.concurrent.DefaultEventExecutorGroup
 
 class ProxyConnectionHandler(
     private val config: GatewayConfig,
@@ -63,10 +61,6 @@ class ProxyConnectionHandler(
                 StateMachineHandler(it, MessageDirection.DOWNSTREAM),
             )
         }
-
-        val businessEventExecutorGroup = DefaultEventExecutorGroup(NettyRuntime.availableProcessors())
-        downstream.attr(GatewayAttrs.BUSINESS_EVENT_EXECUTOR_GROUP_ATTR_KEY).set(businessEventExecutorGroup)
-        upstream.attr(GatewayAttrs.BUSINESS_EVENT_EXECUTOR_GROUP_ATTR_KEY).set(businessEventExecutorGroup)
 
         downstream.attr(GatewayAttrs.GATEWAY_CONFIG_ATTR_KEY).set(config)
         upstream.attr(GatewayAttrs.GATEWAY_CONFIG_ATTR_KEY).set(config)
