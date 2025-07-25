@@ -32,8 +32,8 @@ class DatabaseStateMachine(
             if (isBusinessLogicAware) businessEventExecutorChooser.choose(ctx.channel()) else ctx.executor()
 
         executor.submit {
-            val result = processDownstreamMessageInternal(ctx, msg)
-            promise.setSuccessSafely(ctx, executor, result)
+            val result = runCatching { processDownstreamMessageInternal(ctx, msg) }
+            promise.setResultSafely(ctx, executor, result)
         }
 
         return promise
@@ -48,8 +48,8 @@ class DatabaseStateMachine(
             if (isBusinessLogicAware) businessEventExecutorChooser.choose(ctx.channel()) else ctx.executor()
 
         executor.submit {
-            val result = processUpstreamMessageInternal(ctx, msg)
-            promise.setSuccessSafely(ctx, executor, result)
+            val result = runCatching { processUpstreamMessageInternal(ctx, msg) }
+            promise.setResultSafely(ctx, executor, result)
         }
 
         return promise
@@ -141,18 +141,26 @@ class DatabaseStateMachine(
         return MessageInterceptor.InterceptResult.Continue
     }
 
-    private fun <T> Promise<T>.setSuccessSafely(
+    private fun <T> Promise<T>.setResultSafely(
         ctx: ChannelHandlerContext,
         executor: EventExecutorGroup,
-        result: T,
+        result: Result<T>,
     ) {
         if (executor == ctx.executor()) {
             // If the executor is the same as the context's executor, we can set the result directly
-            setSuccess(result)
+            result.fold(
+                onSuccess = { setSuccess(it) },
+                onFailure = { setFailure(it) },
+            )
         } else {
             // If the executor is different, we need to schedule the result setting on the context's executor
             // to ensure thread safety
-            ctx.executor().submit { setSuccess(result) }
+            ctx.executor().submit {
+                result.fold(
+                    onSuccess = { setSuccess(it) },
+                    onFailure = { setFailure(it) },
+                )
+            }
         }
     }
 }
