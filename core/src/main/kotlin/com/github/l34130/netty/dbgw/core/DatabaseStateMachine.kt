@@ -2,6 +2,8 @@ package com.github.l34130.netty.dbgw.core
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.channel.ChannelHandlerContext
+import io.netty.util.concurrent.EventExecutorGroup
+import io.netty.util.concurrent.Promise
 import io.netty.util.internal.TypeParameterMatcher
 
 class DatabaseStateMachine(
@@ -11,7 +13,41 @@ class DatabaseStateMachine(
     private var state: DatabaseGatewayState<*, *> = initialState
     private val logger = KotlinLogging.logger { }
 
+    private val isInterceptorsBusinessLogicAware: Boolean = interceptors.any { it is BusinessLogicAware }
+    private val isBusinessLogicAware
+        get() = isInterceptorsBusinessLogicAware || state is BusinessLogicAware
+
     fun processDownstreamMessage(
+        ctx: ChannelHandlerContext,
+        msg: Any,
+    ): Promise<MessageAction> {
+        val promise: Promise<MessageAction> = ctx.executor().newPromise()
+        val executor: EventExecutorGroup = if (isBusinessLogicAware) ctx.businessEventExecutorGroup() else ctx.executor()
+
+        executor.submit {
+            val result = processDownstreamMessageInternal(ctx, msg)
+            promise.setSuccessSafely(ctx, executor, result)
+        }
+
+        return promise
+    }
+
+    fun processUpstreamMessage(
+        ctx: ChannelHandlerContext,
+        msg: Any,
+    ): Promise<MessageAction> {
+        val promise: Promise<MessageAction> = ctx.executor().newPromise()
+        val executor: EventExecutorGroup = if (isBusinessLogicAware) ctx.businessEventExecutorGroup() else ctx.executor()
+
+        executor.submit {
+            val result = processUpstreamMessageInternal(ctx, msg)
+            promise.setSuccessSafely(ctx, executor, result)
+        }
+
+        return promise
+    }
+
+    private fun processDownstreamMessageInternal(
         ctx: ChannelHandlerContext,
         msg: Any,
     ): MessageAction {
@@ -24,14 +60,16 @@ class DatabaseStateMachine(
                 state = interceptorResult.nextState
                 interceptorResult.action
             }
+
             is MessageInterceptor.InterceptResult.Terminate -> {
                 MessageAction.Terminate(interceptorResult.reason)
             }
+
             MessageInterceptor.InterceptResult.Continue -> processMessage(ctx, msg, MessageDirection.DOWNSTREAM)
         }
     }
 
-    fun processUpstreamMessage(
+    private fun processUpstreamMessageInternal(
         ctx: ChannelHandlerContext,
         msg: Any,
     ): MessageAction {
@@ -93,5 +131,20 @@ class DatabaseStateMachine(
             }
         }
         return MessageInterceptor.InterceptResult.Continue
+    }
+
+    private fun <T> Promise<T>.setSuccessSafely(
+        ctx: ChannelHandlerContext,
+        executor: EventExecutorGroup,
+        result: T,
+    ) {
+        if (executor == ctx.executor()) {
+            // If the executor is the same as the context's executor, we can set the result directly
+            setSuccess(result)
+        } else {
+            // If the executor is different, we need to schedule the result setting on the context's executor
+            // to ensure thread safety
+            ctx.executor().submit { setSuccess(result) }
+        }
     }
 }

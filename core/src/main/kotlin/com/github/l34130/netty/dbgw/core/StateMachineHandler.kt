@@ -19,38 +19,48 @@ class StateMachineHandler(
         msg: Any,
     ) {
         val relay = getRelayChannel(ctx)
-        val action =
+        val processPromise =
             when (direction) {
                 MessageDirection.DOWNSTREAM -> stateMachine.processDownstreamMessage(ctx, msg)
                 MessageDirection.UPSTREAM -> stateMachine.processUpstreamMessage(ctx, msg)
             }
 
-        val channelFuture =
-            when (action) {
-                MessageAction.Forward -> relay.writeAndFlush(msg) // Forward the message as is.
-                is MessageAction.Transform -> {
-                    ReferenceCountUtil.release(msg) // Release the original message as we are replacing it with a new one.
-                    relay.writeAndFlush(action.newMsg) // Forward the transformed message.
-                }
-                is MessageAction.Intercept -> {
-                    ReferenceCountUtil.release(msg) // Release the original message as we are intercepting it.
-                    ctx.writeAndFlush(action.msg) // Write the intercepted response back to the channel.
-                }
-                MessageAction.Drop -> {
-                    ReferenceCountUtil.release(msg) // Release the original message as we are dropping it.
-                    ctx.newSucceededFuture()
-                }
-                is MessageAction.Terminate -> {
-                    ReferenceCountUtil.release(msg) // Release the original message as we are terminating the processing.
-                    logger.info { "Terminating processing: ${action.reason ?: "no reason provided"}" }
-                    ctx.channel().closeOnFlush() // Close the channel on flush.
-                }
+        processPromise.addListener { processFuture ->
+            if (!processFuture.isSuccess) {
+                logger.error(processFuture.cause()) { "Failed to process message in ${direction.name.lowercase()} direction" }
+                ctx.close()
+                return@addListener
             }
 
-        channelFuture.addListener { future ->
-            if (!future.isSuccess) {
-                logger.error(future.cause()) { "Failed to process message in ${direction.name.lowercase()} direction" }
-                ctx.close()
+            val action: MessageAction = processFuture.resultNow() as MessageAction
+
+            val channelFuture =
+                when (action) {
+                    MessageAction.Forward -> relay.writeAndFlush(msg) // Forward the message as is.
+                    is MessageAction.Transform -> {
+                        ReferenceCountUtil.release(msg) // Release the original message as we are replacing it with a new one.
+                        relay.writeAndFlush(action.newMsg) // Forward the transformed message.
+                    }
+                    is MessageAction.Intercept -> {
+                        ReferenceCountUtil.release(msg) // Release the original message as we are intercepting it.
+                        ctx.writeAndFlush(action.msg) // Write the intercepted response back to the channel.
+                    }
+                    MessageAction.Drop -> {
+                        ReferenceCountUtil.release(msg) // Release the original message as we are dropping it.
+                        ctx.newSucceededFuture()
+                    }
+                    is MessageAction.Terminate -> {
+                        ReferenceCountUtil.release(msg) // Release the original message as we are terminating the processing.
+                        logger.info { "Terminating processing: ${action.reason ?: "no reason provided"}" }
+                        ctx.channel().closeOnFlush() // Close the channel on flush.
+                    }
+                }
+
+            channelFuture.addListener { future ->
+                if (!future.isSuccess) {
+                    logger.error(future.cause()) { "Failed to process message in ${direction.name.lowercase()} direction" }
+                    ctx.close()
+                }
             }
         }
     }
