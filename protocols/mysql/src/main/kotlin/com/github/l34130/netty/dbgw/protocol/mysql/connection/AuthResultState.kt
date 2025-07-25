@@ -41,7 +41,7 @@ internal class AuthResultState : MySqlGatewayState() {
             logger.trace { "Authentication failed: $error" }
             return StateResult(
                 nextState = this,
-                action = MessageAction.Terminate(reason = "Authentication failed: $error"),
+                action = MessageAction.Forward,
             )
         }
 
