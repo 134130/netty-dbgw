@@ -7,6 +7,7 @@ import io.netty.channel.Channel
 import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.ChannelInboundHandlerAdapter
 import io.netty.util.ReferenceCountUtil
+import java.nio.channels.ClosedChannelException
 
 class StateMachineHandler(
     private val stateMachine: DatabaseStateMachine,
@@ -58,7 +59,9 @@ class StateMachineHandler(
 
             channelFuture.addListener { future ->
                 if (!future.isSuccess) {
-                    logger.error(future.cause()) { "Failed to process message in ${direction.name.lowercase()} direction" }
+                    val cause = future.cause()
+                    if (cause is ClosedChannelException) return@addListener // Ignore closed channel exceptions.
+                    logger.error(cause) { "Failed to write message in ${direction.name.lowercase()} direction" }
                     ctx.close()
                 }
             }
@@ -70,7 +73,7 @@ class StateMachineHandler(
         cause: Throwable,
     ) {
         if (ctx.channel().isActive) {
-            logger.error(cause) { "Exception caught. Closing ${direction.name.lowercase()} channel" }
+            logger.error(cause) { "Exception caught in ${direction.name.lowercase()} channel" }
             ctx.close()
         } else {
             // Because we are using auto-read, the channel will read before the channel is closing
