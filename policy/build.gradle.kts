@@ -8,10 +8,6 @@ plugins {
 
 dependencies {
     implementation(project(":common"))
-    implementation(project(":policy"))
 
     implementation(libs.bundles.kotlinxEcosystem)
-    implementation("io.netty:netty-all:4.2.2.Final")
-    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.18.1")
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.19.0")
 }
