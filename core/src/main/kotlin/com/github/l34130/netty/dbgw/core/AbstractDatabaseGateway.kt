@@ -24,7 +24,7 @@ abstract class AbstractDatabaseGateway(
     private lateinit var f: ChannelFuture
 
     private val factory = NioIoHandler.newFactory()
-    private val bossGroup = MultiThreadIoEventLoopGroup(factory)
+    private val bossGroup = MultiThreadIoEventLoopGroup(1, factory)
     private val workerGroup = MultiThreadIoEventLoopGroup(factory)
 
     fun start() {
