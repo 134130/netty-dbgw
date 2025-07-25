@@ -8,12 +8,13 @@ import com.github.l34130.netty.dbgw.protocol.mysql.constant.CapabilityFlag
 import com.github.l34130.netty.dbgw.protocol.mysql.constant.ServerStatusFlag
 import io.netty.buffer.ByteBuf
 import io.netty.buffer.Unpooled
+import io.netty.util.ReferenceCounted
 import java.util.EnumSet
 
 internal class Packet(
     val sequenceId: Int,
     val payload: ByteBuf,
-) {
+) : ReferenceCounted {
     override fun toString(): String = "Packet(sequenceId=$sequenceId, payload=${payload.readableBytes()} bytes)"
 
     fun isErrorPacket(): Boolean {
@@ -31,6 +32,20 @@ internal class Packet(
         val firstByte = payload.peek { it.readFixedLengthInteger(1) }
         return firstByte == 0xFEUL
     }
+
+    override fun refCnt(): Int = payload.refCnt()
+
+    override fun retain(): ReferenceCounted? = apply { payload.retain() }
+
+    override fun retain(increment: Int): ReferenceCounted? = apply { payload.retain(increment) }
+
+    override fun touch(): ReferenceCounted? = apply { payload.touch() }
+
+    override fun touch(hint: Any?): ReferenceCounted? = apply { payload.touch(hint) }
+
+    override fun release(): Boolean = payload.release()
+
+    override fun release(decrement: Int): Boolean = payload.release(decrement)
 
     companion object {
         fun of(
