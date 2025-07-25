@@ -174,7 +174,7 @@ abstract class MySqlProtocolTest(
     @TestFactory
     fun `test prepared statements`(): List<DynamicNode> =
         listOf(
-            dynamicTest("test prepared statement") {
+            dynamicTest("test prepared statement: SELECT CONCAT(1, 2) AS col1") {
                 createConnection { props ->
                     props.setProperty("useServerPrepStmts", "true")
                 }.use { conn ->
@@ -195,7 +195,14 @@ abstract class MySqlProtocolTest(
                                 else -> fail("Unexpected type for concatenated value: ${col1Value?.javaClass?.name}")
                             }
                         }
-
+                    }
+                }
+            },
+            dynamicTest("test prepared statement: SELECT CONCAT(\"Hello\", \" World\") AS col1") {
+                createConnection { props ->
+                    props.setProperty("useServerPrepStmts", "true")
+                }.use { conn ->
+                    conn.prepareStatement("SELECT CONCAT(?, ?) AS col1").use { stmt ->
                         stmt.setObject(1, "Hello")
                         stmt.setObject(2, " World")
 
@@ -206,7 +213,12 @@ abstract class MySqlProtocolTest(
                             assertEquals("Hello World", table[1][0], "Expected concatenated value to be 'Hello World'")
                         }
                     }
-
+                }
+            },
+            dynamicTest("test prepared statement: SELECT ? + ? AS col1 with resetting the parameters") {
+                createConnection { props ->
+                    props.setProperty("useServerPrepStmts", "true")
+                }.use { conn ->
                     conn.prepareStatement("SELECT ? + ? AS col1").use { stmt ->
                         stmt.setObject(1, 1)
                         stmt.setObject(2, 2)
@@ -221,10 +233,12 @@ abstract class MySqlProtocolTest(
                                     // MySQL 5.7 returns Long for integer addition
                                     assertEquals(3, col1Value, "Expected concatenated value to be 3")
                                 }
+
                                 is Double -> {
                                     // MySQL 8.0 returns Double for addition
                                     assertEquals(3.0, col1Value, "Expected concatenated value to be 3.0")
                                 }
+
                                 else -> fail("Unexpected type for addition value: ${col1Value?.javaClass?.name}")
                             }
                         }
@@ -242,17 +256,41 @@ abstract class MySqlProtocolTest(
                                     // MySQL 8.0 returns Double for string concatenation
                                     assertEquals(0.0, col1Value, "Expected concatenated value to be '0.0'")
                                 }
+
                                 is String -> {
                                     // MySQL 5.7 returns String for concatenated values
-                                    assertEquals("Hello World", col1Value, "Expected concatenated value to be 'Hello World'")
+                                    assertEquals(
+                                        "Hello World",
+                                        col1Value,
+                                        "Expected concatenated value to be 'Hello World'",
+                                    )
                                 }
+
                                 else -> fail("Unexpected type for concatenated value: ${col1Value?.javaClass?.name}")
                             }
                         }
                     }
                 }
             },
-//            dynamicTest("test callable statement") {
+            dynamicTest("test prepared statement with null parameters") {
+                createConnection { props ->
+                    props.setProperty("useServerPrepStmts", "true")
+                }.use { conn ->
+                    conn.prepareStatement("SELECT CONCAT(?, ?) AS col1").use { stmt ->
+                        stmt.setObject(1, 1)
+                        stmt.setObject(2, null)
+
+                        stmt.executeQuery().use { rs ->
+                            val table = rs.readAsTable()
+                            assertEquals(2, table.size, "Expected 2 rows in the result set")
+                            assertEquals("col1", table[0][0], "Expected column name to be 'col1'")
+                            val col1Value = table[1][0]
+                            assertEquals(null, col1Value, "Expected concatenated value to be null when second parameter is null")
+                        }
+                    }
+                }
+            },
+            //            dynamicTest("test callable statement") {
 //                createConnection { props ->
 //                    props.setProperty("useServerPrepStmts", "true")
 //                }.use { conn ->

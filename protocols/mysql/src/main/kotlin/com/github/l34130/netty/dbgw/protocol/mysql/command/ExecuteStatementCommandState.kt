@@ -62,7 +62,7 @@ internal class ExecuteStatementCommandState : MySqlGatewayState() {
 
             if (parameterCount > 0UL) {
                 val nullBitmapLength = (parameterCount + 7UL) / 8UL
-                payload.skipBytes(nullBitmapLength.toInt()) // skip null bitmap
+                val nullBitmap = Bitmap.readFrom(payload, nullBitmapLength.toInt())
 
                 val newParamsBindFlag = payload.readFixedLengthInteger(1) == 1UL
                 val parameterTypeAndNames: List<Pair<MySqlFieldType, String?>> =
@@ -89,9 +89,12 @@ internal class ExecuteStatementCommandState : MySqlGatewayState() {
                     (0UL until parameterCount).map { i ->
                         val parameterType: MySqlFieldType = parameterTypeAndNames[i.toInt()].first
                         val parameterName: String? = parameterTypeAndNames[i.toInt()].second
-
-                        val parameterValue = payload.readFieldValue(parameterType)
-
+                        val parameterValue =
+                            if (nullBitmap.get(i.toInt())) {
+                                null
+                            } else {
+                                payload.readFieldValue(parameterType)
+                            }
                         Triple(parameterType, parameterName, parameterValue)
                     }
 
@@ -293,14 +296,15 @@ internal class ExecuteStatementCommandState : MySqlGatewayState() {
                 "Expected column definition packet header 0x00, but received: 0x${"%02x".format(packetHeader).uppercase()}"
             }
 
-            val nullBitmapLength = (columnCount + 7U + 2U) / 8U
-            val nullBitmap = Bitmap.readFrom(payload, nullBitmapLength.toInt())
+            val offset = 2
+            val nullBitmapLength = ((columnCount + 7U + offset.toULong()) / 8U).toInt()
+            val nullBitmap = Bitmap.readFrom(payload, nullBitmapLength)
             val values =
-                (0UL until columnCount).map { i ->
-                    if (nullBitmap.get(i.toInt())) {
+                (0 until columnCount.toInt()).map { i ->
+                    if (nullBitmap.get(i + offset)) {
                         null // Column value is NULL
                     } else {
-                        val columnType = columnDefinitions[i.toInt()].type
+                        val columnType = columnDefinitions[i].type
                         payload.readFieldValue(columnType)
                     }
                 }
