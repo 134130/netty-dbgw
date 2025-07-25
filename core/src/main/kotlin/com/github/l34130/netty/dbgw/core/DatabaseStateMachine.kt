@@ -17,7 +17,11 @@ class DatabaseStateMachine(
 
     private val businessEventExecutorChooser =
         ChannelBasedEventExecutorChooser(
-            executors = DefaultEventExecutorGroup(NettyRuntime.availableProcessors()).toList().toTypedArray(),
+            executors =
+                DefaultEventExecutorGroup(
+                    NettyRuntime.availableProcessors(),
+                    DefaultThreadFactory("businessEventExecutorGroup"),
+                ).toList().toTypedArray(),
         )
     private val isInterceptorsBusinessLogicAware: Boolean = interceptors.any { it is BusinessLogicAware }
     private val isBusinessLogicAware
