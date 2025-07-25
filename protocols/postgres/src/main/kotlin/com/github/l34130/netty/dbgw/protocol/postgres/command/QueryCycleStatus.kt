@@ -3,6 +3,11 @@ package com.github.l34130.netty.dbgw.protocol.postgres.command
 import com.github.l34130.netty.dbgw.core.BusinessLogicAware
 import com.github.l34130.netty.dbgw.core.DatabaseGatewayState
 import com.github.l34130.netty.dbgw.core.MessageAction
+import com.github.l34130.netty.dbgw.core.gatewayConfig
+import com.github.l34130.netty.dbgw.policy.api.ClientInfo
+import com.github.l34130.netty.dbgw.policy.api.ConnectionInfo
+import com.github.l34130.netty.dbgw.policy.api.SessionInfo
+import com.github.l34130.netty.dbgw.policy.api.query.QueryPolicyContext
 import com.github.l34130.netty.dbgw.protocol.postgres.Message
 import com.github.l34130.netty.dbgw.protocol.postgres.message.ErrorResponse
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -19,15 +24,86 @@ class QueryCycleStatus :
         when (msg.type) {
             Query.TYPE -> {
                 val query = Query.readFrom(msg)
-                logger.trace { "Query: $query" }
-                StateResult(
-                    nextState = this,
-                    action = MessageAction.Forward,
-                )
+                logger.debug { "Query: $query" }
+
+                val result =
+                    ctx.gatewayConfig().policyEngine.evaluateQueryPolicy(
+                        QueryPolicyContext(
+                            clientInfo =
+                                ClientInfo(
+                                    sourceIps = listOf(),
+                                ),
+                            connectionInfo =
+                                ConnectionInfo(
+                                    databaseType = "",
+                                ),
+                            sessionInfo =
+                                SessionInfo(
+                                    sessionId = "",
+                                    userId = "",
+                                    username = "",
+                                ),
+                        ),
+                        query = query.query,
+                    )
+
+                if (result.isAllowed) {
+                    StateResult(
+                        nextState = this,
+                        action = MessageAction.Forward,
+                    )
+                } else {
+                    // TODO: Intercept the message and send an error response
+                    StateResult(
+                        nextState = QueryCycleStatus(),
+                        action =
+                            MessageAction.Terminate(
+                                reason = "Query policy violation: ${result.reason}",
+                            ),
+                    )
+                }
             }
             Parse.TYPE -> {
                 val parse = Parse.readFrom(msg)
-                logger.trace { "Parse: $parse" }
+                logger.debug { "Parse: $parse" }
+
+                val result =
+                    ctx.gatewayConfig().policyEngine.evaluateQueryPolicy(
+                        QueryPolicyContext(
+                            clientInfo =
+                                ClientInfo(
+                                    sourceIps = listOf(),
+                                ),
+                            connectionInfo =
+                                ConnectionInfo(
+                                    databaseType = "",
+                                ),
+                            sessionInfo =
+                                SessionInfo(
+                                    sessionId = "",
+                                    userId = "",
+                                    username = "",
+                                ),
+                        ),
+                        query = parse.query,
+                    )
+
+                if (result.isAllowed) {
+                    StateResult(
+                        nextState = this,
+                        action = MessageAction.Forward,
+                    )
+                } else {
+                    // TODO: Intercept the message and send an error response
+                    StateResult(
+                        nextState = QueryCycleStatus(),
+                        action =
+                            MessageAction.Terminate(
+                                reason = "Query policy violation: ${result.reason}",
+                            ),
+                    )
+                }
+
                 StateResult(
                     nextState = this,
                     action = MessageAction.Forward,
