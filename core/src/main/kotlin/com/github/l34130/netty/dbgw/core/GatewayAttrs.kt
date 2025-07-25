@@ -21,4 +21,4 @@ fun ChannelHandlerContext.upstream(): Channel =
         "Upstream channel is not set in the context. Maybe trying to access already in the upstream handler?"
     }
 
-fun ChannelHandlerContext.gwConfig(): GatewayConfig = this.channel().attr(GatewayAttrs.GATEWAY_CONFIG_ATTR_KEY).get()
+fun ChannelHandlerContext.gatewayConfig(): GatewayConfig = this.channel().attr(GatewayAttrs.GATEWAY_CONFIG_ATTR_KEY).get()

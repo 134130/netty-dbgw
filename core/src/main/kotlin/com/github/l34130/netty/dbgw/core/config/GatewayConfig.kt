@@ -1,13 +1,22 @@
 package com.github.l34130.netty.dbgw.core.config
 
+import com.github.l34130.netty.dbgw.core.policy.PolicyEngine
+
 data class GatewayConfig(
     val listenPort: Int,
     val upstreamHost: String,
     val upstreamPort: Int,
     val upstreamDatabaseType: UpstreamDatabaseType,
+    @Deprecated("")
     val restrictedSqlStatements: List<String>,
     val authenticationOverride: Authentication?,
 ) {
+    // TODO: Remove this once the policy engine is fully integrated
+    val policyEngine =
+        PolicyEngine().apply {
+            init()
+        }
+
     override fun toString(): String =
         buildString {
             appendLine()

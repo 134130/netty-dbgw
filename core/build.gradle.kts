@@ -8,7 +8,10 @@ plugins {
 
 dependencies {
     implementation(project(":common"))
-    implementation(project(":policy"))
+    api(project(":policy"))
+
+    // runTimeonly is correct here, but IntelliJ IDEA does not recognize it as such.
+    implementation(project(":policy-builtin"))
 
     implementation(libs.bundles.kotlinxEcosystem)
     implementation("io.netty:netty-all:4.2.2.Final")

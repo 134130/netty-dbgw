@@ -7,7 +7,6 @@ plugins {
 }
 
 dependencies {
-    // Apply the kotlinx bundle of dependencies from the version catalog (`gradle/libs.versions.toml`).
     implementation(libs.bundles.kotlinxEcosystem)
     implementation("io.netty:netty-all:4.2.2.Final")
 }

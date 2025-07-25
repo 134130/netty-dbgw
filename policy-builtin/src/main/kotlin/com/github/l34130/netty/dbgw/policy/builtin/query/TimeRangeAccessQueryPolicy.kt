@@ -58,16 +58,23 @@ class TimeRangeAccessQueryPolicy(
         }
     }
 
-    override fun getMetadata(): PolicyMetadata =
-        PolicyMetadata(
-            group = "builtin",
-            version = "v1",
-            kind = "TimeRangeAccessQueryPolicy",
-        )
+    override fun getMetadata(): PolicyMetadata = METADATA
 
     companion object {
         private val RANGE_PATTERN: Pattern =
             Pattern.compile("""^([(\[])\s*(\d{2}:\d{2})\s*,\s*(\d{2}:\d{2})\s*([)\]])$""")
+
+        val METADATA: PolicyMetadata =
+            PolicyMetadata(
+                group = "builtin",
+                version = "v1",
+                names =
+                    PolicyMetadata.Names(
+                        kind = TimeRangeAccessQueryPolicy::class.java.simpleName,
+                        plural = "timerangeaccessquerypolicies",
+                        singular = "timerangeaccessquerypolicy",
+                    ),
+            )
 
         /**
          * Creates a [TimeRangeAccessQueryPolicy] from a string representation of a time range

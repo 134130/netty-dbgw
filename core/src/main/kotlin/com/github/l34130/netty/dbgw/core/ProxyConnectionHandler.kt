@@ -40,8 +40,8 @@ class ProxyConnectionHandler(
                     },
                 ).connect(config.upstreamHost, config.upstreamPort)
 
+        val upstream = upstreamFuture.channel()
         upstreamFuture.addListener { future ->
-            val upstream = upstreamFuture.channel()
 
             logger.debug { "Connected to upstream: ${upstream.remoteAddress()}" }
 
@@ -61,6 +61,9 @@ class ProxyConnectionHandler(
                 StateMachineHandler(it, MessageDirection.DOWNSTREAM),
             )
         }
+
+        downstream.attr(GatewayAttrs.GATEWAY_CONFIG_ATTR_KEY).set(config)
+        upstream.attr(GatewayAttrs.GATEWAY_CONFIG_ATTR_KEY).set(config)
 
         downstream.pipeline().remove(this)
     }
