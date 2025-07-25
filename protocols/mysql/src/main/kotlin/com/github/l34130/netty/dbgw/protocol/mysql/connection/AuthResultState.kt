@@ -6,7 +6,6 @@ import com.github.l34130.netty.dbgw.protocol.mysql.MySqlGatewayState
 import com.github.l34130.netty.dbgw.protocol.mysql.Packet
 import com.github.l34130.netty.dbgw.protocol.mysql.capabilities
 import com.github.l34130.netty.dbgw.protocol.mysql.command.CommandPhaseState
-import com.github.l34130.netty.dbgw.protocol.mysql.readNullTerminatedString
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.channel.ChannelHandlerContext
 
@@ -16,15 +15,6 @@ internal class AuthResultState : MySqlGatewayState() {
         msg: Packet,
     ): StateResult {
         if (msg.isEofPacket()) {
-            msg.payload.markReaderIndex()
-            msg.payload.skipBytes(1) // Skip the first byte (EOF marker)
-
-            logger.trace {
-                val pluginName = msg.payload.readNullTerminatedString().toString(Charsets.US_ASCII)
-                "Received AuthSwitchRequest with plugin: $pluginName"
-            }
-
-            msg.payload.resetReaderIndex()
             return AuthSwitchState().onUpstreamMessage(ctx, msg)
         }
 
