@@ -62,6 +62,13 @@ abstract class MySqlProtocolTest(
                     assertMySqlConnection(conn)
                 }
             },
+            dynamicTest("test with sha256_password") {
+                createConnection { props ->
+                    props.setProperty("defaultAuthenticationPlugin", "sha256_password")
+                }.use { conn ->
+                    assertMySqlConnection(conn)
+                }
+            },
             dynamicTest("test invalid username/password") {
                 try {
                     createConnection { props ->

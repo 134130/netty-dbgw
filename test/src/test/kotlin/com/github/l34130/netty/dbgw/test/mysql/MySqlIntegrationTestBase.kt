@@ -55,6 +55,7 @@ abstract class MySqlIntegrationTestBase(
                 setProperty("user", "testuser")
                 setProperty("password", "testpass")
                 setProperty("sslMode", "DISABLED")
+                setProperty("allowPublicKeyRetrieval", "true") // For 'caching_sha2_password' and 'sha256_password'
             }
         modifier(properties)
         return DriverManager.getConnection(
