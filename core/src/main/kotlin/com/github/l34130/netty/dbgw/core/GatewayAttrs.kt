@@ -2,9 +2,9 @@ package com.github.l34130.netty.dbgw.core
 
 import com.github.l34130.netty.dbgw.core.config.DatabaseGatewayConfig
 import com.github.l34130.netty.dbgw.policy.api.ClientInfo
-import com.github.l34130.netty.dbgw.policy.api.DatabaseConnectionInfo
-import com.github.l34130.netty.dbgw.policy.api.DatabaseContext
 import com.github.l34130.netty.dbgw.policy.api.SessionInfo
+import com.github.l34130.netty.dbgw.policy.api.database.DatabaseConnectionInfo
+import com.github.l34130.netty.dbgw.policy.api.database.DatabaseContext
 import io.netty.channel.Channel
 import io.netty.channel.ChannelHandlerContext
 import io.netty.util.AttributeKey

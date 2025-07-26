@@ -1,9 +1,9 @@
 package com.github.l34130.netty.dbgw.policy.builtin.database.query
 
 import com.github.l34130.netty.dbgw.policy.api.Policy
-import com.github.l34130.netty.dbgw.policy.api.query.AbstractDatabaseQueryPolicy
-import com.github.l34130.netty.dbgw.policy.api.query.DatabaseQueryContext
-import com.github.l34130.netty.dbgw.policy.api.query.DatabaseQueryPolicyResult
+import com.github.l34130.netty.dbgw.policy.api.database.query.AbstractDatabaseQueryPolicy
+import com.github.l34130.netty.dbgw.policy.api.database.query.DatabaseQueryContext
+import com.github.l34130.netty.dbgw.policy.api.database.query.DatabaseQueryPolicyResult
 
 @Policy(
     group = "builtin",

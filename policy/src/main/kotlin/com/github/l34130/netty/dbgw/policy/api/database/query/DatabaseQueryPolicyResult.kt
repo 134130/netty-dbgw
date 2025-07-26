@@ -1,4 +1,4 @@
-package com.github.l34130.netty.dbgw.policy.api.query
+package com.github.l34130.netty.dbgw.policy.api.database.query
 
 sealed class DatabaseQueryPolicyResult(
     open val isAllowed: Boolean,

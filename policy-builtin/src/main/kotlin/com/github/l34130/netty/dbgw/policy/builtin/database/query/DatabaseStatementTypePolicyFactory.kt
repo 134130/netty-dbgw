@@ -1,6 +1,6 @@
 package com.github.l34130.netty.dbgw.policy.builtin.database.query
 
-import com.github.l34130.netty.dbgw.policy.api.query.AbstractDatabaseQueryPolicyFactory
+import com.github.l34130.netty.dbgw.policy.api.database.query.AbstractDatabaseQueryPolicyFactory
 
 class DatabaseStatementTypePolicyFactory :
     AbstractDatabaseQueryPolicyFactory<DatabaseStatementTypePolicy>(DatabaseStatementTypePolicy::class) {

@@ -1,4 +1,4 @@
-package com.github.l34130.netty.dbgw.policy.api.query
+package com.github.l34130.netty.dbgw.policy.api.database.query
 
 interface DatabaseQueryPolicyFactory<T : DatabaseQueryPolicy> {
     fun isApplicable(

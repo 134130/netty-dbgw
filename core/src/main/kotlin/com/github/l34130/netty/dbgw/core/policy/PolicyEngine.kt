@@ -1,9 +1,9 @@
 package com.github.l34130.netty.dbgw.core.policy
 
-import com.github.l34130.netty.dbgw.policy.api.query.DatabaseQueryContext
-import com.github.l34130.netty.dbgw.policy.api.query.DatabaseQueryPolicy
-import com.github.l34130.netty.dbgw.policy.api.query.DatabaseQueryPolicyFactory
-import com.github.l34130.netty.dbgw.policy.api.query.DatabaseQueryPolicyResult
+import com.github.l34130.netty.dbgw.policy.api.database.query.DatabaseQueryContext
+import com.github.l34130.netty.dbgw.policy.api.database.query.DatabaseQueryPolicy
+import com.github.l34130.netty.dbgw.policy.api.database.query.DatabaseQueryPolicyFactory
+import com.github.l34130.netty.dbgw.policy.api.database.query.DatabaseQueryPolicyResult
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.util.ServiceLoader
 
