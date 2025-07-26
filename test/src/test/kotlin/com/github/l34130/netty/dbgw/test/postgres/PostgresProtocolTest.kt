@@ -1,5 +1,7 @@
-package com.github.l34130.netty.dbgw.test.mysql
+package com.github.l34130.netty.dbgw.test.postgres
 
+import com.github.l34130.netty.dbgw.test.mysql.executeQuery
+import com.github.l34130.netty.dbgw.test.mysql.readAsTable
 import org.junit.jupiter.api.DynamicNode
 import org.junit.jupiter.api.DynamicTest.dynamicTest
 import org.junit.jupiter.api.TestFactory

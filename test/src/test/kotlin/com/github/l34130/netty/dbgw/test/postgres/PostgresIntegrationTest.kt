@@ -1,4 +1,4 @@
-package com.github.l34130.netty.dbgw.test.mysql
+package com.github.l34130.netty.dbgw.test.postgres
 
 import org.junit.jupiter.api.Nested
 
