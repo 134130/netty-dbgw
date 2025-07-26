@@ -6,7 +6,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import java.io.StringWriter
 
-object ResourceManifestMapper {
+object ManifestMapper {
     private val yamlMapper =
         ObjectMapper(
             YAMLFactory().apply {

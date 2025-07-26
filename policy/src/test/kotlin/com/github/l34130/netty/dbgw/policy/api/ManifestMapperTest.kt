@@ -5,7 +5,7 @@ import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 
-class ResourceManifestMapperTest {
+class ManifestMapperTest {
     @Test
     fun `test readValues`() {
         val yaml =
@@ -21,7 +21,7 @@ class ResourceManifestMapperTest {
               action: DENY
             """.trimIndent()
 
-        val parsed = ResourceManifestMapper.readValues(yaml)
+        val parsed = ManifestMapper.readValues(yaml)
 
         assertEquals(1, parsed.size)
         val manifest = parsed[0]
@@ -52,7 +52,7 @@ class ResourceManifestMapperTest {
                     ),
             )
 
-        val yaml = ResourceManifestMapper.writeValueAsString(manifest)
+        val yaml = ManifestMapper.writeValueAsString(manifest)
         assertEquals(
             """
             apiVersion: "builtin/v1"
@@ -96,7 +96,7 @@ class ResourceManifestMapperTest {
                 ),
             )
 
-        val yaml = ResourceManifestMapper.writeValuesAsString(manifests)
+        val yaml = ManifestMapper.writeValuesAsString(manifests)
         assertEquals(
             """
             apiVersion: "builtin/v1"
