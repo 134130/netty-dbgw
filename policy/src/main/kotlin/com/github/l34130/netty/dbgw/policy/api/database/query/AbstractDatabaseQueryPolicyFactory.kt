@@ -1,7 +1,7 @@
 package com.github.l34130.netty.dbgw.policy.api.database.query
 
-import com.github.l34130.netty.dbgw.policy.api.Policy
-import com.github.l34130.netty.dbgw.policy.api.PolicyDefinition
+import com.github.l34130.netty.dbgw.policy.api.Resource
+import com.github.l34130.netty.dbgw.policy.api.ResourceInfo
 import kotlin.reflect.KClass
 import kotlin.reflect.full.findAnnotation
 
@@ -13,9 +13,9 @@ abstract class AbstractDatabaseQueryPolicyFactory<T : DatabaseQueryPolicy>(
         version: String,
         kind: String,
     ): Boolean {
-        val policyAnnotation =
-            policyClass.findAnnotation<Policy>()
+        val resourceAnnotation =
+            policyClass.findAnnotation<Resource>()
                 ?: error("Policy metadata not found for ${policyClass.qualifiedName}. Ensure the class is annotated with @Policy.")
-        return PolicyDefinition.from(policyAnnotation).isApplicable(group, version, kind)
+        return ResourceInfo.from(resourceAnnotation).isApplicable(group, version, kind)
     }
 }

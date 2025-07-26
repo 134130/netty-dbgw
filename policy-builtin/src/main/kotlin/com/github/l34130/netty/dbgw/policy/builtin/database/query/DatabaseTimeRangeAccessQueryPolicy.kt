@@ -1,6 +1,6 @@
 package com.github.l34130.netty.dbgw.policy.builtin.database.query
 
-import com.github.l34130.netty.dbgw.policy.api.Policy
+import com.github.l34130.netty.dbgw.policy.api.Resource
 import com.github.l34130.netty.dbgw.policy.api.database.query.AbstractDatabaseQueryPolicy
 import com.github.l34130.netty.dbgw.policy.api.database.query.DatabaseQueryContext
 import com.github.l34130.netty.dbgw.policy.api.database.query.DatabaseQueryPolicyResult
@@ -9,7 +9,7 @@ import java.time.LocalTime
 import java.util.regex.Pattern
 
 // TODO: Make this policy as not query policy, but as a connection policy
-@Policy(
+@Resource(
     group = "builtin",
     version = "v1",
     kind = "DatabaseTimeRangeAccessQueryPolicy",

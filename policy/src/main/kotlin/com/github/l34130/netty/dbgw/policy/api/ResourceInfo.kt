@@ -2,7 +2,7 @@ package com.github.l34130.netty.dbgw.policy.api
 
 import com.github.l34130.netty.dbgw.common.util.ValidationUtil
 
-class PolicyDefinition(
+class ResourceInfo(
     /**
      * Group of the policy. Must be a valid lowercase RFC 1123 subdomain.
      */
@@ -43,21 +43,21 @@ class PolicyDefinition(
     override fun toString(): String = "PolicyMetadata(group='$group', version='$version', names=$names)"
 
     companion object {
-        fun from(policyAnnotation: Policy): PolicyDefinition =
-            PolicyDefinition(
-                group = policyAnnotation.group,
-                version = policyAnnotation.version,
+        fun from(resourceAnnotation: Resource): ResourceInfo =
+            ResourceInfo(
+                group = resourceAnnotation.group,
+                version = resourceAnnotation.version,
                 names =
-                    if (policyAnnotation.singular.isEmpty()) {
+                    if (resourceAnnotation.singular.isEmpty()) {
                         Names(
-                            kind = policyAnnotation.kind,
-                            plural = policyAnnotation.plural,
+                            kind = resourceAnnotation.kind,
+                            plural = resourceAnnotation.plural,
                         )
                     } else {
                         Names(
-                            kind = policyAnnotation.kind,
-                            plural = policyAnnotation.plural,
-                            singular = policyAnnotation.singular,
+                            kind = resourceAnnotation.kind,
+                            plural = resourceAnnotation.plural,
+                            singular = resourceAnnotation.singular,
                         )
                     },
             )
