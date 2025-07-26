@@ -17,8 +17,6 @@ dependencies {
     implementation("io.netty:netty-all:4.2.2.Final")
 
     implementation("org.bouncycastle:bcpkix-jdk18on:1.81")
-
-    implementation("ch.qos.logback:logback-classic:1.5.18")
 }
 
 application {
