@@ -35,7 +35,6 @@ abstract class PostgresIntegrationTestBase(
                     upstreamHost = postgresContainer.host,
                     upstreamPort = postgresContainer.getMappedPort(5432),
                     upstreamDatabaseType = DatabaseGatewayConfig.UpstreamDatabaseType.POSTGRESQL,
-                    restrictedSqlStatements = emptyList(),
                     authenticationOverride = null,
                 ),
             )

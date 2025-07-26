@@ -35,7 +35,6 @@ abstract class MySqlIntegrationTestBase(
                     upstreamHost = mysqlContainer.host,
                     upstreamPort = mysqlContainer.getMappedPort(3306),
                     upstreamDatabaseType = DatabaseGatewayConfig.UpstreamDatabaseType.MYSQL,
-                    restrictedSqlStatements = emptyList(),
                     authenticationOverride = null,
                 ),
             )
