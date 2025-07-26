@@ -7,18 +7,23 @@ import io.netty.channel.Channel
 import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.ChannelInboundHandlerAdapter
 import io.netty.util.ReferenceCountUtil
-import java.nio.channels.ClosedChannelException
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 
 class StateMachineHandler(
     private val stateMachine: StateMachine,
     private val direction: MessageDirection,
 ) : ChannelInboundHandlerAdapter() {
     private val logger = KotlinLogging.logger("StateMachineHandler-${direction.name}")
+    private val pendingMessages = AtomicInteger()
+    private val channelReadCompleted = AtomicBoolean(false)
 
     override fun channelRead(
         ctx: ChannelHandlerContext,
         msg: Any,
     ) {
+        pendingMessages.incrementAndGet()
+
         val relay = getRelayChannel(ctx)
         val processPromise =
             when (direction) {
@@ -27,28 +32,30 @@ class StateMachineHandler(
             }
 
         processPromise.addListener { processFuture ->
-            if (!processFuture.isSuccess) {
-                logger.error(processFuture.cause()) { "Failed to process message in ${direction.name.lowercase()} direction" }
-                ctx.close()
-                return@addListener
-            }
+            try {
+                if (!processFuture.isSuccess) {
+                    if (ctx.channel().isActive) {
+                        logger.error(processFuture.cause()) { "Failed to process message in ${direction.name.lowercase()} direction" }
+                        ctx.close()
+                    }
+                    return@addListener
+                }
 
-            val action: MessageAction = processFuture.resultNow() as MessageAction
-
-            val channelFuture =
+                val action: MessageAction = processFuture.resultNow() as MessageAction
                 when (action) {
-                    MessageAction.Forward -> relay.writeAndFlush(msg) // Forward the message as is.
+                    MessageAction.Forward -> {
+                        relay.write(msg) // Forward the message as is.
+                    }
                     is MessageAction.Transform -> {
                         ReferenceCountUtil.release(msg) // Release the original message as we are replacing it with a new one.
-                        relay.writeAndFlush(action.newMsg) // Forward the transformed message.
+                        relay.write(action.newMsg) // Forward the transformed message.
                     }
                     is MessageAction.Intercept -> {
                         ReferenceCountUtil.release(msg) // Release the original message as we are intercepting it.
-                        ctx.writeAndFlush(action.msg) // Write the intercepted response back to the channel.
+                        ctx.write(action.msg) // Write the intercepted response back to the channel.
                     }
                     MessageAction.Drop -> {
                         ReferenceCountUtil.release(msg) // Release the original message as we are dropping it.
-                        ctx.newSucceededFuture()
                     }
                     is MessageAction.Terminate -> {
                         ReferenceCountUtil.release(msg) // Release the original message as we are terminating the processing.
@@ -56,15 +63,21 @@ class StateMachineHandler(
                         ctx.channel().closeOnFlush() // Close the channel on flush.
                     }
                 }
-
-            channelFuture.addListener { future ->
-                if (!future.isSuccess) {
-                    val cause = future.cause()
-                    if (cause is ClosedChannelException) return@addListener // Ignore closed channel exceptions.
-                    logger.error(cause) { "Failed to write message in ${direction.name.lowercase()} direction" }
-                    ctx.close()
+            } finally {
+                val remaining = pendingMessages.decrementAndGet()
+                if (remaining == 0 && channelReadCompleted.compareAndSet(true, false)) {
+                    relay.flush() // Flush the relay channel if no more pending messages.
                 }
             }
+        }
+    }
+
+    override fun channelReadComplete(ctx: ChannelHandlerContext) {
+        val relay = getRelayChannel(ctx)
+        if (pendingMessages.get() > 0) {
+            channelReadCompleted.set(true) // Set the flag to true if there are pending messages to flush later.
+        } else {
+            relay.flush() // Flush immediately if no pending messages.
         }
     }
 
