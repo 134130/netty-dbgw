@@ -12,6 +12,7 @@ import io.netty.channel.ChannelHandler
 import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.ChannelInboundHandlerAdapter
 import io.netty.channel.ChannelInitializer
+import java.net.InetSocketAddress
 import java.util.UUID
 
 class ProxyConnectionHandler(
@@ -73,8 +74,14 @@ class ProxyConnectionHandler(
                 frontend.attr(GatewayAttrs.SESSION_INFO_ATTR_KEY).set(it)
                 backend.attr(GatewayAttrs.SESSION_INFO_ATTR_KEY).set(it)
             }
+        val remoteAddress = frontend.remoteAddress()
+        val sourceIp =
+            when (remoteAddress) {
+                is InetSocketAddress -> remoteAddress.address.hostAddress
+                else -> remoteAddress.toString()
+            }
         val clientInfo =
-            ClientInfo(sourceIps = listOf(frontend.remoteAddress().toString())).also {
+            ClientInfo(sourceIps = listOf(sourceIp)).also {
                 frontend.attr(GatewayAttrs.CLIENT_INFO_ATTR_KEY).set(it)
                 backend.attr(GatewayAttrs.CLIENT_INFO_ATTR_KEY).set(it)
             }

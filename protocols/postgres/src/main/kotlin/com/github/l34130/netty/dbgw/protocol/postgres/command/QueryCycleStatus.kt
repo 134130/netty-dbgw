@@ -27,13 +27,17 @@ class QueryCycleStatus :
                 ctx.gatewayConfig()?.let { config ->
                     val result = config.policyEngine.evaluateQueryPolicy(ctx.databaseCtx()!!.withQuery(query.query))
                     // TODO: Intercept the message and send an error response
-                    StateResult(
-                        nextState = QueryCycleStatus(),
-                        action =
-                            MessageAction.Terminate(
-                                reason = "Query policy violation: ${result.reason}",
-                            ),
-                    )
+                    if (!result.isAllowed) {
+                        StateResult(
+                            nextState = QueryCycleStatus(),
+                            action =
+                                MessageAction.Terminate(
+                                    reason = "Query policy violation: ${result.reason}",
+                                ),
+                        )
+                    } else {
+                        null
+                    }
                 } ?: StateResult(
                     nextState = this,
                     action = MessageAction.Forward,
@@ -46,13 +50,17 @@ class QueryCycleStatus :
                 ctx.gatewayConfig()?.let { config ->
                     val result = config.policyEngine.evaluateQueryPolicy(ctx.databaseCtx()!!.withQuery(parse.query))
                     // TODO: Intercept the message and send an error response
-                    StateResult(
-                        nextState = QueryCycleStatus(),
-                        action =
-                            MessageAction.Terminate(
-                                reason = "Query policy violation: ${result.reason}",
-                            ),
-                    )
+                    if (!result.isAllowed) {
+                        StateResult(
+                            nextState = QueryCycleStatus(),
+                            action =
+                                MessageAction.Terminate(
+                                    reason = "Query policy violation: ${result.reason}",
+                                ),
+                        )
+                    } else {
+                        null
+                    }
                 } ?: StateResult(
                     nextState = this,
                     action = MessageAction.Forward,

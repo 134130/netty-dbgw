@@ -2,6 +2,7 @@ package com.github.l34130.netty.dbgw.protocol.mysql.connection
 
 import com.github.l34130.netty.dbgw.core.MessageAction
 import com.github.l34130.netty.dbgw.core.backend
+import com.github.l34130.netty.dbgw.core.databaseCtx
 import com.github.l34130.netty.dbgw.core.utils.netty.closeOnFlush
 import com.github.l34130.netty.dbgw.core.utils.toEnumSet
 import com.github.l34130.netty.dbgw.protocol.mysql.MySqlGatewayState
@@ -132,11 +133,12 @@ internal class HandshakeResponseState : MySqlGatewayState() {
 
         val database =
             if (clientCapabilities.contains(CapabilityFlag.CLIENT_CONNECT_WITH_DB)) {
-                payload.readNullTerminatedString()
+                payload.readNullTerminatedString().toString(Charsets.US_ASCII)
             } else {
                 null
             }
-        logger.trace { "Database: ${database?.toString(Charsets.US_ASCII)}" }
+        logger.trace { "Database: $database" }
+        ctx.databaseCtx()!!.connectionInfo.database = database
 
         val clientPluginName =
             if (clientCapabilities.contains(CapabilityFlag.CLIENT_PLUGIN_AUTH)) {
@@ -150,23 +152,25 @@ internal class HandshakeResponseState : MySqlGatewayState() {
             )}"
         }
 
-        val clientConnectAttrs =
+        val clientConnectAttrs: Map<String, String> =
             if (clientCapabilities.contains(CapabilityFlag.CLIENT_CONNECT_ATTRS)) {
                 val lengthOfAllKeyValues = payload.readLenEncInteger()
 
                 val keyValuesByteBuf = payload.readSlice(lengthOfAllKeyValues.toInt())
 
-                val attrs = mutableListOf<Pair<String, String>>()
+                val attrs = mutableMapOf<String, String>()
                 while (keyValuesByteBuf.readableBytes() > 0) {
                     val key = keyValuesByteBuf.readLenEncString().toString(Charsets.UTF_8)
                     val value = keyValuesByteBuf.readLenEncString().toString(Charsets.UTF_8)
-                    attrs.add(key to value)
+                    attrs.put(key, value)
                 }
                 attrs
             } else {
-                emptyList()
+                emptyMap()
             }
         logger.trace { "Client Connect Attributes: $clientConnectAttrs" }
+        val clientName = clientNameFromConnectAttrs(clientConnectAttrs)
+        ctx.databaseCtx()!!.clientInfo.userAgent = clientName
 
         val zstdCompressionLevel =
             if (clientCapabilities.contains(CapabilityFlag.CLIENT_ZSTD_COMPRESSION_ALGORITHM)) {
@@ -180,6 +184,43 @@ internal class HandshakeResponseState : MySqlGatewayState() {
             nextState = AuthResultState(),
             action = MessageAction.Forward,
         )
+    }
+
+    private fun clientNameFromConnectAttrs(clientConnectAttrs: Map<String, String>): String? {
+        val runtimeVendor = clientConnectAttrs["_runtime_vendor"]
+        var clientName = clientConnectAttrs["_client_name"]
+        val clientVersion = clientConnectAttrs["_client_version"]
+        val (program, version, comment) =
+            if (runtimeVendor == "JetBrains s.r.o.") {
+                val program = clientName ?: "JetBrains Client"
+                val version = clientVersion
+                val comment =
+                    buildString {
+                        append("JetBrains s.r.o.")
+                        clientConnectAttrs["_runtime_version"]?.let { append("; $it") }
+                    }
+
+                Triple(program, version, comment)
+            } else if (clientName == "libmysql") {
+                val program = clientConnectAttrs["program_name"] ?: "mysql"
+                val version = clientVersion
+                val comment =
+                    buildString {
+                        append("libmysql")
+                        clientConnectAttrs["_os"]?.let { append("; $it") }
+                        clientConnectAttrs["_platform"]?.let { append("; $it") }
+                    }
+
+                Triple(program, version, comment)
+            } else {
+                logger.warn { "Failed to parse client from attrs: $clientConnectAttrs" }
+                return null // Unknown client
+            }
+        return buildString {
+            append(program)
+            version?.let { append("/$it") }
+            append(" ($comment)")
+        }
     }
 
     companion object {
