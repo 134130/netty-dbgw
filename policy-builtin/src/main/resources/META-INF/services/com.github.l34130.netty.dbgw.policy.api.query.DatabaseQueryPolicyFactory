@@ -1,0 +1,2 @@
+com.github.l34130.netty.dbgw.policy.builtin.database.query.DatabaseStatementTypePolicyFactory
+com.github.l34130.netty.dbgw.policy.builtin.database.query.DatabaseTimeRangeAccessQueryPolicyFactory

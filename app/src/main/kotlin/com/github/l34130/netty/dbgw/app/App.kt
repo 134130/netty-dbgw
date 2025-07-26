@@ -70,7 +70,6 @@ fun main(args: Array<String>) {
                             upstreamHost = upstream.first,
                             upstreamPort = upstream.second,
                             upstreamDatabaseType = DatabaseGatewayConfig.UpstreamDatabaseType.MYSQL,
-                            restrictedSqlStatements = emptyList(),
                             authenticationOverride = null, // No authentication by default
                         )
                     }

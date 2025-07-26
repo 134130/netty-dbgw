@@ -8,7 +8,6 @@ import com.github.l34130.netty.dbgw.policy.api.ClientInfo
 import com.github.l34130.netty.dbgw.policy.api.DatabaseConnectionInfo
 import com.github.l34130.netty.dbgw.policy.api.SessionInfo
 import com.github.l34130.netty.dbgw.policy.api.query.DatabaseQueryPolicyContext
-import com.github.l34130.netty.dbgw.protocol.mysql.MySqlAttrs
 import com.github.l34130.netty.dbgw.protocol.mysql.MySqlGatewayState
 import com.github.l34130.netty.dbgw.protocol.mysql.Packet
 import com.github.l34130.netty.dbgw.protocol.mysql.capabilities
@@ -76,31 +75,7 @@ internal class CommandPhaseState :
         val query = payload.readRestOfPacketString().toString(Charsets.UTF_8)
         logger.debug { "COM_QUERY: query='$query'" }
 
-        val engine = ctx.channel().attr(MySqlAttrs.QUERY_POLICY_ENGINE_ATTR_KEY).get()
-        val result = engine.evaluate(query)
-        if (!result.isAllowed) {
-            val errorPacket =
-                Packet.Error.of(
-                    sequenceId = packet.sequenceId + 1,
-                    errorCode = 1U,
-                    sqlState = "DBGW_",
-                    message =
-                        buildString {
-                            append("Access denied")
-                            if (!result.reason.isNullOrBlank()) {
-                                append(": ${result.reason}")
-                            }
-                        },
-                    capabilities = ctx.capabilities().enumSet(),
-                )
-
-            return StateResult(
-                nextState = CommandPhaseState(),
-                action = MessageAction.Intercept(msg = errorPacket),
-            )
-        }
-
-        val engine2 =
+        val engine =
             ctx.gatewayConfig().policyEngine.evaluateQueryPolicy(
                 DatabaseQueryPolicyContext(
                     clientInfo =
@@ -120,7 +95,7 @@ internal class CommandPhaseState :
                 ),
                 query,
             )
-        if (!engine2.isAllowed) {
+        if (!engine.isAllowed) {
             val errorPacket =
                 Packet.Error.of(
                     sequenceId = packet.sequenceId + 1,
@@ -129,8 +104,8 @@ internal class CommandPhaseState :
                     message =
                         buildString {
                             append("Access denied")
-                            if (!engine2.reason.isNullOrBlank()) {
-                                append(": ${engine2.reason}")
+                            if (!engine.reason.isNullOrBlank()) {
+                                append(": ${engine.reason}")
                             }
                         },
                     capabilities = ctx.capabilities().enumSet(),

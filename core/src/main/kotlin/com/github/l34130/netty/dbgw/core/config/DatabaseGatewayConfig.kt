@@ -7,26 +7,18 @@ data class DatabaseGatewayConfig(
     val upstreamHost: String,
     val upstreamPort: Int,
     val upstreamDatabaseType: UpstreamDatabaseType,
-    @Deprecated("")
-    val restrictedSqlStatements: List<String>,
     val authenticationOverride: Authentication?,
 ) {
     // TODO: Remove this once the policy engine is fully integrated
     val policyEngine =
-        PolicyEngine().apply {
-            init()
+        run {
+            PolicyEngine().apply { init() }
         }
 
     override fun toString(): String =
         buildString {
             appendLine()
             appendLine("    0.0.0.0:$listenPort -> $upstreamHost:$upstreamPort ($upstreamDatabaseType)")
-            if (restrictedSqlStatements.isNotEmpty()) {
-                appendLine("    Restricted SQL Statements:")
-                restrictedSqlStatements.forEach { sql ->
-                    appendLine("      - $sql")
-                }
-            }
             if (authenticationOverride != null) {
                 appendLine("    Authentication Override: ${authenticationOverride.username}")
             } else {

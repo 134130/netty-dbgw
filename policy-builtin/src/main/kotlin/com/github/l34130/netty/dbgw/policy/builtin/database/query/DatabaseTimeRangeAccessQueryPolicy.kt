@@ -1,21 +1,29 @@
-package com.github.l34130.netty.dbgw.policy.builtin.query
+package com.github.l34130.netty.dbgw.policy.builtin.database.query
 
-import com.github.l34130.netty.dbgw.policy.api.PolicyMetadata
-import com.github.l34130.netty.dbgw.policy.api.query.DatabaseQueryPolicy
+import com.github.l34130.netty.dbgw.policy.api.Policy
+import com.github.l34130.netty.dbgw.policy.api.query.AbstractDatabaseQueryPolicy
 import com.github.l34130.netty.dbgw.policy.api.query.DatabaseQueryPolicyContext
 import com.github.l34130.netty.dbgw.policy.api.query.DatabaseQueryPolicyResult
 import java.time.Clock
 import java.time.LocalTime
 import java.util.regex.Pattern
 
-class DatabaseTimeRangeAccessQueryPolicy(
+// TODO: Make this policy as not query policy, but as a connection policy
+@Policy(
+    group = "builtin",
+    version = "v1",
+    kind = "DatabaseTimeRangeAccessQueryPolicy",
+    plural = "databasetimerangeaccessquerypolicies",
+    singular = "databasetimerangeaccessquerypolicy",
+)
+data class DatabaseTimeRangeAccessQueryPolicy(
     private val startTime: LocalTime,
     private val endTime: LocalTime,
     private val startInclusive: Boolean,
     private val endInclusive: Boolean,
     private val allowInRange: Boolean = true,
     private val clock: Clock,
-) : DatabaseQueryPolicy {
+) : AbstractDatabaseQueryPolicy() {
     private val rangeNotation: String =
         "${if (startInclusive) '[' else '('}$startTime, $endTime${if (endInclusive) ']' else ')'}"
 
@@ -58,23 +66,9 @@ class DatabaseTimeRangeAccessQueryPolicy(
         }
     }
 
-    override fun getMetadata(): PolicyMetadata = METADATA
-
     companion object {
         private val RANGE_PATTERN: Pattern =
             Pattern.compile("""^([(\[])\s*(\d{2}:\d{2})\s*,\s*(\d{2}:\d{2})\s*([)\]])$""")
-
-        val METADATA: PolicyMetadata =
-            PolicyMetadata(
-                group = "builtin",
-                version = "v1",
-                names =
-                    PolicyMetadata.Names(
-                        kind = DatabaseTimeRangeAccessQueryPolicy::class.java.simpleName,
-                        plural = "databasetimerangeaccessquerypolicies",
-                        singular = "databasetimerangeaccessquerypolicy",
-                    ),
-            )
 
         /**
          * Creates a [DatabaseTimeRangeAccessQueryPolicy] from a string representation of a time range

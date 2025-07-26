@@ -3,8 +3,17 @@ package com.github.l34130.netty.dbgw.policy.api
 import com.github.l34130.netty.dbgw.common.util.ValidationUtil
 
 class PolicyMetadata(
+    /**
+     * Group of the policy. Must be a valid lowercase RFC 1123 subdomain.
+     */
     val group: String,
+    /**
+     * Version of the policy. Must be a valid lowercase RFC 1123 label.
+     */
     val version: String,
+    /**
+     * Names of the policy resource.
+     */
     val names: Names,
 ) {
     init {
@@ -32,6 +41,27 @@ class PolicyMetadata(
     ): Boolean = this.group == group && this.version == version && this.names.kind == kind
 
     override fun toString(): String = "PolicyMetadata(group='$group', version='$version', names=$names)"
+
+    companion object {
+        fun from(policyAnnotation: Policy): PolicyMetadata =
+            PolicyMetadata(
+                group = policyAnnotation.group,
+                version = policyAnnotation.version,
+                names =
+                    if (policyAnnotation.singular.isEmpty()) {
+                        Names(
+                            kind = policyAnnotation.kind,
+                            plural = policyAnnotation.plural,
+                        )
+                    } else {
+                        Names(
+                            kind = policyAnnotation.kind,
+                            plural = policyAnnotation.plural,
+                            singular = policyAnnotation.singular,
+                        )
+                    },
+            )
+    }
 
     class Names(
         /**

@@ -5,6 +5,7 @@ import com.github.l34130.netty.dbgw.policy.api.DatabaseConnectionInfo
 import com.github.l34130.netty.dbgw.policy.api.SessionInfo
 import com.github.l34130.netty.dbgw.policy.api.query.DatabaseQueryPolicyContext
 import com.github.l34130.netty.dbgw.policy.api.query.DatabaseQueryPolicyResult
+import com.github.l34130.netty.dbgw.policy.builtin.database.query.DatabaseTimeRangeAccessQueryPolicy
 import org.junit.jupiter.api.DynamicTest.dynamicTest
 import org.junit.jupiter.api.TestFactory
 import java.time.Clock

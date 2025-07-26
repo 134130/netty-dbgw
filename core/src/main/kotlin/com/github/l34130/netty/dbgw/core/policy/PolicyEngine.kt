@@ -30,25 +30,37 @@ class PolicyEngine {
     private fun loadFactories() {
         ServiceLoader.load(DatabaseQueryPolicyFactory::class.java).forEach { queryPolicyFactory ->
             val queryPolicy =
-                if (queryPolicyFactory.isApplicable(
+                when {
+                    queryPolicyFactory.isApplicable(
                         group = "builtin",
                         version = "v1",
-                        kind = "TimeRangeAccessQueryPolicy",
-                    )
-                ) {
-                    queryPolicyFactory.create(
-                        mapOf(
-                            "range" to "[15:00, 17:00)",
-                            "allowInRange" to false,
-                        ),
-                    )
-                } else {
-                    null
+                        kind = "DatabaseTimeRangeAccessQueryPolicy",
+                    ) -> {
+                        queryPolicyFactory.create(
+                            mapOf(
+                                "range" to "[15:00, 17:00)",
+                                "allowInRange" to false,
+                            ),
+                        )
+                    }
+                    queryPolicyFactory.isApplicable(
+                        group = "builtin",
+                        version = "v1",
+                        kind = "DatabaseQueryStatementType",
+                    ) -> {
+                        queryPolicyFactory.create(
+                            mapOf(
+                                "statements" to listOf("DELETE"),
+                                "action" to "DENY",
+                            ),
+                        )
+                    }
+                    else -> null
                 }
 
             if (queryPolicy != null) {
                 queryPolicies[queryPolicyFactory::class.java.name] = queryPolicy
-                logger.info { "Loaded query policy: ${queryPolicyFactory::class.java.name}" }
+                logger.info { "Loaded query policy: $queryPolicy" }
             } else {
                 logger.trace { "Query policy factory ${queryPolicyFactory::class.java.name} is not applicable" }
             }
