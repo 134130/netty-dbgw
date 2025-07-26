@@ -1,9 +1,8 @@
 package com.github.l34130.netty.dbgw.policy.builtin.database.query
 
-import com.github.l34130.netty.dbgw.policy.api.database.query.AbstractDatabaseQueryPolicyFactory
+import com.github.l34130.netty.dbgw.policy.api.AbstractResourceFactory
 
-class DatabaseStatementTypePolicyFactory :
-    AbstractDatabaseQueryPolicyFactory<DatabaseStatementTypePolicy>(DatabaseStatementTypePolicy::class) {
+class DatabaseStatementTypePolicyFactory : AbstractResourceFactory<DatabaseStatementTypePolicy>(DatabaseStatementTypePolicy::class) {
     override fun create(props: Map<String, Any>): DatabaseStatementTypePolicy =
         DatabaseStatementTypePolicy(
             statements = props["statements"] as List<String>,

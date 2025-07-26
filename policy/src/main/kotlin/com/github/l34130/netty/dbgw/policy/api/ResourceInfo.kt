@@ -32,36 +32,21 @@ class ResourceInfo(
         }
     }
 
-    fun key(): String = "${names.plural}.$version.$group"
+    fun groupVersionKind(): GroupVersionKind =
+        GroupVersionKind(
+            group = group,
+            version = version,
+            kind = names.kind,
+        )
 
-    fun isApplicable(
-        group: String,
-        version: String,
-        kind: String,
-    ): Boolean = this.group == group && this.version == version && this.names.kind == kind
+    fun groupVersionResource(): GroupVersionResource =
+        GroupVersionResource(
+            group = group,
+            version = version,
+            resource = names.plural,
+        )
 
-    override fun toString(): String = "PolicyMetadata(group='$group', version='$version', names=$names)"
-
-    companion object {
-        fun from(resourceAnnotation: Resource): ResourceInfo =
-            ResourceInfo(
-                group = resourceAnnotation.group,
-                version = resourceAnnotation.version,
-                names =
-                    if (resourceAnnotation.singular.isEmpty()) {
-                        Names(
-                            kind = resourceAnnotation.kind,
-                            plural = resourceAnnotation.plural,
-                        )
-                    } else {
-                        Names(
-                            kind = resourceAnnotation.kind,
-                            plural = resourceAnnotation.plural,
-                            singular = resourceAnnotation.singular,
-                        )
-                    },
-            )
-    }
+    override fun toString(): String = "$group/$version, Names=(kind=${names.kind}, plural=${names.plural}, singular=${names.singular})"
 
     class Names(
         /**

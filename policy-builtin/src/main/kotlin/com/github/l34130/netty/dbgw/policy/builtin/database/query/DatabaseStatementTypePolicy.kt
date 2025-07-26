@@ -1,8 +1,8 @@
 package com.github.l34130.netty.dbgw.policy.builtin.database.query
 
 import com.github.l34130.netty.dbgw.policy.api.Resource
-import com.github.l34130.netty.dbgw.policy.api.database.query.AbstractDatabaseQueryPolicy
 import com.github.l34130.netty.dbgw.policy.api.database.query.DatabaseQueryContext
+import com.github.l34130.netty.dbgw.policy.api.database.query.DatabaseQueryPolicy
 import com.github.l34130.netty.dbgw.policy.api.database.query.DatabaseQueryPolicyResult
 
 @Resource(
@@ -15,7 +15,7 @@ import com.github.l34130.netty.dbgw.policy.api.database.query.DatabaseQueryPolic
 data class DatabaseStatementTypePolicy(
     val statements: List<String>,
     val action: Action,
-) : AbstractDatabaseQueryPolicy() {
+) : DatabaseQueryPolicy {
     override fun evaluate(ctx: DatabaseQueryContext): DatabaseQueryPolicyResult {
         // TODO: Parse the query to extract the statement type
         //  For now, we will just check if the query contains any of the statements

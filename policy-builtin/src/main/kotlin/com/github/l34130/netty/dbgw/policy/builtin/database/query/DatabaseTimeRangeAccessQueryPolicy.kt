@@ -1,8 +1,8 @@
 package com.github.l34130.netty.dbgw.policy.builtin.database.query
 
 import com.github.l34130.netty.dbgw.policy.api.Resource
-import com.github.l34130.netty.dbgw.policy.api.database.query.AbstractDatabaseQueryPolicy
 import com.github.l34130.netty.dbgw.policy.api.database.query.DatabaseQueryContext
+import com.github.l34130.netty.dbgw.policy.api.database.query.DatabaseQueryPolicy
 import com.github.l34130.netty.dbgw.policy.api.database.query.DatabaseQueryPolicyResult
 import java.time.Clock
 import java.time.LocalTime
@@ -23,7 +23,7 @@ data class DatabaseTimeRangeAccessQueryPolicy(
     private val endInclusive: Boolean,
     private val allowInRange: Boolean = true,
     private val clock: Clock,
-) : AbstractDatabaseQueryPolicy() {
+) : DatabaseQueryPolicy {
     private val rangeNotation: String =
         "${if (startInclusive) '[' else '('}$startTime, $endTime${if (endInclusive) ']' else ')'}"
 
