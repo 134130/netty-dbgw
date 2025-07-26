@@ -1,6 +1,7 @@
 package com.github.l34130.netty.dbgw.core
 
 import com.github.l34130.netty.dbgw.core.config.DatabaseGatewayConfig
+import com.github.l34130.netty.dbgw.core.utils.netty.closeOnFlush
 import com.github.l34130.netty.dbgw.policy.api.ClientInfo
 import com.github.l34130.netty.dbgw.policy.api.SessionInfo
 import com.github.l34130.netty.dbgw.policy.api.database.DatabaseConnectionInfo
@@ -48,6 +49,11 @@ class ProxyConnectionHandler(
 
         val backend = backendFuture.channel()
         backendFuture.addListener { future ->
+            if (!future.isSuccess) {
+                logger.error(future.cause()) { "Failed to connect to backend: ${config.upstreamHost}:${config.upstreamPort}" }
+                frontend.closeOnFlush()
+                return@addListener
+            }
 
             logger.debug { "Connected to backend: ${backend.remoteAddress()}" }
 
