@@ -1,4 +1,4 @@
-package com.github.l34130.netty.dbgw.core
+package com.github.l34130.netty.dbgw.core.utils.concurrent
 
 import io.netty.channel.Channel
 import io.netty.util.concurrent.EventExecutor

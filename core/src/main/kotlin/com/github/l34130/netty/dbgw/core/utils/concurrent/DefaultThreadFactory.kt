@@ -1,4 +1,4 @@
-package com.github.l34130.netty.dbgw.core
+package com.github.l34130.netty.dbgw.core.utils.concurrent
 
 import java.util.concurrent.ThreadFactory
 import java.util.concurrent.atomic.AtomicInteger
