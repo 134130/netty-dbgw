@@ -1,4 +1,4 @@
-package com.github.l34130.netty.dbgw.policy.api
+package com.github.l34130.netty.dbgw.policy
 
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.ObjectMapper
