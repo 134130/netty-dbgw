@@ -3,9 +3,9 @@ package com.github.l34130.netty.dbgw.core
 
 import io.netty.channel.ChannelHandlerContext
 
-abstract class DatabaseGatewayState<F : Any, B : Any> {
+abstract class GatewayState<F : Any, B : Any> {
     data class StateResult(
-        val nextState: DatabaseGatewayState<*, *>,
+        val nextState: GatewayState<*, *>,
         val action: MessageAction,
     )
 
@@ -20,4 +20,4 @@ abstract class DatabaseGatewayState<F : Any, B : Any> {
     ): StateResult = error("onBackendMessage() not implemented for ${this::class.java.simpleName}")
 }
 
-abstract class BidirectionalDatabaseGatewayState<T : Any> : DatabaseGatewayState<T, T>()
+abstract class BidirectionalGatewayState<T : Any> : GatewayState<T, T>()

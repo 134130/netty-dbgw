@@ -1,6 +1,6 @@
 package com.github.l34130.netty.dbgw.core
 
-import com.github.l34130.netty.dbgw.core.config.GatewayConfig
+import com.github.l34130.netty.dbgw.core.config.DatabaseGatewayConfig
 import io.netty.bootstrap.ServerBootstrap
 import io.netty.channel.Channel
 import io.netty.channel.ChannelFuture
@@ -12,14 +12,14 @@ import io.netty.channel.socket.nio.NioServerSocketChannel
 import io.netty.handler.logging.LogLevel
 import io.netty.handler.logging.LoggingHandler
 
-abstract class AbstractDatabaseGateway(
-    protected val config: GatewayConfig,
+abstract class AbstractGateway(
+    protected val config: DatabaseGatewayConfig,
 ) {
     protected abstract fun createFrontendHandlers(): List<ChannelHandler>
 
     protected abstract fun createBackendHandlers(): List<ChannelHandler>
 
-    protected open fun createStateMachine(): DatabaseStateMachine? = null
+    protected open fun createStateMachine(): StateMachine? = null
 
     private lateinit var f: ChannelFuture
 

@@ -10,11 +10,11 @@ import io.netty.util.concurrent.EventExecutorGroup
 import io.netty.util.concurrent.Promise
 import io.netty.util.internal.TypeParameterMatcher
 
-class DatabaseStateMachine(
-    initialState: DatabaseGatewayState<*, *>,
+class StateMachine(
+    initialState: GatewayState<*, *>,
     private val interceptors: List<MessageInterceptor> = emptyList(),
 ) {
-    private var state: DatabaseGatewayState<*, *> = initialState
+    private var state: GatewayState<*, *> = initialState
     private val logger = KotlinLogging.logger { }
 
     private val businessEventExecutorChooser =
@@ -110,15 +110,15 @@ class DatabaseStateMachine(
     ): MessageAction {
         val matcher =
             when (direction) {
-                MessageDirection.FRONTEND -> TypeParameterMatcher.find(state, DatabaseGatewayState::class.java, "F")
-                MessageDirection.BACKEND -> TypeParameterMatcher.find(state, DatabaseGatewayState::class.java, "B")
+                MessageDirection.FRONTEND -> TypeParameterMatcher.find(state, GatewayState::class.java, "F")
+                MessageDirection.BACKEND -> TypeParameterMatcher.find(state, GatewayState::class.java, "B")
             }
         check(matcher.match(msg)) {
             "Message type '${msg::class.java.simpleName}' does not match expected type for state '${state::class.java.simpleName}'"
         }
 
         @Suppress("UNCHECKED_CAST")
-        val state = state as DatabaseGatewayState<Any, Any>
+        val state = state as GatewayState<Any, Any>
         logger.trace { "[$direction] Processing message in state: ${state::class.java.simpleName}" }
 
         val result =

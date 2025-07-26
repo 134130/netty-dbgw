@@ -14,7 +14,7 @@ fun interface MessageInterceptor {
 
         data class Complete(
             val action: MessageAction,
-            val nextState: DatabaseGatewayState<*, *>,
+            val nextState: GatewayState<*, *>,
         ) : InterceptResult()
 
         data class Terminate(

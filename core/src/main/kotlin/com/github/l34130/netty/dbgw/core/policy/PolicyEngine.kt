@@ -1,34 +1,34 @@
 package com.github.l34130.netty.dbgw.core.policy
 
-import com.github.l34130.netty.dbgw.policy.api.query.QueryPolicy
-import com.github.l34130.netty.dbgw.policy.api.query.QueryPolicyContext
-import com.github.l34130.netty.dbgw.policy.api.query.QueryPolicyFactory
-import com.github.l34130.netty.dbgw.policy.api.query.QueryPolicyResult
+import com.github.l34130.netty.dbgw.policy.api.query.DatabaseQueryPolicy
+import com.github.l34130.netty.dbgw.policy.api.query.DatabaseQueryPolicyContext
+import com.github.l34130.netty.dbgw.policy.api.query.DatabaseQueryPolicyFactory
+import com.github.l34130.netty.dbgw.policy.api.query.DatabaseQueryPolicyResult
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.util.ServiceLoader
 
 class PolicyEngine {
-    private val queryPolicies = mutableMapOf<String, QueryPolicy>()
+    private val queryPolicies = mutableMapOf<String, DatabaseQueryPolicy>()
 
     fun init() {
         loadFactories()
     }
 
     fun evaluateQueryPolicy(
-        ctx: QueryPolicyContext,
+        ctx: DatabaseQueryPolicyContext,
         query: String,
-    ): QueryPolicyResult {
+    ): DatabaseQueryPolicyResult {
         queryPolicies.values.forEach { policy ->
             val result = policy.evaluate(ctx, query)
             if (!result.isAllowed) {
                 return result
             }
         }
-        return QueryPolicyResult.Allowed()
+        return DatabaseQueryPolicyResult.Allowed()
     }
 
     private fun loadFactories() {
-        ServiceLoader.load(QueryPolicyFactory::class.java).forEach { queryPolicyFactory ->
+        ServiceLoader.load(DatabaseQueryPolicyFactory::class.java).forEach { queryPolicyFactory ->
             val queryPolicy =
                 if (queryPolicyFactory.isApplicable(
                         group = "builtin",

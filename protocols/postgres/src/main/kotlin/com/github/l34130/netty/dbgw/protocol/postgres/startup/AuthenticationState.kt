@@ -1,6 +1,6 @@
 package com.github.l34130.netty.dbgw.protocol.postgres.startup
 
-import com.github.l34130.netty.dbgw.core.DatabaseGatewayState
+import com.github.l34130.netty.dbgw.core.GatewayState
 import com.github.l34130.netty.dbgw.core.MessageAction
 import com.github.l34130.netty.dbgw.protocol.postgres.Message
 import com.github.l34130.netty.dbgw.protocol.postgres.MessageEncoder
@@ -9,7 +9,7 @@ import com.github.l34130.netty.dbgw.protocol.postgres.message.ParameterStatusMes
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.channel.ChannelHandlerContext
 
-class AuthenticationState : DatabaseGatewayState<Message, Message>() {
+class AuthenticationState : GatewayState<Message, Message>() {
     private var authenticationRequest: AuthenticationRequest? = null
 
     override fun onFrontendMessage(

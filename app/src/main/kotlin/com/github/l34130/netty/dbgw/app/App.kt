@@ -1,6 +1,6 @@
 package com.github.l34130.netty.dbgw.app
 
-import com.github.l34130.netty.dbgw.core.config.GatewayConfig
+import com.github.l34130.netty.dbgw.core.config.DatabaseGatewayConfig
 import com.github.l34130.netty.dbgw.core.config.GatewayConfigLoader
 import com.github.l34130.netty.dbgw.protocol.mysql.MySqlGateway
 import com.github.l34130.netty.dbgw.protocol.postgres.PostgresGateway
@@ -65,11 +65,11 @@ fun main(args: Array<String>) {
                     } else {
                         // Use the provided port and upstream
                         logger.info { "Using provided port: $port and upstream: $upstream" }
-                        GatewayConfig(
+                        DatabaseGatewayConfig(
                             listenPort = port,
                             upstreamHost = upstream.first,
                             upstreamPort = upstream.second,
-                            upstreamDatabaseType = GatewayConfig.UpstreamDatabaseType.MYSQL,
+                            upstreamDatabaseType = DatabaseGatewayConfig.UpstreamDatabaseType.MYSQL,
                             restrictedSqlStatements = emptyList(),
                             authenticationOverride = null, // No authentication by default
                         )
@@ -82,7 +82,7 @@ fun main(args: Array<String>) {
         }
 
         when (config.upstreamDatabaseType) {
-            GatewayConfig.UpstreamDatabaseType.MYSQL -> {
+            DatabaseGatewayConfig.UpstreamDatabaseType.MYSQL -> {
                 val gateway = MySqlGateway(config)
                 try {
                     gateway.start()
@@ -90,7 +90,7 @@ fun main(args: Array<String>) {
                     gateway.shutdown()
                 }
             }
-            GatewayConfig.UpstreamDatabaseType.POSTGRESQL -> {
+            DatabaseGatewayConfig.UpstreamDatabaseType.POSTGRESQL -> {
                 val gateway = PostgresGateway(config)
                 try {
                     gateway.start()

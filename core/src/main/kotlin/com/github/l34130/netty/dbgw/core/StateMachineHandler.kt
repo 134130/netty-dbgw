@@ -10,7 +10,7 @@ import io.netty.util.ReferenceCountUtil
 import java.nio.channels.ClosedChannelException
 
 class StateMachineHandler(
-    private val stateMachine: DatabaseStateMachine,
+    private val stateMachine: StateMachine,
     private val direction: MessageDirection,
 ) : ChannelInboundHandlerAdapter() {
     private val logger = KotlinLogging.logger("StateMachineHandler-${direction.name}")

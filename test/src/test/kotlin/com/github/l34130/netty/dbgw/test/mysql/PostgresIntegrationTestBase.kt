@@ -1,6 +1,6 @@
 package com.github.l34130.netty.dbgw.test.mysql
 
-import com.github.l34130.netty.dbgw.core.config.GatewayConfig
+import com.github.l34130.netty.dbgw.core.config.DatabaseGatewayConfig
 import com.github.l34130.netty.dbgw.protocol.postgres.PostgresGateway
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -30,11 +30,11 @@ abstract class PostgresIntegrationTestBase(
     fun setup() {
         gateway =
             PostgresGateway(
-                GatewayConfig(
+                DatabaseGatewayConfig(
                     listenPort = gatewayPort,
                     upstreamHost = postgresContainer.host,
                     upstreamPort = postgresContainer.getMappedPort(5432),
-                    upstreamDatabaseType = GatewayConfig.UpstreamDatabaseType.POSTGRESQL,
+                    upstreamDatabaseType = DatabaseGatewayConfig.UpstreamDatabaseType.POSTGRESQL,
                     restrictedSqlStatements = emptyList(),
                     authenticationOverride = null,
                 ),

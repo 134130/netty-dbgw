@@ -15,13 +15,13 @@ object GatewayConfigLoader {
      * Loads the gateway configuration from the default location.
      * Search the classpath, the project root directory.
      */
-    fun loadDefault(): GatewayConfig? {
+    fun loadDefault(): DatabaseGatewayConfig? {
         logger.debug { "Loading gateway configuration automatically..." }
 
         // Load from classpath
         GatewayConfigLoader::class.java
             .getResourceAsStream("/dbgw.yaml")
-            ?.use { inputStream -> mapper.readValue<GatewayConfig.Wrapper>(inputStream) }
+            ?.use { inputStream -> mapper.readValue<DatabaseGatewayConfig.Wrapper>(inputStream) }
             ?.let {
                 logger.info { "Gateway configuration automatically loaded from classpath." }
                 return it.gateway
@@ -30,7 +30,7 @@ object GatewayConfigLoader {
         // Load from project root directory
         File("dbgw.yaml")
             .takeIf { it.exists() }
-            ?.let { file -> file to mapper.readValue<GatewayConfig.Wrapper>(file) }
+            ?.let { file -> file to mapper.readValue<DatabaseGatewayConfig.Wrapper>(file) }
             ?.let { (file, it) ->
                 logger.info { "Gateway configuration automatically loaded from '${file.absolutePath}'" }
                 return it.gateway
@@ -40,10 +40,10 @@ object GatewayConfigLoader {
         return null
     }
 
-    fun loadFrom(file: File): GatewayConfig {
+    fun loadFrom(file: File): DatabaseGatewayConfig {
         require(!file.exists()) {
             "File ${file.absolutePath} does not exist."
         }
-        return mapper.readValue<GatewayConfig.Wrapper>(file).gateway
+        return mapper.readValue<DatabaseGatewayConfig.Wrapper>(file).gateway
     }
 }

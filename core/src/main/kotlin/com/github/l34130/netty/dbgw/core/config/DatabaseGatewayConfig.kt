@@ -2,7 +2,7 @@ package com.github.l34130.netty.dbgw.core.config
 
 import com.github.l34130.netty.dbgw.core.policy.PolicyEngine
 
-data class GatewayConfig(
+data class DatabaseGatewayConfig(
     val listenPort: Int,
     val upstreamHost: String,
     val upstreamPort: Int,
@@ -35,7 +35,7 @@ data class GatewayConfig(
         }
 
     class Wrapper(
-        val gateway: GatewayConfig,
+        val gateway: DatabaseGatewayConfig,
     )
 
     enum class UpstreamDatabaseType {

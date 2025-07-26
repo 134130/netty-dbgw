@@ -1,8 +1,8 @@
 package com.github.l34130.netty.dbgw.protocol.mysql
 
-import com.github.l34130.netty.dbgw.core.AbstractDatabaseGateway
-import com.github.l34130.netty.dbgw.core.DatabaseStateMachine
-import com.github.l34130.netty.dbgw.core.config.GatewayConfig
+import com.github.l34130.netty.dbgw.core.AbstractGateway
+import com.github.l34130.netty.dbgw.core.StateMachine
+import com.github.l34130.netty.dbgw.core.config.DatabaseGatewayConfig
 import com.github.l34130.netty.dbgw.core.frontend
 import com.github.l34130.netty.dbgw.core.security.QueryPolicy
 import com.github.l34130.netty.dbgw.core.security.QueryPolicyEngine
@@ -14,17 +14,17 @@ import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.ChannelInboundHandlerAdapter
 
 class MySqlGateway(
-    config: GatewayConfig,
-) : AbstractDatabaseGateway(config) {
+    config: DatabaseGatewayConfig,
+) : AbstractGateway(config) {
     override fun createFrontendHandlers(): List<ChannelHandler> = listOf(PacketEncoder(), PacketDecoder())
 
     override fun createBackendHandlers(): List<ChannelHandler> =
         listOf(MySqlChannelInitialHandler(config), PacketEncoder(), PacketDecoder())
 
-    override fun createStateMachine(): DatabaseStateMachine = DatabaseStateMachine(HandshakeState())
+    override fun createStateMachine(): StateMachine = StateMachine(HandshakeState())
 
     private inner class MySqlChannelInitialHandler(
-        config: GatewayConfig,
+        config: DatabaseGatewayConfig,
     ) : ChannelInboundHandlerAdapter() {
         private val capabilities = Capabilities()
         private val preparedStatements: MutableMap<UInt, PreparedStatement> = mutableMapOf()

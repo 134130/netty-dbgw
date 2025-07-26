@@ -1,16 +1,16 @@
 package com.github.l34130.netty.dbgw.policy.api.query
 
 import com.github.l34130.netty.dbgw.policy.api.ClientInfo
-import com.github.l34130.netty.dbgw.policy.api.ConnectionInfo
-import com.github.l34130.netty.dbgw.policy.api.PolicyContext
+import com.github.l34130.netty.dbgw.policy.api.DatabaseConnectionInfo
+import com.github.l34130.netty.dbgw.policy.api.DatabasePolicyContext
 import com.github.l34130.netty.dbgw.policy.api.SessionInfo
 
-class QueryPolicyContext(
+class DatabaseQueryPolicyContext(
     clientInfo: ClientInfo,
-    connectionInfo: ConnectionInfo,
+    connectionInfo: DatabaseConnectionInfo,
     sessionInfo: SessionInfo,
     attributes: MutableMap<String, Any> = mutableMapOf(),
-) : PolicyContext(
+) : DatabasePolicyContext(
         clientInfo = clientInfo,
         connectionInfo = connectionInfo,
         sessionInfo = sessionInfo,

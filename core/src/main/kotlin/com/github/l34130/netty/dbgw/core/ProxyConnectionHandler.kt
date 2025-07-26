@@ -1,6 +1,6 @@
 package com.github.l34130.netty.dbgw.core
 
-import com.github.l34130.netty.dbgw.core.config.GatewayConfig
+import com.github.l34130.netty.dbgw.core.config.DatabaseGatewayConfig
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.bootstrap.Bootstrap
 import io.netty.channel.Channel
@@ -10,10 +10,10 @@ import io.netty.channel.ChannelInboundHandlerAdapter
 import io.netty.channel.ChannelInitializer
 
 class ProxyConnectionHandler(
-    private val config: GatewayConfig,
+    private val config: DatabaseGatewayConfig,
     private val frontendHandlers: List<ChannelHandler>,
     private val backendHandlers: List<ChannelHandler>,
-    private val stateMachine: DatabaseStateMachine?,
+    private val stateMachine: StateMachine?,
 ) : ChannelInboundHandlerAdapter() {
     override fun channelActive(ctx: ChannelHandlerContext) {
         val frontend = ctx.channel()

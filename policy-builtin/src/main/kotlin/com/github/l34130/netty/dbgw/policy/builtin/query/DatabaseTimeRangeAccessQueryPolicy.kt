@@ -1,21 +1,21 @@
 package com.github.l34130.netty.dbgw.policy.builtin.query
 
 import com.github.l34130.netty.dbgw.policy.api.PolicyMetadata
-import com.github.l34130.netty.dbgw.policy.api.query.QueryPolicy
-import com.github.l34130.netty.dbgw.policy.api.query.QueryPolicyContext
-import com.github.l34130.netty.dbgw.policy.api.query.QueryPolicyResult
+import com.github.l34130.netty.dbgw.policy.api.query.DatabaseQueryPolicy
+import com.github.l34130.netty.dbgw.policy.api.query.DatabaseQueryPolicyContext
+import com.github.l34130.netty.dbgw.policy.api.query.DatabaseQueryPolicyResult
 import java.time.Clock
 import java.time.LocalTime
 import java.util.regex.Pattern
 
-class TimeRangeAccessQueryPolicy(
+class DatabaseTimeRangeAccessQueryPolicy(
     private val startTime: LocalTime,
     private val endTime: LocalTime,
     private val startInclusive: Boolean,
     private val endInclusive: Boolean,
     private val allowInRange: Boolean = true,
     private val clock: Clock,
-) : QueryPolicy {
+) : DatabaseQueryPolicy {
     private val rangeNotation: String =
         "${if (startInclusive) '[' else '('}$startTime, $endTime${if (endInclusive) ']' else ')'}"
 
@@ -26,9 +26,9 @@ class TimeRangeAccessQueryPolicy(
     }
 
     override fun evaluate(
-        ctx: QueryPolicyContext,
+        ctx: DatabaseQueryPolicyContext,
         query: String,
-    ): QueryPolicyResult {
+    ): DatabaseQueryPolicyResult {
         val currentTime = LocalTime.now(clock)
 
         val afterStart = if (startInclusive) !currentTime.isBefore(startTime) else currentTime.isAfter(startTime)
@@ -45,9 +45,9 @@ class TimeRangeAccessQueryPolicy(
 
         val shouldAllow = if (allowInRange) isWithinRange else !isWithinRange
         return if (shouldAllow) {
-            QueryPolicyResult.Allowed()
+            DatabaseQueryPolicyResult.Allowed()
         } else {
-            QueryPolicyResult.Denied(
+            DatabaseQueryPolicyResult.Denied(
                 reason =
                     if (allowInRange) {
                         "current time is outside the allowed range $rangeNotation"
@@ -70,14 +70,14 @@ class TimeRangeAccessQueryPolicy(
                 version = "v1",
                 names =
                     PolicyMetadata.Names(
-                        kind = TimeRangeAccessQueryPolicy::class.java.simpleName,
-                        plural = "timerangeaccessquerypolicies",
-                        singular = "timerangeaccessquerypolicy",
+                        kind = DatabaseTimeRangeAccessQueryPolicy::class.java.simpleName,
+                        plural = "databasetimerangeaccessquerypolicies",
+                        singular = "databasetimerangeaccessquerypolicy",
                     ),
             )
 
         /**
-         * Creates a [TimeRangeAccessQueryPolicy] from a string representation of a time range
+         * Creates a [DatabaseTimeRangeAccessQueryPolicy] from a string representation of a time range
          * @param range the time range string in the format `[HH:mm, HH:mm)`, `(HH:mm, HH:mm)`, `[HH:mm, HH:mm]`, or `(HH:mm, HH:mm]`
          * @param allowInRange if true, the policy allows access within the specified range; if false, it denies access within the specified range
          */
@@ -85,7 +85,7 @@ class TimeRangeAccessQueryPolicy(
             range: String,
             allowInRange: Boolean = true,
             clock: Clock = Clock.systemDefaultZone(),
-        ): TimeRangeAccessQueryPolicy {
+        ): DatabaseTimeRangeAccessQueryPolicy {
             val matcher = RANGE_PATTERN.matcher(range)
             require(matcher.matches()) { "Range must be in format '[HH:mm, HH:mm)' or similar" }
 
@@ -94,7 +94,7 @@ class TimeRangeAccessQueryPolicy(
             val endTimeStr = matcher.group(3)
             val endBracket = matcher.group(4)
 
-            return TimeRangeAccessQueryPolicy(
+            return DatabaseTimeRangeAccessQueryPolicy(
                 startTime = LocalTime.parse(startTimeStr),
                 endTime = LocalTime.parse(endTimeStr),
                 startInclusive = startBracket == "[",

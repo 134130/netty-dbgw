@@ -1,6 +1,6 @@
 package com.github.l34130.netty.dbgw.policy.api
 
-data class ConnectionInfo(
+data class DatabaseConnectionInfo(
     /**
      * [com.github.l34130.netty.dbgw.common.DatabaseType.id]
      */

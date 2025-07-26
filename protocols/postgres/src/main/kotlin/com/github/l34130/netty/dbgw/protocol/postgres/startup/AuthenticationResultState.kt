@@ -1,6 +1,6 @@
 package com.github.l34130.netty.dbgw.protocol.postgres.startup
 
-import com.github.l34130.netty.dbgw.core.DatabaseGatewayState
+import com.github.l34130.netty.dbgw.core.GatewayState
 import com.github.l34130.netty.dbgw.core.MessageAction
 import com.github.l34130.netty.dbgw.protocol.postgres.Message
 import com.github.l34130.netty.dbgw.protocol.postgres.command.QueryCycleStatus
@@ -9,7 +9,7 @@ import com.github.l34130.netty.dbgw.protocol.postgres.message.ParameterStatusMes
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.channel.ChannelHandlerContext
 
-class AuthenticationResultState : DatabaseGatewayState<Message, Message>() {
+class AuthenticationResultState : GatewayState<Message, Message>() {
     override fun onBackendMessage(
         ctx: ChannelHandlerContext,
         msg: Message,

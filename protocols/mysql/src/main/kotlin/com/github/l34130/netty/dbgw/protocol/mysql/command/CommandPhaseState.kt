@@ -5,9 +5,9 @@ import com.github.l34130.netty.dbgw.core.MessageAction
 import com.github.l34130.netty.dbgw.core.gatewayConfig
 import com.github.l34130.netty.dbgw.core.utils.netty.peek
 import com.github.l34130.netty.dbgw.policy.api.ClientInfo
-import com.github.l34130.netty.dbgw.policy.api.ConnectionInfo
+import com.github.l34130.netty.dbgw.policy.api.DatabaseConnectionInfo
 import com.github.l34130.netty.dbgw.policy.api.SessionInfo
-import com.github.l34130.netty.dbgw.policy.api.query.QueryPolicyContext
+import com.github.l34130.netty.dbgw.policy.api.query.DatabaseQueryPolicyContext
 import com.github.l34130.netty.dbgw.protocol.mysql.MySqlAttrs
 import com.github.l34130.netty.dbgw.protocol.mysql.MySqlGatewayState
 import com.github.l34130.netty.dbgw.protocol.mysql.Packet
@@ -102,13 +102,13 @@ internal class CommandPhaseState :
 
         val engine2 =
             ctx.gatewayConfig().policyEngine.evaluateQueryPolicy(
-                QueryPolicyContext(
+                DatabaseQueryPolicyContext(
                     clientInfo =
                         ClientInfo(
                             sourceIps = listOf(),
                         ),
                     connectionInfo =
-                        ConnectionInfo(
+                        DatabaseConnectionInfo(
                             databaseType = "",
                         ),
                     sessionInfo =

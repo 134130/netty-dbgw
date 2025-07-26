@@ -1,13 +1,13 @@
 package com.github.l34130.netty.dbgw.protocol.postgres.command
 
 import com.github.l34130.netty.dbgw.core.BusinessLogicAware
-import com.github.l34130.netty.dbgw.core.DatabaseGatewayState
+import com.github.l34130.netty.dbgw.core.GatewayState
 import com.github.l34130.netty.dbgw.core.MessageAction
 import com.github.l34130.netty.dbgw.core.gatewayConfig
 import com.github.l34130.netty.dbgw.policy.api.ClientInfo
-import com.github.l34130.netty.dbgw.policy.api.ConnectionInfo
+import com.github.l34130.netty.dbgw.policy.api.DatabaseConnectionInfo
 import com.github.l34130.netty.dbgw.policy.api.SessionInfo
-import com.github.l34130.netty.dbgw.policy.api.query.QueryPolicyContext
+import com.github.l34130.netty.dbgw.policy.api.query.DatabaseQueryPolicyContext
 import com.github.l34130.netty.dbgw.protocol.postgres.Message
 import com.github.l34130.netty.dbgw.protocol.postgres.message.ErrorResponse
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -15,7 +15,7 @@ import io.netty.channel.ChannelHandlerContext
 
 // TODO: Handle the state more restrictively, e.g., by checking if the query is in progress or not
 class QueryCycleStatus :
-    DatabaseGatewayState<Message, Message>(),
+    GatewayState<Message, Message>(),
     BusinessLogicAware {
     override fun onFrontendMessage(
         ctx: ChannelHandlerContext,
@@ -28,13 +28,13 @@ class QueryCycleStatus :
 
                 val result =
                     ctx.gatewayConfig().policyEngine.evaluateQueryPolicy(
-                        QueryPolicyContext(
+                        DatabaseQueryPolicyContext(
                             clientInfo =
                                 ClientInfo(
                                     sourceIps = listOf(),
                                 ),
                             connectionInfo =
-                                ConnectionInfo(
+                                DatabaseConnectionInfo(
                                     databaseType = "",
                                 ),
                             sessionInfo =
@@ -69,13 +69,13 @@ class QueryCycleStatus :
 
                 val result =
                     ctx.gatewayConfig().policyEngine.evaluateQueryPolicy(
-                        QueryPolicyContext(
+                        DatabaseQueryPolicyContext(
                             clientInfo =
                                 ClientInfo(
                                     sourceIps = listOf(),
                                 ),
                             connectionInfo =
-                                ConnectionInfo(
+                                DatabaseConnectionInfo(
                                     databaseType = "",
                                 ),
                             sessionInfo =

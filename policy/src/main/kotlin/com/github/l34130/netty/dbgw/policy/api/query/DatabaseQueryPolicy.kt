@@ -2,11 +2,11 @@ package com.github.l34130.netty.dbgw.policy.api.query
 
 import com.github.l34130.netty.dbgw.policy.api.PolicyMetadata
 
-interface QueryPolicy {
+interface DatabaseQueryPolicy {
     fun evaluate(
-        ctx: QueryPolicyContext,
+        ctx: DatabaseQueryPolicyContext,
         query: String,
-    ): QueryPolicyResult
+    ): DatabaseQueryPolicyResult
 
     fun getMetadata(): PolicyMetadata
 }
