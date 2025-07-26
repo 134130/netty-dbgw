@@ -56,7 +56,6 @@ internal class AuthSwitchState : MySqlGatewayState() {
         packet: Packet,
     ): StateResult {
         val payload = packet.payload
-
         if (payload.readableBytes() < 1) {
             throw IllegalStateException("Received AuthSwitchResponse with no data")
         }

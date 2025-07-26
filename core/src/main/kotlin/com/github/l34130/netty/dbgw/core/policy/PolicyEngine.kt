@@ -39,6 +39,7 @@ class PolicyEngine {
                     queryPolicyFactory.create(
                         mapOf(
                             "range" to "[15:00, 17:00)",
+                            "allowInRange" to false,
                         ),
                     )
                 } else {
