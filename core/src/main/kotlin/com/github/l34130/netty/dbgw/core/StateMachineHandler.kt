@@ -22,8 +22,8 @@ class StateMachineHandler(
         val relay = getRelayChannel(ctx)
         val processPromise =
             when (direction) {
-                MessageDirection.DOWNSTREAM -> stateMachine.processDownstreamMessage(ctx, msg)
-                MessageDirection.UPSTREAM -> stateMachine.processUpstreamMessage(ctx, msg)
+                MessageDirection.FRONTEND -> stateMachine.processFrontendMessage(ctx, msg)
+                MessageDirection.BACKEND -> stateMachine.processBackendMessage(ctx, msg)
             }
 
         processPromise.addListener { processFuture ->
@@ -99,7 +99,7 @@ class StateMachineHandler(
 
     private fun getRelayChannel(ctx: ChannelHandlerContext): Channel =
         when (direction) {
-            MessageDirection.DOWNSTREAM -> ctx.upstream()
-            MessageDirection.UPSTREAM -> ctx.downstream()
+            MessageDirection.FRONTEND -> ctx.backend()
+            MessageDirection.BACKEND -> ctx.frontend()
         }
 }

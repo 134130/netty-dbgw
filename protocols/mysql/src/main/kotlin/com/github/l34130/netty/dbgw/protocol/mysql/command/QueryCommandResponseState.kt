@@ -15,7 +15,7 @@ import io.netty.buffer.ByteBuf
 import io.netty.channel.ChannelHandlerContext
 
 internal class QueryCommandResponseState : MySqlGatewayState() {
-    override fun onUpstreamMessage(
+    override fun onBackendMessage(
         ctx: ChannelHandlerContext,
         msg: Packet,
     ): StateResult {
@@ -46,7 +46,7 @@ internal class QueryCommandResponseState : MySqlGatewayState() {
         if (msg.payload.peek { it.readUnsignedByte().toUInt() } == 0xFBu) {
             TODO("Unhandled 0xFB byte in COM_QUERY_RESPONSE, this indicates a More Data packet.")
         }
-        return TextResultsetState().onUpstreamMessage(ctx, msg)
+        return TextResultsetState().onBackendMessage(ctx, msg)
     }
 
     companion object {
@@ -59,7 +59,7 @@ internal class QueryCommandResponseState : MySqlGatewayState() {
         private var metadataFollows: Boolean = false
         private var columnDefinitionCount: ULong = 0UL
 
-        override fun onUpstreamMessage(
+        override fun onBackendMessage(
             ctx: ChannelHandlerContext,
             packet: Packet,
         ): StateResult {

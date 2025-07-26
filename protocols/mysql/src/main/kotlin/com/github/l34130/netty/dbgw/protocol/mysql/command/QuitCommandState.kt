@@ -11,7 +11,7 @@ import io.netty.channel.ChannelHandlerContext
 internal class QuitCommandState : MySqlGatewayState() {
     private var requested = false
 
-    override fun onDownstreamMessage(
+    override fun onFrontendMessage(
         ctx: ChannelHandlerContext,
         msg: Packet,
     ): StateResult {
@@ -24,7 +24,7 @@ internal class QuitCommandState : MySqlGatewayState() {
         )
     }
 
-    override fun onUpstreamMessage(
+    override fun onBackendMessage(
         ctx: ChannelHandlerContext,
         msg: Packet,
     ): StateResult {

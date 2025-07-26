@@ -1,7 +1,7 @@
 package com.github.l34130.netty.dbgw.protocol.mysql.connection
 
 import com.github.l34130.netty.dbgw.core.MessageAction
-import com.github.l34130.netty.dbgw.core.upstream
+import com.github.l34130.netty.dbgw.core.backend
 import com.github.l34130.netty.dbgw.core.utils.netty.closeOnFlush
 import com.github.l34130.netty.dbgw.core.utils.toEnumSet
 import com.github.l34130.netty.dbgw.protocol.mysql.MySqlGatewayState
@@ -21,7 +21,7 @@ import io.netty.handler.ssl.util.InsecureTrustManagerFactory
 import java.util.EnumSet
 
 internal class HandshakeResponseState : MySqlGatewayState() {
-    override fun onDownstreamMessage(
+    override fun onFrontendMessage(
         ctx: ChannelHandlerContext,
         msg: Packet,
     ): StateResult {
@@ -59,9 +59,9 @@ internal class HandshakeResponseState : MySqlGatewayState() {
         logger.trace { "Character Set: $characterSet" }
         payload.skipBytes(23) // skip filler bytes
 
-        val downstream = ctx.channel()
-        val upstream = ctx.upstream()
-        if (ctx.capabilities().contains(CapabilityFlag.CLIENT_SSL) && downstream.pipeline().get("ssl-handler") == null) {
+        val frontend = ctx.channel()
+        val backend = ctx.backend()
+        if (ctx.capabilities().contains(CapabilityFlag.CLIENT_SSL) && frontend.pipeline().get("ssl-handler") == null) {
             // TODO: Singletonize SSL context creation
             val serverSslContext =
                 SslContextBuilder
@@ -69,7 +69,7 @@ internal class HandshakeResponseState : MySqlGatewayState() {
                         this.javaClass.classLoader.getResourceAsStream("certificate.pem"),
                         this.javaClass.classLoader.getResourceAsStream("private.key"),
                     ).build()
-                    .newEngine(downstream.alloc())
+                    .newEngine(frontend.alloc())
 
             // TODO: Use InsecureTrustManagerFactory for testing purposes only
             val clientSslContext =
@@ -77,37 +77,37 @@ internal class HandshakeResponseState : MySqlGatewayState() {
                     .forClient()
                     .trustManager(InsecureTrustManagerFactory.INSTANCE)
                     .build()
-                    .newEngine(upstream.alloc())
+                    .newEngine(backend.alloc())
 
             payload.resetReaderIndex()
-            upstream.writeAndFlush(msg)
-            upstream.pipeline().addFirst(
+            backend.writeAndFlush(msg)
+            backend.pipeline().addFirst(
                 "ssl-handler",
                 SslHandler(clientSslContext).apply {
                     handshakeFuture().addListener { future ->
                         if (!future.isSuccess) {
-                            logger.error(future.cause()) { "[Upstream] SSL handshake failed." }
-                            downstream.closeOnFlush()
+                            logger.error(future.cause()) { "[Backend] SSL handshake failed." }
+                            frontend.closeOnFlush()
                             return@addListener
                         }
 
-                        logger.info { "[Upstream] SSL handshake completed successfully." }
+                        logger.info { "[Backend] SSL handshake completed successfully." }
                     }
-                    upstream.writeAndFlush(Unpooled.EMPTY_BUFFER) // Trigger the SSL handshake
+                    backend.writeAndFlush(Unpooled.EMPTY_BUFFER) // Trigger the SSL handshake
                 },
             )
 
-            downstream.pipeline().addFirst(
+            frontend.pipeline().addFirst(
                 "ssl-handler",
                 SslHandler(serverSslContext).apply {
                     handshakeFuture().addListener { future ->
                         if (!future.isSuccess) {
-                            logger.error(future.cause()) { "[Downstream] SSL handshake failed." }
-                            downstream.closeOnFlush()
+                            logger.error(future.cause()) { "[Frontend] SSL handshake failed." }
+                            frontend.closeOnFlush()
                             return@addListener
                         }
 
-                        logger.info { "[Downstream] SSL handshake completed successfully." }
+                        logger.info { "[Frontend] SSL handshake completed successfully." }
                     }
                 },
             )

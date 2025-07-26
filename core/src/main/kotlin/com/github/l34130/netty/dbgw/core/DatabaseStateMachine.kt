@@ -29,7 +29,7 @@ class DatabaseStateMachine(
     private val isBusinessLogicAware
         get() = isInterceptorsBusinessLogicAware || state is BusinessLogicAware
 
-    fun processDownstreamMessage(
+    fun processFrontendMessage(
         ctx: ChannelHandlerContext,
         msg: Any,
     ): Promise<MessageAction> {
@@ -38,14 +38,14 @@ class DatabaseStateMachine(
             if (isBusinessLogicAware) businessEventExecutorChooser.choose(ctx.channel()) else ctx.executor()
 
         executor.submit {
-            val result = runCatching { processDownstreamMessageInternal(ctx, msg) }
+            val result = runCatching { processFrontendMessageInternal(ctx, msg) }
             promise.setResultSafely(ctx, executor, result)
         }
 
         return promise
     }
 
-    fun processUpstreamMessage(
+    fun processBackendMessage(
         ctx: ChannelHandlerContext,
         msg: Any,
     ): Promise<MessageAction> {
@@ -54,22 +54,22 @@ class DatabaseStateMachine(
             if (isBusinessLogicAware) businessEventExecutorChooser.choose(ctx.channel()) else ctx.executor()
 
         executor.submit {
-            val result = runCatching { processUpstreamMessageInternal(ctx, msg) }
+            val result = runCatching { processBackendMessageInternal(ctx, msg) }
             promise.setResultSafely(ctx, executor, result)
         }
 
         return promise
     }
 
-    private fun processDownstreamMessageInternal(
+    private fun processFrontendMessageInternal(
         ctx: ChannelHandlerContext,
         msg: Any,
     ): MessageAction {
-        val interceptorResult = executeInterceptors(ctx, msg, MessageDirection.DOWNSTREAM)
+        val interceptorResult = executeInterceptors(ctx, msg, MessageDirection.FRONTEND)
         return when (interceptorResult) {
             is MessageInterceptor.InterceptResult.Complete -> {
                 logger.debug {
-                    "Intercepted message in DOWNSTREAM direction: ${msg::class.java.simpleName}, action: ${interceptorResult.action}"
+                    "Intercepted message in FRONTEND direction: ${msg::class.java.simpleName}, action: ${interceptorResult.action}"
                 }
                 state = interceptorResult.nextState
                 interceptorResult.action
@@ -79,19 +79,19 @@ class DatabaseStateMachine(
                 MessageAction.Terminate(interceptorResult.reason)
             }
 
-            MessageInterceptor.InterceptResult.Continue -> processMessage(ctx, msg, MessageDirection.DOWNSTREAM)
+            MessageInterceptor.InterceptResult.Continue -> processMessage(ctx, msg, MessageDirection.FRONTEND)
         }
     }
 
-    private fun processUpstreamMessageInternal(
+    private fun processBackendMessageInternal(
         ctx: ChannelHandlerContext,
         msg: Any,
     ): MessageAction {
-        val interceptorResult = executeInterceptors(ctx, msg, MessageDirection.UPSTREAM)
+        val interceptorResult = executeInterceptors(ctx, msg, MessageDirection.BACKEND)
         return when (interceptorResult) {
             is MessageInterceptor.InterceptResult.Complete -> {
                 logger.debug {
-                    "Intercepted message in UPSTREAM direction: ${msg::class.java.simpleName}, action: ${interceptorResult.action}"
+                    "Intercepted message in BACKEND direction: ${msg::class.java.simpleName}, action: ${interceptorResult.action}"
                 }
                 state = interceptorResult.nextState
                 interceptorResult.action
@@ -99,7 +99,7 @@ class DatabaseStateMachine(
             is MessageInterceptor.InterceptResult.Terminate -> {
                 MessageAction.Terminate(interceptorResult.reason)
             }
-            MessageInterceptor.InterceptResult.Continue -> processMessage(ctx, msg, MessageDirection.UPSTREAM)
+            MessageInterceptor.InterceptResult.Continue -> processMessage(ctx, msg, MessageDirection.BACKEND)
         }
     }
 
@@ -110,8 +110,8 @@ class DatabaseStateMachine(
     ): MessageAction {
         val matcher =
             when (direction) {
-                MessageDirection.DOWNSTREAM -> TypeParameterMatcher.find(state, DatabaseGatewayState::class.java, "D")
-                MessageDirection.UPSTREAM -> TypeParameterMatcher.find(state, DatabaseGatewayState::class.java, "U")
+                MessageDirection.FRONTEND -> TypeParameterMatcher.find(state, DatabaseGatewayState::class.java, "F")
+                MessageDirection.BACKEND -> TypeParameterMatcher.find(state, DatabaseGatewayState::class.java, "B")
             }
         check(matcher.match(msg)) {
             "Message type '${msg::class.java.simpleName}' does not match expected type for state '${state::class.java.simpleName}'"
@@ -123,8 +123,8 @@ class DatabaseStateMachine(
 
         val result =
             when (direction) {
-                MessageDirection.DOWNSTREAM -> state.onDownstreamMessage(ctx, msg)
-                MessageDirection.UPSTREAM -> state.onUpstreamMessage(ctx, msg)
+                MessageDirection.FRONTEND -> state.onFrontendMessage(ctx, msg)
+                MessageDirection.BACKEND -> state.onBackendMessage(ctx, msg)
             }
 
         logger.trace { "[$direction] Resulting action: ${result.action}, next state: ${result.nextState::class.java.simpleName}" }

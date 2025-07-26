@@ -2,7 +2,7 @@ package com.github.l34130.netty.dbgw.protocol.postgres.startup
 
 import com.github.l34130.netty.dbgw.core.DatabaseGatewayState
 import com.github.l34130.netty.dbgw.core.MessageAction
-import com.github.l34130.netty.dbgw.core.upstream
+import com.github.l34130.netty.dbgw.core.backend
 import com.github.l34130.netty.dbgw.protocol.postgres.Message
 import com.github.l34130.netty.dbgw.protocol.postgres.MessageDecoder
 import com.github.l34130.netty.dbgw.protocol.postgres.MessageEncoder
@@ -12,7 +12,7 @@ import io.netty.buffer.ByteBuf
 import io.netty.channel.ChannelHandlerContext
 
 class StartupState : DatabaseGatewayState<ByteBuf, Message>() {
-    override fun onDownstreamMessage(
+    override fun onFrontendMessage(
         ctx: ChannelHandlerContext,
         msg: ByteBuf,
     ): StateResult {
@@ -27,7 +27,7 @@ class StartupState : DatabaseGatewayState<ByteBuf, Message>() {
             it.addFirst("encoder", MessageEncoder())
             it.addFirst("decoder", MessageDecoder())
         }
-        ctx.upstream().pipeline().also {
+        ctx.backend().pipeline().also {
             it.addFirst("decoder", MessageDecoder())
             // encoder will be added later to escape the startup message encoding; StartupMessage is not a message format
         }

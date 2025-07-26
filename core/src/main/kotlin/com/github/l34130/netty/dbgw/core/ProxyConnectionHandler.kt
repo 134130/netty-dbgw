@@ -11,61 +11,61 @@ import io.netty.channel.ChannelInitializer
 
 class ProxyConnectionHandler(
     private val config: GatewayConfig,
-    private val downstreamHandlers: List<ChannelHandler>,
-    private val upstreamHandlers: List<ChannelHandler>,
+    private val frontendHandlers: List<ChannelHandler>,
+    private val backendHandlers: List<ChannelHandler>,
     private val stateMachine: DatabaseStateMachine?,
 ) : ChannelInboundHandlerAdapter() {
     override fun channelActive(ctx: ChannelHandlerContext) {
-        val downstream = ctx.channel()
+        val frontend = ctx.channel()
 
-        logger.debug { "Connected from downstream: ${downstream.remoteAddress()}" }
+        logger.debug { "Connected from frontend: ${frontend.remoteAddress()}" }
 
-        val upstreamFuture =
+        val backendFuture =
             Bootstrap()
-                .group(downstream.eventLoop())
-                .channel(downstream.javaClass)
+                .group(frontend.eventLoop())
+                .channel(frontend.javaClass)
                 .handler(
                     object : ChannelInitializer<Channel>() {
                         override fun initChannel(ch: Channel) {
                             ch.pipeline().addLast(
-                                *upstreamHandlers.toTypedArray(),
+                                *backendHandlers.toTypedArray(),
                             )
                             stateMachine?.let {
                                 ch.pipeline().addLast(
                                     "state-machine-handler",
-                                    StateMachineHandler(it, MessageDirection.UPSTREAM),
+                                    StateMachineHandler(it, MessageDirection.BACKEND),
                                 )
                             }
                         }
                     },
                 ).connect(config.upstreamHost, config.upstreamPort)
 
-        val upstream = upstreamFuture.channel()
-        upstreamFuture.addListener { future ->
+        val backend = backendFuture.channel()
+        backendFuture.addListener { future ->
 
-            logger.debug { "Connected to upstream: ${upstream.remoteAddress()}" }
+            logger.debug { "Connected to backend: ${backend.remoteAddress()}" }
 
-            downstream.attr(GatewayAttrs.UPSTREAM_ATTR_KEY).set(upstream)
-            upstream.attr(GatewayAttrs.DOWNSTREAM_ATTR_KEY).set(downstream)
+            frontend.attr(GatewayAttrs.BACKEND_ATTR_KEY).set(backend)
+            backend.attr(GatewayAttrs.FRONTEND_ATTR_KEY).set(frontend)
 
-            downstream.config().isAutoRead = true
-            downstream.read()
+            frontend.config().isAutoRead = true
+            frontend.read()
         }
 
-        downstream.pipeline().addLast(
-            *downstreamHandlers.toTypedArray(),
+        frontend.pipeline().addLast(
+            *frontendHandlers.toTypedArray(),
         )
         stateMachine?.let {
-            downstream.pipeline().addLast(
+            frontend.pipeline().addLast(
                 "state-machine-handler",
-                StateMachineHandler(it, MessageDirection.DOWNSTREAM),
+                StateMachineHandler(it, MessageDirection.FRONTEND),
             )
         }
 
-        downstream.attr(GatewayAttrs.GATEWAY_CONFIG_ATTR_KEY).set(config)
-        upstream.attr(GatewayAttrs.GATEWAY_CONFIG_ATTR_KEY).set(config)
+        frontend.attr(GatewayAttrs.GATEWAY_CONFIG_ATTR_KEY).set(config)
+        backend.attr(GatewayAttrs.GATEWAY_CONFIG_ATTR_KEY).set(config)
 
-        downstream.pipeline().remove(this)
+        frontend.pipeline().remove(this)
     }
 
     companion object {

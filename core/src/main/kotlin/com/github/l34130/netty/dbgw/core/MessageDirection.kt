@@ -1,13 +1,13 @@
 package com.github.l34130.netty.dbgw.core
 
 enum class MessageDirection {
-    DOWNSTREAM,
-    UPSTREAM,
+    FRONTEND,
+    BACKEND,
     ;
 
     fun opposite(): MessageDirection =
         when (this) {
-            DOWNSTREAM -> UPSTREAM
-            UPSTREAM -> DOWNSTREAM
+            FRONTEND -> BACKEND
+            BACKEND -> FRONTEND
         }
 }

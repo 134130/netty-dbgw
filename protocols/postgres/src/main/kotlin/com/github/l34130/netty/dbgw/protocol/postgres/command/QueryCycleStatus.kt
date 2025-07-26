@@ -17,7 +17,7 @@ import io.netty.channel.ChannelHandlerContext
 class QueryCycleStatus :
     DatabaseGatewayState<Message, Message>(),
     BusinessLogicAware {
-    override fun onDownstreamMessage(
+    override fun onFrontendMessage(
         ctx: ChannelHandlerContext,
         msg: Message,
     ): StateResult =
@@ -143,7 +143,7 @@ class QueryCycleStatus :
             else -> TODO("Unsupported command type: ${msg.type}")
         }
 
-    override fun onUpstreamMessage(
+    override fun onBackendMessage(
         ctx: ChannelHandlerContext,
         msg: Message,
     ): StateResult {
@@ -210,7 +210,7 @@ class QueryCycleStatus :
                     action = MessageAction.Forward,
                 )
             }
-            else -> error("Unexpected upstream message type '${msg.type}'")
+            else -> error("Unexpected backend message type '${msg.type}'")
         }
     }
 

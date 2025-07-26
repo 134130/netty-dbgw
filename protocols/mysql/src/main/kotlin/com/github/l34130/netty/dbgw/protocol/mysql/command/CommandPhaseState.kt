@@ -24,7 +24,7 @@ import io.netty.channel.ChannelHandlerContext
 internal class CommandPhaseState :
     MySqlGatewayState(),
     BusinessLogicAware {
-    override fun onDownstreamMessage(
+    override fun onFrontendMessage(
         ctx: ChannelHandlerContext,
         msg: Packet,
     ): StateResult {
@@ -34,12 +34,12 @@ internal class CommandPhaseState :
         logger.debug { "Received $commandType" }
         return when (commandType) {
             CommandType.COM_QUERY -> handleQueryCommand(ctx, msg)
-            CommandType.COM_PING -> PingCommandState().onDownstreamMessage(ctx, msg)
-            CommandType.COM_QUIT -> QuitCommandState().onDownstreamMessage(ctx, msg)
-            CommandType.COM_DEBUG -> DebugCommandState().onDownstreamMessage(ctx, msg)
-            CommandType.COM_STMT_PREPARE -> PrepareStatementCommandState().onDownstreamMessage(ctx, msg)
-            CommandType.COM_STMT_EXECUTE -> ExecuteStatementCommandState().onDownstreamMessage(ctx, msg)
-            CommandType.COM_STMT_CLOSE -> CloseStatementCommandState().onDownstreamMessage(ctx, msg)
+            CommandType.COM_PING -> PingCommandState().onFrontendMessage(ctx, msg)
+            CommandType.COM_QUIT -> QuitCommandState().onFrontendMessage(ctx, msg)
+            CommandType.COM_DEBUG -> DebugCommandState().onFrontendMessage(ctx, msg)
+            CommandType.COM_STMT_PREPARE -> PrepareStatementCommandState().onFrontendMessage(ctx, msg)
+            CommandType.COM_STMT_EXECUTE -> ExecuteStatementCommandState().onFrontendMessage(ctx, msg)
+            CommandType.COM_STMT_CLOSE -> CloseStatementCommandState().onFrontendMessage(ctx, msg)
             null -> throw IllegalArgumentException("Unknown command byte: 0x${"%02x".format(commandByte).uppercase()}")
         }
     }

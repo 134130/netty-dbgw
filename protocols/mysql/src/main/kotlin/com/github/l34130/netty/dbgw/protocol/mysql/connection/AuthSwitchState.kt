@@ -11,22 +11,22 @@ import io.netty.channel.ChannelHandlerContext
 internal class AuthSwitchState : MySqlGatewayState() {
     private var state: State = State.WAITING_REQUEST
 
-    override fun onDownstreamMessage(
+    override fun onFrontendMessage(
         ctx: ChannelHandlerContext,
         msg: Packet,
     ): StateResult =
         when (state) {
-            State.WAITING_REQUEST -> error("Unexpected downstream packet in $state state")
+            State.WAITING_REQUEST -> error("Unexpected frontend packet in $state state")
             State.WAITING_RESPONSE -> handleAuthSwitchResponse(ctx, msg)
         }
 
-    override fun onUpstreamMessage(
+    override fun onBackendMessage(
         ctx: ChannelHandlerContext,
         msg: Packet,
     ): StateResult =
         when (state) {
             State.WAITING_REQUEST -> handleAuthSwitchRequest(ctx, msg)
-            State.WAITING_RESPONSE -> error("Unexpected upstream packet in $state state")
+            State.WAITING_RESPONSE -> error("Unexpected backend packet in $state state")
         }
 
     private fun handleAuthSwitchRequest(

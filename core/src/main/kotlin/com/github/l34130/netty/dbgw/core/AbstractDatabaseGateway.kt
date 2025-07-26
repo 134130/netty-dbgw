@@ -15,9 +15,9 @@ import io.netty.handler.logging.LoggingHandler
 abstract class AbstractDatabaseGateway(
     protected val config: GatewayConfig,
 ) {
-    protected abstract fun createDownstreamHandlers(): List<ChannelHandler>
+    protected abstract fun createFrontendHandlers(): List<ChannelHandler>
 
-    protected abstract fun createUpstreamHandlers(): List<ChannelHandler>
+    protected abstract fun createBackendHandlers(): List<ChannelHandler>
 
     protected open fun createStateMachine(): DatabaseStateMachine? = null
 
@@ -66,17 +66,17 @@ abstract class AbstractDatabaseGateway(
 
     private inner class DatabaseGatewayChannelInitializer : ChannelInitializer<Channel>() {
         override fun initChannel(ch: Channel) {
-            val downstream = ch
+            val frontend = ch
 
-            downstream.config().isAutoRead = false
+            frontend.config().isAutoRead = false
 
-            downstream
+            frontend
                 .pipeline()
                 .addLast(
                     ProxyConnectionHandler(
                         config = config,
-                        downstreamHandlers = createDownstreamHandlers(),
-                        upstreamHandlers = createUpstreamHandlers(),
+                        frontendHandlers = createFrontendHandlers(),
+                        backendHandlers = createBackendHandlers(),
                         stateMachine = createStateMachine(),
                     ),
                 )

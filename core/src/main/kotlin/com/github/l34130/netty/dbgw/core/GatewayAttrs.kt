@@ -6,19 +6,19 @@ import io.netty.channel.ChannelHandlerContext
 import io.netty.util.AttributeKey
 
 object GatewayAttrs {
-    val DOWNSTREAM_ATTR_KEY: AttributeKey<Channel> = AttributeKey.valueOf("downstream")
-    val UPSTREAM_ATTR_KEY: AttributeKey<Channel> = AttributeKey.valueOf("upstream")
+    val FRONTEND_ATTR_KEY: AttributeKey<Channel> = AttributeKey.valueOf("frontend")
+    val BACKEND_ATTR_KEY: AttributeKey<Channel> = AttributeKey.valueOf("backend")
     val GATEWAY_CONFIG_ATTR_KEY: AttributeKey<GatewayConfig> = AttributeKey.valueOf("config")
 }
 
-fun ChannelHandlerContext.downstream(): Channel =
-    checkNotNull(this.channel().attr(GatewayAttrs.DOWNSTREAM_ATTR_KEY).get()) {
-        "Downstream channel is not set in the context. Maybe trying to access already in the downstream handler?"
+fun ChannelHandlerContext.frontend(): Channel =
+    checkNotNull(this.channel().attr(GatewayAttrs.FRONTEND_ATTR_KEY).get()) {
+        "Frontend channel is not set in the context. Maybe trying to access already in the frontend handler? If so, use ctx.channel() instead."
     }
 
-fun ChannelHandlerContext.upstream(): Channel =
-    checkNotNull(this.channel().attr(GatewayAttrs.UPSTREAM_ATTR_KEY).get()) {
-        "Upstream channel is not set in the context. Maybe trying to access already in the upstream handler?"
+fun ChannelHandlerContext.backend(): Channel =
+    checkNotNull(this.channel().attr(GatewayAttrs.BACKEND_ATTR_KEY).get()) {
+        "Backend channel is not set in the context. Maybe trying to access already in the backend handler? If so, use ctx.channel() instead."
     }
 
 fun ChannelHandlerContext.gatewayConfig(): GatewayConfig = this.channel().attr(GatewayAttrs.GATEWAY_CONFIG_ATTR_KEY).get()

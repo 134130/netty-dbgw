@@ -15,7 +15,7 @@ import kotlin.math.max
 
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_connection_phase_packets_protocol_handshake.html
 internal class HandshakeState : MySqlGatewayState() {
-    override fun onUpstreamMessage(
+    override fun onBackendMessage(
         ctx: ChannelHandlerContext,
         msg: Packet,
     ): StateResult {

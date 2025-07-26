@@ -12,7 +12,7 @@ internal class CloseStatementCommandState : MySqlGatewayState() {
     private var requested = false
     var statementId: ULong = 0UL
 
-    override fun onDownstreamMessage(
+    override fun onFrontendMessage(
         ctx: ChannelHandlerContext,
         msg: Packet,
     ): StateResult {

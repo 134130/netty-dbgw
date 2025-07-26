@@ -3,7 +3,7 @@ package com.github.l34130.netty.dbgw.protocol.mysql
 import com.github.l34130.netty.dbgw.core.AbstractDatabaseGateway
 import com.github.l34130.netty.dbgw.core.DatabaseStateMachine
 import com.github.l34130.netty.dbgw.core.config.GatewayConfig
-import com.github.l34130.netty.dbgw.core.downstream
+import com.github.l34130.netty.dbgw.core.frontend
 import com.github.l34130.netty.dbgw.core.security.QueryPolicy
 import com.github.l34130.netty.dbgw.core.security.QueryPolicyEngine
 import com.github.l34130.netty.dbgw.core.security.QueryPolicyResult
@@ -16,9 +16,9 @@ import io.netty.channel.ChannelInboundHandlerAdapter
 class MySqlGateway(
     config: GatewayConfig,
 ) : AbstractDatabaseGateway(config) {
-    override fun createDownstreamHandlers(): List<ChannelHandler> = listOf(PacketEncoder(), PacketDecoder())
+    override fun createFrontendHandlers(): List<ChannelHandler> = listOf(PacketEncoder(), PacketDecoder())
 
-    override fun createUpstreamHandlers(): List<ChannelHandler> =
+    override fun createBackendHandlers(): List<ChannelHandler> =
         listOf(MySqlChannelInitialHandler(config), PacketEncoder(), PacketDecoder())
 
     override fun createStateMachine(): DatabaseStateMachine = DatabaseStateMachine(HandshakeState())
@@ -53,7 +53,7 @@ class MySqlGateway(
             ctx.channel().attr(MySqlAttrs.PREPARED_STATEMENTS_ATTR_KEY).set(preparedStatements)
             ctx.channel().attr(MySqlAttrs.QUERY_POLICY_ENGINE_ATTR_KEY).set(queryPolicyEngine)
 
-            ctx.downstream().apply {
+            ctx.frontend().apply {
                 attr(MySqlAttrs.CAPABILITIES_ATTR_KEY).set(capabilities)
                 attr(MySqlAttrs.PREPARED_STATEMENTS_ATTR_KEY).set(preparedStatements)
                 attr(MySqlAttrs.QUERY_POLICY_ENGINE_ATTR_KEY).set(queryPolicyEngine)

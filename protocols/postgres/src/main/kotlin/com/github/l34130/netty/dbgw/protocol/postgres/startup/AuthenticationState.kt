@@ -12,7 +12,7 @@ import io.netty.channel.ChannelHandlerContext
 class AuthenticationState : DatabaseGatewayState<Message, Message>() {
     private var authenticationRequest: AuthenticationRequest? = null
 
-    override fun onDownstreamMessage(
+    override fun onFrontendMessage(
         ctx: ChannelHandlerContext,
         msg: Message,
     ): StateResult {
@@ -39,7 +39,7 @@ class AuthenticationState : DatabaseGatewayState<Message, Message>() {
                 )
             }
             is AuthenticationRequest.AuthenticationSASLFinal ->
-                error("Never should reach here, final response should be handled in onUpstreamMessage")
+                error("Never should reach here, final response should be handled in onBackendMessage")
             is AuthenticationRequest.AuthenticationMD5Password -> {
                 val passwordMsg = PasswordMessage.readFrom(msg)
                 logger.trace { "MD5 password response: $passwordMsg" }
@@ -48,11 +48,11 @@ class AuthenticationState : DatabaseGatewayState<Message, Message>() {
                     action = MessageAction.Forward,
                 )
             }
-            AuthenticationRequest.AuthenticationOk -> error("Never should reach here, ok response should be handled in onUpstreamMessage")
+            AuthenticationRequest.AuthenticationOk -> error("Never should reach here, ok response should be handled in onBackendMessage")
         }
     }
 
-    override fun onUpstreamMessage(
+    override fun onBackendMessage(
         ctx: ChannelHandlerContext,
         msg: Message,
     ): StateResult {

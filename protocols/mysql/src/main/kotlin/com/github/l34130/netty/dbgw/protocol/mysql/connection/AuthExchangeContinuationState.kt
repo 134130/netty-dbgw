@@ -11,7 +11,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.channel.ChannelHandlerContext
 
 internal class AuthExchangeContinuationState : MySqlGatewayState() {
-    override fun onDownstreamMessage(
+    override fun onFrontendMessage(
         ctx: ChannelHandlerContext,
         msg: Packet,
     ): StateResult {
@@ -29,7 +29,7 @@ internal class AuthExchangeContinuationState : MySqlGatewayState() {
         )
     }
 
-    override fun onUpstreamMessage(
+    override fun onBackendMessage(
         ctx: ChannelHandlerContext,
         msg: Packet,
     ): StateResult {

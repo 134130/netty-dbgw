@@ -10,7 +10,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.channel.ChannelHandlerContext
 
 class AuthenticationResultState : DatabaseGatewayState<Message, Message>() {
-    override fun onUpstreamMessage(
+    override fun onBackendMessage(
         ctx: ChannelHandlerContext,
         msg: Message,
     ): StateResult =

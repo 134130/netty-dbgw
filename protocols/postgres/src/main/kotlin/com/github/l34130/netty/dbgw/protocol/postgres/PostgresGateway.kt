@@ -9,9 +9,9 @@ import io.netty.channel.ChannelHandler
 class PostgresGateway(
     config: GatewayConfig,
 ) : AbstractDatabaseGateway(config) {
-    override fun createDownstreamHandlers(): List<ChannelHandler> = listOf()
+    override fun createFrontendHandlers(): List<ChannelHandler> = listOf()
 
-    override fun createUpstreamHandlers(): List<ChannelHandler> = listOf()
+    override fun createBackendHandlers(): List<ChannelHandler> = listOf()
 
     override fun createStateMachine(): DatabaseStateMachine? =
         DatabaseStateMachine(

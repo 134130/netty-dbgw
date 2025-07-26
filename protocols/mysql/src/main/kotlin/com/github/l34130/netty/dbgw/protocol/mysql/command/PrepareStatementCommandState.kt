@@ -26,7 +26,7 @@ internal class PrepareStatementCommandState : MySqlGatewayState() {
 
     private val preparedStatementBuilder = PreparedStatement.builder()
 
-    override fun onDownstreamMessage(
+    override fun onFrontendMessage(
         ctx: ChannelHandlerContext,
         msg: Packet,
     ): StateResult {
@@ -45,7 +45,7 @@ internal class PrepareStatementCommandState : MySqlGatewayState() {
         )
     }
 
-    override fun onUpstreamMessage(
+    override fun onBackendMessage(
         ctx: ChannelHandlerContext,
         msg: Packet,
     ): StateResult {

@@ -24,7 +24,7 @@ import java.time.LocalDateTime
 internal class ExecuteStatementCommandState : MySqlGatewayState() {
     private var requested = false
 
-    override fun onDownstreamMessage(
+    override fun onFrontendMessage(
         ctx: ChannelHandlerContext,
         msg: Packet,
     ): StateResult {
@@ -102,14 +102,14 @@ internal class ExecuteStatementCommandState : MySqlGatewayState() {
             }
         }
 
-        // Forward the packet to the upstream handler
+        // Forward the packet to the backend handler
         return StateResult(
             nextState = this,
             action = MessageAction.Forward,
         )
     }
 
-    override fun onUpstreamMessage(
+    override fun onBackendMessage(
         ctx: ChannelHandlerContext,
         msg: Packet,
     ): StateResult {
@@ -140,7 +140,7 @@ internal class ExecuteStatementCommandState : MySqlGatewayState() {
 
         // If the response is not an error or OK packet, it must be a result set.
         // The BinaryProtocolResultsetState will handle the result set packets.
-        return BinaryProtocolResultsetState().onUpstreamMessage(ctx, msg)
+        return BinaryProtocolResultsetState().onBackendMessage(ctx, msg)
     }
 
     companion object {
@@ -222,7 +222,7 @@ internal class ExecuteStatementCommandState : MySqlGatewayState() {
         private var columnCount: ULong = 0UL
         private val columnDefinitions = mutableListOf<ColumnDefinition41>()
 
-        override fun onUpstreamMessage(
+        override fun onBackendMessage(
             ctx: ChannelHandlerContext,
             msg: Packet,
         ): StateResult =
