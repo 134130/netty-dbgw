@@ -15,8 +15,6 @@ dependencies {
     implementation("com.xenomachina:kotlin-argparser:2.0.7")
 
     implementation("io.netty:netty-all:4.2.2.Final")
-
-    implementation("org.bouncycastle:bcpkix-jdk18on:1.81")
 }
 
 application {
