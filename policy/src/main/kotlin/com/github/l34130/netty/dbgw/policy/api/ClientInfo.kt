@@ -1,7 +1,10 @@
 package com.github.l34130.netty.dbgw.policy.api
 
+/**
+ * Represents client information connected to the gateway.
+ */
 data class ClientInfo(
-    val sourceIps: List<String>,
-    val userAgent: String? = null,
-    val applicationName: String? = null,
+    var sourceIps: List<String>,
+    var userAgent: String? = null,
+    var applicationName: String? = null,
 )

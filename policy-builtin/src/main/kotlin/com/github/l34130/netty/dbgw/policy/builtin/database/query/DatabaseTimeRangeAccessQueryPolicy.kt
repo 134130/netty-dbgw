@@ -2,7 +2,7 @@ package com.github.l34130.netty.dbgw.policy.builtin.database.query
 
 import com.github.l34130.netty.dbgw.policy.api.Policy
 import com.github.l34130.netty.dbgw.policy.api.query.AbstractDatabaseQueryPolicy
-import com.github.l34130.netty.dbgw.policy.api.query.DatabaseQueryPolicyContext
+import com.github.l34130.netty.dbgw.policy.api.query.DatabaseQueryContext
 import com.github.l34130.netty.dbgw.policy.api.query.DatabaseQueryPolicyResult
 import java.time.Clock
 import java.time.LocalTime
@@ -33,10 +33,7 @@ data class DatabaseTimeRangeAccessQueryPolicy(
         }
     }
 
-    override fun evaluate(
-        ctx: DatabaseQueryPolicyContext,
-        query: String,
-    ): DatabaseQueryPolicyResult {
+    override fun evaluate(ctx: DatabaseQueryContext): DatabaseQueryPolicyResult {
         val currentTime = LocalTime.now(clock)
 
         val afterStart = if (startInclusive) !currentTime.isBefore(startTime) else currentTime.isAfter(startTime)

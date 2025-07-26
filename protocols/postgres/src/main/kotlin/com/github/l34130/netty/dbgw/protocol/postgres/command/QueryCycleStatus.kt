@@ -3,11 +3,9 @@ package com.github.l34130.netty.dbgw.protocol.postgres.command
 import com.github.l34130.netty.dbgw.core.BusinessLogicAware
 import com.github.l34130.netty.dbgw.core.GatewayState
 import com.github.l34130.netty.dbgw.core.MessageAction
+import com.github.l34130.netty.dbgw.core.databaseCtx
 import com.github.l34130.netty.dbgw.core.gatewayConfig
-import com.github.l34130.netty.dbgw.policy.api.ClientInfo
-import com.github.l34130.netty.dbgw.policy.api.DatabaseConnectionInfo
-import com.github.l34130.netty.dbgw.policy.api.SessionInfo
-import com.github.l34130.netty.dbgw.policy.api.query.DatabaseQueryPolicyContext
+import com.github.l34130.netty.dbgw.policy.api.query.withQuery
 import com.github.l34130.netty.dbgw.protocol.postgres.Message
 import com.github.l34130.netty.dbgw.protocol.postgres.message.ErrorResponse
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -26,33 +24,8 @@ class QueryCycleStatus :
                 val query = Query.readFrom(msg)
                 logger.debug { "Query: $query" }
 
-                val result =
-                    ctx.gatewayConfig().policyEngine.evaluateQueryPolicy(
-                        DatabaseQueryPolicyContext(
-                            clientInfo =
-                                ClientInfo(
-                                    sourceIps = listOf(),
-                                ),
-                            connectionInfo =
-                                DatabaseConnectionInfo(
-                                    databaseType = "",
-                                ),
-                            sessionInfo =
-                                SessionInfo(
-                                    sessionId = "",
-                                    userId = "",
-                                    username = "",
-                                ),
-                        ),
-                        query = query.query,
-                    )
-
-                if (result.isAllowed) {
-                    StateResult(
-                        nextState = this,
-                        action = MessageAction.Forward,
-                    )
-                } else {
+                ctx.gatewayConfig()?.let { config ->
+                    val result = config.policyEngine.evaluateQueryPolicy(ctx.databaseCtx()!!.withQuery(query.query))
                     // TODO: Intercept the message and send an error response
                     StateResult(
                         nextState = QueryCycleStatus(),
@@ -61,39 +34,17 @@ class QueryCycleStatus :
                                 reason = "Query policy violation: ${result.reason}",
                             ),
                     )
-                }
+                } ?: StateResult(
+                    nextState = this,
+                    action = MessageAction.Forward,
+                )
             }
             Parse.TYPE -> {
                 val parse = Parse.readFrom(msg)
                 logger.debug { "Parse: $parse" }
 
-                val result =
-                    ctx.gatewayConfig().policyEngine.evaluateQueryPolicy(
-                        DatabaseQueryPolicyContext(
-                            clientInfo =
-                                ClientInfo(
-                                    sourceIps = listOf(),
-                                ),
-                            connectionInfo =
-                                DatabaseConnectionInfo(
-                                    databaseType = "",
-                                ),
-                            sessionInfo =
-                                SessionInfo(
-                                    sessionId = "",
-                                    userId = "",
-                                    username = "",
-                                ),
-                        ),
-                        query = parse.query,
-                    )
-
-                if (result.isAllowed) {
-                    StateResult(
-                        nextState = this,
-                        action = MessageAction.Forward,
-                    )
-                } else {
+                ctx.gatewayConfig()?.let { config ->
+                    val result = config.policyEngine.evaluateQueryPolicy(ctx.databaseCtx()!!.withQuery(parse.query))
                     // TODO: Intercept the message and send an error response
                     StateResult(
                         nextState = QueryCycleStatus(),
@@ -102,9 +53,7 @@ class QueryCycleStatus :
                                 reason = "Query policy violation: ${result.reason}",
                             ),
                     )
-                }
-
-                StateResult(
+                } ?: StateResult(
                     nextState = this,
                     action = MessageAction.Forward,
                 )

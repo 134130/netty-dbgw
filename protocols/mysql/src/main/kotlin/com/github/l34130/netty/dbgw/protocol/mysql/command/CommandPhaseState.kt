@@ -2,12 +2,10 @@ package com.github.l34130.netty.dbgw.protocol.mysql.command
 
 import com.github.l34130.netty.dbgw.core.BusinessLogicAware
 import com.github.l34130.netty.dbgw.core.MessageAction
+import com.github.l34130.netty.dbgw.core.databaseCtx
 import com.github.l34130.netty.dbgw.core.gatewayConfig
 import com.github.l34130.netty.dbgw.core.utils.netty.peek
-import com.github.l34130.netty.dbgw.policy.api.ClientInfo
-import com.github.l34130.netty.dbgw.policy.api.DatabaseConnectionInfo
-import com.github.l34130.netty.dbgw.policy.api.SessionInfo
-import com.github.l34130.netty.dbgw.policy.api.query.DatabaseQueryPolicyContext
+import com.github.l34130.netty.dbgw.policy.api.query.withQuery
 import com.github.l34130.netty.dbgw.protocol.mysql.MySqlGatewayState
 import com.github.l34130.netty.dbgw.protocol.mysql.Packet
 import com.github.l34130.netty.dbgw.protocol.mysql.capabilities
@@ -75,46 +73,29 @@ internal class CommandPhaseState :
         val query = payload.readRestOfPacketString().toString(Charsets.UTF_8)
         logger.debug { "COM_QUERY: query='$query'" }
 
-        val engine =
-            ctx.gatewayConfig().policyEngine.evaluateQueryPolicy(
-                DatabaseQueryPolicyContext(
-                    clientInfo =
-                        ClientInfo(
-                            sourceIps = listOf(),
-                        ),
-                    connectionInfo =
-                        DatabaseConnectionInfo(
-                            databaseType = "",
-                        ),
-                    sessionInfo =
-                        SessionInfo(
-                            sessionId = "",
-                            userId = "",
-                            username = "",
-                        ),
-                ),
-                query,
-            )
-        if (!engine.isAllowed) {
-            val errorPacket =
-                Packet.Error.of(
-                    sequenceId = packet.sequenceId + 1,
-                    errorCode = 1U,
-                    sqlState = "DBGW_",
-                    message =
-                        buildString {
-                            append("Access denied")
-                            if (!engine.reason.isNullOrBlank()) {
-                                append(": ${engine.reason}")
-                            }
-                        },
-                    capabilities = ctx.capabilities().enumSet(),
-                )
+        ctx.gatewayConfig()?.let { config ->
+            val result = config.policyEngine.evaluateQueryPolicy(ctx.databaseCtx()!!.withQuery(query))
+            if (!result.isAllowed) {
+                val errorPacket =
+                    Packet.Error.of(
+                        sequenceId = packet.sequenceId + 1,
+                        errorCode = 1U,
+                        sqlState = "DBGW_",
+                        message =
+                            buildString {
+                                append("Access denied")
+                                if (!result.reason.isNullOrBlank()) {
+                                    append(": ${result.reason}")
+                                }
+                            },
+                        capabilities = ctx.capabilities().enumSet(),
+                    )
 
-            return StateResult(
-                nextState = CommandPhaseState(),
-                action = MessageAction.Intercept(msg = errorPacket),
-            )
+                return StateResult(
+                    nextState = CommandPhaseState(),
+                    action = MessageAction.Intercept(msg = errorPacket),
+                )
+            }
         }
 
         return StateResult(

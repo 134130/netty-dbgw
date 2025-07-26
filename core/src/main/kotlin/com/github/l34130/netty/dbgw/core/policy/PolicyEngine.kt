@@ -1,7 +1,7 @@
 package com.github.l34130.netty.dbgw.core.policy
 
+import com.github.l34130.netty.dbgw.policy.api.query.DatabaseQueryContext
 import com.github.l34130.netty.dbgw.policy.api.query.DatabaseQueryPolicy
-import com.github.l34130.netty.dbgw.policy.api.query.DatabaseQueryPolicyContext
 import com.github.l34130.netty.dbgw.policy.api.query.DatabaseQueryPolicyFactory
 import com.github.l34130.netty.dbgw.policy.api.query.DatabaseQueryPolicyResult
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -14,12 +14,9 @@ class PolicyEngine {
         loadFactories()
     }
 
-    fun evaluateQueryPolicy(
-        ctx: DatabaseQueryPolicyContext,
-        query: String,
-    ): DatabaseQueryPolicyResult {
+    fun evaluateQueryPolicy(ctx: DatabaseQueryContext): DatabaseQueryPolicyResult {
         queryPolicies.values.forEach { policy ->
-            val result = policy.evaluate(ctx, query)
+            val result = policy.evaluate(ctx)
             if (!result.isAllowed) {
                 return result
             }

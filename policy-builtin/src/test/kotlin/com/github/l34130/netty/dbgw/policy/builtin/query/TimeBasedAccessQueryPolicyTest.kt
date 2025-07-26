@@ -3,7 +3,7 @@ package com.github.l34130.netty.dbgw.policy.builtin.query
 import com.github.l34130.netty.dbgw.policy.api.ClientInfo
 import com.github.l34130.netty.dbgw.policy.api.DatabaseConnectionInfo
 import com.github.l34130.netty.dbgw.policy.api.SessionInfo
-import com.github.l34130.netty.dbgw.policy.api.query.DatabaseQueryPolicyContext
+import com.github.l34130.netty.dbgw.policy.api.query.DatabaseQueryContext
 import com.github.l34130.netty.dbgw.policy.api.query.DatabaseQueryPolicyResult
 import com.github.l34130.netty.dbgw.policy.builtin.database.query.DatabaseTimeRangeAccessQueryPolicy
 import org.junit.jupiter.api.DynamicTest.dynamicTest
@@ -15,7 +15,7 @@ import kotlin.test.assertIs
 
 class TimeBasedAccessQueryPolicyTest {
     private val ctx =
-        DatabaseQueryPolicyContext(
+        DatabaseQueryContext(
             clientInfo =
                 ClientInfo(
                     sourceIps = listOf(),
