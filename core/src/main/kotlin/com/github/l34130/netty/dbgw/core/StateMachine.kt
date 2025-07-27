@@ -112,11 +112,9 @@ private fun processMessageInCurrentState(
                 MessageDirection.FRONTEND -> TypeParameterMatcher.find(state, GatewayState::class.java, "F")
                 MessageDirection.BACKEND -> TypeParameterMatcher.find(state, GatewayState::class.java, "B")
             }
-    if (!matcher.match(msg)) {
-        throw IllegalStateException(
-            "Message type '${msg::class.java.simpleName}' does not match expected type for state '${state::class.java.simpleName}'"
-        )
-        }
+    check(matcher.match(msg)) {
+        "Message type '${msg::class.java.simpleName}' does not match expected type for state '${state::class.java.simpleName}'"
+    }
 
         @Suppress("UNCHECKED_CAST")
         val state = state as GatewayState<Any, Any>
