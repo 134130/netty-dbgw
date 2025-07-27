@@ -22,9 +22,8 @@ internal class HandshakeState : MySqlGatewayState() {
         val payload = msg.payload
         val protocolVersion = payload.readFixedLengthInteger(1)
         if (protocolVersion != 10UL) {
-            logger.error { "Unsupported MySQL protocol version: $protocolVersion" }
             ctx.close()
-            TODO("Handle unsupported protocol version")
+            throw IllegalStateException("Unsupported MySQL protocol version: $protocolVersion")
         }
 
         // human-readable server version

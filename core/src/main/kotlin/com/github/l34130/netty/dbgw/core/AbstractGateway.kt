@@ -38,30 +38,12 @@ abstract class AbstractGateway(
         f = b.bind(config.listenPort).sync()
     }
 
-    fun stop() {
-        try {
-            if (::f.isInitialized && f.isSuccess) {
-                f.channel().close().sync()
-            } else {
-                throw IllegalStateException("Gateway is not running or has not been started.")
-            }
-        } finally {
-            workerGroup.shutdownGracefully()
-            bossGroup.shutdownGracefully()
-        }
-    }
-
     fun shutdown() {
-        try {
-            if (::f.isInitialized && f.isSuccess) {
-                f.channel().closeFuture().sync()
-            } else {
-                throw IllegalStateException("Gateway is not running or has not been started.")
-            }
-        } finally {
-            workerGroup.shutdownGracefully()
-            bossGroup.shutdownGracefully()
+        if (::f.isInitialized) {
+            f.channel().close().sync()
         }
+        workerGroup.shutdownGracefully()
+        bossGroup.shutdownGracefully()
     }
 
     private inner class DatabaseGatewayChannelInitializer : ChannelInitializer<Channel>() {
