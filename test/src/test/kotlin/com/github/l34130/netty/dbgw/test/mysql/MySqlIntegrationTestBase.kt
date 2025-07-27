@@ -45,7 +45,7 @@ abstract class MySqlIntegrationTestBase(
     @AfterEach
     fun tearDown() {
         // Stop the gateway after each test
-        gateway.stop()
+        gateway.shutdown()
     }
 
     protected fun createConnection(modifier: (props: Properties) -> Unit = {}): Connection {

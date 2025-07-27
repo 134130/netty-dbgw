@@ -36,6 +36,7 @@ class StateMachineHandler(
                 if (!processFuture.isSuccess) {
                     if (ctx.channel().isActive) {
                         logger.error(processFuture.cause()) { "Failed to process message in ${direction.name.lowercase()} direction" }
+                        ReferenceCountUtil.release(msg)
                         ctx.close()
                     }
                     return@addListener
