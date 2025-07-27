@@ -8,7 +8,7 @@ import com.github.l34130.netty.dbgw.policy.api.database.query.DatabaseQueryPolic
 @Resource(
     group = "builtin",
     version = "v1",
-    kind = "DatabaseQueryStatementType",
+    kind = "DatabaseStatementTypePolicy",
     plural = "databasestatementtypepolicies",
     singular = "databasestatementtypepolicy",
 )

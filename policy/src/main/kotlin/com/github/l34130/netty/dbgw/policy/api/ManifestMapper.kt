@@ -5,6 +5,8 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import com.github.l34130.netty.dbgw.policy.readValues
+import java.io.File
+import java.io.InputStream
 import java.io.StringWriter
 
 object ManifestMapper {
@@ -17,6 +19,10 @@ object ManifestMapper {
         ).apply {
             registerKotlinModule()
         }
+
+    fun readValues(file: File) = yamlMapper.readValues<Manifest>(file)
+
+    fun readValues(inputStream: InputStream) = yamlMapper.readValues<Manifest>(inputStream)
 
     fun readValues(content: String) = yamlMapper.readValues<Manifest>(content)
 

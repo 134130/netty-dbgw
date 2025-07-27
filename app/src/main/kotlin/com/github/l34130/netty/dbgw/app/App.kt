@@ -38,6 +38,12 @@ class Args(
             "--config",
             help = "Path to the configuration file (YAML format)",
         ).default(null)
+
+    val policyFile by parser
+        .storing(
+            "--policy-file",
+            help = "Path to the policy file or directory (YAML format)",
+        ).default(null)
 }
 
 private val logger = KotlinLogging.logger { }
@@ -45,17 +51,17 @@ private val logger = KotlinLogging.logger { }
 fun main(args: Array<String>) {
     mainBody {
         val config =
-            parse(args).let {
-                val config = it.config
+            parse(args).let { args ->
+                val config = args.config
                 if (config != null) {
-                    if (it.port != null || it.upstream != null) {
+                    if (args.port != null || args.upstream != null) {
                         throw IllegalArgumentException("Cannot specify --port or --upstream when using --config")
                     }
                     logger.info { "Loading configuration from file: $config" }
                     GatewayConfigLoader.loadFrom(File(config))
                 } else {
-                    val port = it.port
-                    val upstream = it.upstream
+                    val port = args.port
+                    val upstream = args.upstream
                     if (port == null || upstream == null) {
                         // Try to load the default configuration
                         GatewayConfigLoader.loadDefault() ?: throw IllegalArgumentException(
@@ -64,13 +70,14 @@ fun main(args: Array<String>) {
                         )
                     } else {
                         // Use the provided port and upstream
-                        logger.info { "Using provided port: $port and upstream: $upstream" }
+                        logger.info { "Using provided port: $port, upstream: $upstream, policyFile: ${args.policyFile}" }
                         DatabaseGatewayConfig(
                             listenPort = port,
                             upstreamHost = upstream.first,
                             upstreamPort = upstream.second,
                             upstreamDatabaseType = DatabaseGatewayConfig.UpstreamDatabaseType.MYSQL,
                             authenticationOverride = null, // No authentication by default
+                            policyFile = args.policyFile,
                         )
                     }
                 }

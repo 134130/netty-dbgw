@@ -19,6 +19,8 @@ interface ResourceRegistry {
 
     fun getResourceByGvk(gvk: GroupVersionKind): ResourceInfo?
 
+    fun getAllResources(): List<ResourceInfo>
+
     companion object {
         val DEFAULT: ResourceRegistry =
             object : ResourceRegistry {
@@ -89,6 +91,8 @@ interface ResourceRegistry {
                     lock.read {
                         gvrByGvk[gvk]?.let { gvr -> resourcesByGvr[gvr] }
                     }
+
+                override fun getAllResources(): List<ResourceInfo> = lock.read { resourcesByGvr.values.toList() }
             }
     }
 }

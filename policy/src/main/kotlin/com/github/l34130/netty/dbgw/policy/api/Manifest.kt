@@ -32,5 +32,7 @@ class Manifest {
         this.spec = spec
     }
 
+    fun groupVersionKind(): GroupVersionKind = GroupVersionKind.from(apiVersion, kind)
+
     override fun toString(): String = "ResourceManifest(apiVersion='$apiVersion', kind='$kind', metadata=$metadata, spec=$spec)"
 }

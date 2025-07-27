@@ -52,7 +52,7 @@ class StateMachineHandler(
                     }
                     is MessageAction.Intercept -> {
                         ReferenceCountUtil.release(msg) // Release the original message as we are intercepting it.
-                        ctx.write(action.msg) // Write the intercepted response back to the channel.
+                        ctx.writeAndFlush(action.msg) // Write the intercepted response back to the channel.
                     }
                     MessageAction.Drop -> {
                         ReferenceCountUtil.release(msg) // Release the original message as we are dropping it.
@@ -77,7 +77,9 @@ class StateMachineHandler(
         if (pendingMessages.get() > 0) {
             channelReadCompleted.set(true) // Set the flag to true if there are pending messages to flush later.
         } else {
-            relay.flush() // Flush immediately if no pending messages.
+            relay.eventLoop().execute {
+                relay.flush() // Flush immediately if no pending messages.
+            }
         }
     }
 

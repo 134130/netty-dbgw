@@ -1,0 +1,15 @@
+apiVersion: builtin/v1
+kind: DatabaseTimeRangeAccessQueryPolicy
+metadata: {}
+spec:
+  range: "[15:00, 17:00)"
+  allowInRange: false
+---
+apiVersion: builtin/v1
+kind: DatabaseStatementTypePolicy
+metadata: {}
+spec:
+  statements:
+    - "UPDATE"
+    - "DELETE"
+  action: DENY
