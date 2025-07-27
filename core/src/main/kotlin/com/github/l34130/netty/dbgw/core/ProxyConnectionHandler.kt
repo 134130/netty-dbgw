@@ -51,6 +51,7 @@ class ProxyConnectionHandler(
         backendFuture.addListener { future ->
             if (!future.isSuccess) {
                 logger.error(future.cause()) { "Failed to connect to backend: ${config.upstreamHost}:${config.upstreamPort}" }
+                backend.close()
                 frontend.closeOnFlush()
                 return@addListener
             }
