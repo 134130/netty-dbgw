@@ -15,17 +15,16 @@ import io.netty.handler.logging.LoggingHandler
 abstract class AbstractGateway(
     protected val config: DatabaseGatewayConfig,
 ) {
+    private val bossGroup = MultiThreadIoEventLoopGroup(1, NioIoHandler.newFactory())
+    private val workerGroup = MultiThreadIoEventLoopGroup(NioIoHandler.newFactory())
+
+    private var channel: Channel? = null
+
     protected abstract fun createFrontendHandlers(): List<ChannelHandler>
 
     protected abstract fun createBackendHandlers(): List<ChannelHandler>
 
     protected open fun createStateMachine(): StateMachine? = null
-
-    private lateinit var f: ChannelFuture
-
-    private val factory = NioIoHandler.newFactory()
-    private val bossGroup = MultiThreadIoEventLoopGroup(1, factory)
-    private val workerGroup = MultiThreadIoEventLoopGroup(factory)
 
     fun start() {
         val b =
@@ -35,16 +34,14 @@ abstract class AbstractGateway(
                 .handler(LoggingHandler(LogLevel.INFO))
                 .childHandler(DatabaseGatewayChannelInitializer())
 
-        f = b.bind(config.listenPort).sync()
+        val future = b.bind(config.listenPort).sync()
+        channel = future.channel()
     }
 
     fun stop() {
         try {
-            if (::f.isInitialized && f.isSuccess) {
-                f.channel().close().sync()
-            } else {
-                throw IllegalStateException("Gateway is not running or has not been started.")
-            }
+            channel?.close()?.sync()
+                ?: throw IllegalStateException("Gateway is not running or has not been started.")
         } finally {
             workerGroup.shutdownGracefully()
             bossGroup.shutdownGracefully()
@@ -53,11 +50,8 @@ abstract class AbstractGateway(
 
     fun shutdown() {
         try {
-            if (::f.isInitialized && f.isSuccess) {
-                f.channel().closeFuture().sync()
-            } else {
-                throw IllegalStateException("Gateway is not running or has not been started.")
-            }
+            channel?.closeFuture()?.sync()
+                ?: throw IllegalStateException("Gateway is not running or has not been started.")
         } finally {
             workerGroup.shutdownGracefully()
             bossGroup.shutdownGracefully()

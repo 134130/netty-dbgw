@@ -33,40 +33,9 @@ class StateMachine(
         ctx: ChannelHandlerContext,
         msg: Any,
     ): Promise<MessageAction> {
-        val promise: Promise<MessageAction> = ctx.executor().newPromise()
-        val executor: EventExecutorGroup =
-            if (isBusinessLogicAware) businessEventExecutorChooser.choose(ctx.channel()) else ctx.executor()
-
-        executor.submit {
-            val result = runCatching { processFrontendMessageInternal(ctx, msg) }
-            promise.setResultSafely(ctx, executor, result)
-        }
-
-        return promise
-    }
-
-    fun processBackendMessage(
-        ctx: ChannelHandlerContext,
-        msg: Any,
-    ): Promise<MessageAction> {
-        val promise: Promise<MessageAction> = ctx.executor().newPromise()
-        val executor: EventExecutorGroup =
-            if (isBusinessLogicAware) businessEventExecutorChooser.choose(ctx.channel()) else ctx.executor()
-
-        executor.submit {
-            val result = runCatching { processBackendMessageInternal(ctx, msg) }
-            promise.setResultSafely(ctx, executor, result)
-        }
-
-        return promise
-    }
-
-    private fun processFrontendMessageInternal(
-        ctx: ChannelHandlerContext,
-        msg: Any,
-    ): MessageAction {
+    return processMessage(ctx, msg, MessageDirection.FRONTEND) {
         val interceptorResult = executeInterceptors(ctx, msg, MessageDirection.FRONTEND)
-        return when (interceptorResult) {
+        when (interceptorResult) {
             is MessageInterceptor.InterceptResult.Complete -> {
                 logger.debug {
                     "Intercepted message in FRONTEND direction: ${msg::class.java.simpleName}, action: ${interceptorResult.action}"
@@ -79,16 +48,22 @@ class StateMachine(
                 MessageAction.Terminate(interceptorResult.reason)
             }
 
-            MessageInterceptor.InterceptResult.Continue -> processMessage(ctx, msg, MessageDirection.FRONTEND)
+            MessageInterceptor.InterceptResult.Continue -> processMessageInCurrentState(
+                ctx,
+                msg,
+                MessageDirection.FRONTEND
+            )
+        }
         }
     }
 
-    private fun processBackendMessageInternal(
+    fun processBackendMessage(
         ctx: ChannelHandlerContext,
         msg: Any,
-    ): MessageAction {
+    ): Promise<MessageAction> {
+    return processMessage(ctx, msg, MessageDirection.BACKEND) {
         val interceptorResult = executeInterceptors(ctx, msg, MessageDirection.BACKEND)
-        return when (interceptorResult) {
+        when (interceptorResult) {
             is MessageInterceptor.InterceptResult.Complete -> {
                 logger.debug {
                     "Intercepted message in BACKEND direction: ${msg::class.java.simpleName}, action: ${interceptorResult.action}"
@@ -96,11 +71,35 @@ class StateMachine(
                 state = interceptorResult.nextState
                 interceptorResult.action
             }
+
             is MessageInterceptor.InterceptResult.Terminate -> {
                 MessageAction.Terminate(interceptorResult.reason)
+                }
+
+            MessageInterceptor.InterceptResult.Continue -> processMessageInCurrentState(
+                ctx,
+                msg,
+                MessageDirection.BACKEND
+            )
             }
-            MessageInterceptor.InterceptResult.Continue -> processMessage(ctx, msg, MessageDirection.BACKEND)
         }
+    }
+
+private fun processMessageInCurrentState(
+        ctx: ChannelHandlerContext,
+        msg: Any,
+    direction: MessageDirection,
+    processor: () -> MessageAction,
+): Promise<MessageAction> {
+    val promise: Promise<MessageAction> = ctx.executor().newPromise()
+    val executor = if (isBusinessLogicAware) businessEventExecutorChooser.choose(ctx.channel()) else ctx.executor()
+
+    executor.submit {
+        val result = runCatching { processor() }
+        promise.setResultSafely(ctx, executor, result)
+        }
+
+    return promise
     }
 
     private fun processMessage(
@@ -113,8 +112,10 @@ class StateMachine(
                 MessageDirection.FRONTEND -> TypeParameterMatcher.find(state, GatewayState::class.java, "F")
                 MessageDirection.BACKEND -> TypeParameterMatcher.find(state, GatewayState::class.java, "B")
             }
-        check(matcher.match(msg)) {
+    if (!matcher.match(msg)) {
+        throw IllegalStateException(
             "Message type '${msg::class.java.simpleName}' does not match expected type for state '${state::class.java.simpleName}'"
+        )
         }
 
         @Suppress("UNCHECKED_CAST")
