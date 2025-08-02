@@ -5,6 +5,7 @@ import io.netty.bootstrap.ServerBootstrap
 import io.netty.channel.Channel
 import io.netty.channel.ChannelHandler
 import io.netty.channel.ChannelInitializer
+import io.netty.channel.IoEventLoopGroup
 import io.netty.channel.MultiThreadIoEventLoopGroup
 import io.netty.channel.nio.NioIoHandler
 import io.netty.channel.socket.nio.NioServerSocketChannel
@@ -14,8 +15,8 @@ import io.netty.handler.logging.LoggingHandler
 abstract class AbstractGateway(
     protected val config: DatabaseGatewayConfig,
 ) {
-    private val bossGroup = MultiThreadIoEventLoopGroup(1, NioIoHandler.newFactory())
-    private val workerGroup = MultiThreadIoEventLoopGroup(NioIoHandler.newFactory())
+    private var bossGroup: IoEventLoopGroup? = null
+    private var workerGroup: IoEventLoopGroup? = null
 
     private var channel: Channel? = null
 
@@ -26,6 +27,8 @@ abstract class AbstractGateway(
     protected open fun createStateMachine(): StateMachine? = null
 
     fun start() {
+        bossGroup = MultiThreadIoEventLoopGroup(1, NioIoHandler.newFactory())
+        workerGroup = MultiThreadIoEventLoopGroup(NioIoHandler.newFactory())
         val b =
             ServerBootstrap()
                 .group(bossGroup, workerGroup)
@@ -41,8 +44,8 @@ abstract class AbstractGateway(
         try {
             channel?.close()?.sync()
         } finally {
-            workerGroup.shutdownGracefully()
-            bossGroup.shutdownGracefully()
+            workerGroup?.shutdownGracefully()
+            bossGroup?.shutdownGracefully()
         }
     }
 

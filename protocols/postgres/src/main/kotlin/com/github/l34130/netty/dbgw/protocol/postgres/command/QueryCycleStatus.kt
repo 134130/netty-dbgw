@@ -5,6 +5,7 @@ import com.github.l34130.netty.dbgw.core.GatewayState
 import com.github.l34130.netty.dbgw.core.MessageAction
 import com.github.l34130.netty.dbgw.core.databaseCtx
 import com.github.l34130.netty.dbgw.core.gatewayConfig
+import com.github.l34130.netty.dbgw.policy.api.PolicyDecision
 import com.github.l34130.netty.dbgw.policy.api.database.query.withQuery
 import com.github.l34130.netty.dbgw.protocol.postgres.Message
 import com.github.l34130.netty.dbgw.protocol.postgres.message.ErrorResponse
@@ -27,7 +28,7 @@ class QueryCycleStatus :
                 ctx.gatewayConfig()?.let { config ->
                     val result = config.policyEngine.evaluateQueryPolicy(ctx.databaseCtx()!!.withQuery(query.query))
                     // TODO: Intercept the message and send an error response
-                    if (!result.isAllowed) {
+                    if (result is PolicyDecision.Deny) {
                         StateResult(
                             nextState = QueryCycleStatus(),
                             action =
@@ -50,7 +51,7 @@ class QueryCycleStatus :
                 ctx.gatewayConfig()?.let { config ->
                     val result = config.policyEngine.evaluateQueryPolicy(ctx.databaseCtx()!!.withQuery(parse.query))
                     // TODO: Intercept the message and send an error response
-                    if (!result.isAllowed) {
+                    if (result is PolicyDecision.Deny) {
                         StateResult(
                             nextState = QueryCycleStatus(),
                             action =

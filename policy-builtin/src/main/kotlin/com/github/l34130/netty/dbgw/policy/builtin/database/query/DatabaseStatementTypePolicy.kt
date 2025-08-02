@@ -1,9 +1,9 @@
 package com.github.l34130.netty.dbgw.policy.builtin.database.query
 
-import com.github.l34130.netty.dbgw.policy.api.Resource
+import com.github.l34130.netty.dbgw.policy.api.PolicyDecision
+import com.github.l34130.netty.dbgw.policy.api.config.Resource
+import com.github.l34130.netty.dbgw.policy.api.database.DatabasePolicyInterceptor
 import com.github.l34130.netty.dbgw.policy.api.database.query.DatabaseQueryContext
-import com.github.l34130.netty.dbgw.policy.api.database.query.DatabaseQueryPolicy
-import com.github.l34130.netty.dbgw.policy.api.database.query.DatabaseQueryPolicyResult
 
 @Resource(
     group = "builtin",
@@ -15,29 +15,26 @@ import com.github.l34130.netty.dbgw.policy.api.database.query.DatabaseQueryPolic
 data class DatabaseStatementTypePolicy(
     val statements: List<String>,
     val action: Action,
-) : DatabaseQueryPolicy {
-    override fun evaluate(ctx: DatabaseQueryContext): DatabaseQueryPolicyResult {
+) : DatabasePolicyInterceptor {
+    override fun onQuery(ctx: DatabaseQueryContext): PolicyDecision {
         // TODO: Parse the query to extract the statement type
         //  For now, we will just check if the query contains any of the statements
         for (stmt in statements) {
             if (ctx.query.contains(stmt, ignoreCase = true)) {
                 return when (action) {
                     Action.ALLOW ->
-                        DatabaseQueryPolicyResult.Allowed(
+                        PolicyDecision.Allow(
                             reason = "Allowed statement: $stmt",
                         )
                     Action.DENY ->
-                        DatabaseQueryPolicyResult.Denied(
+                        PolicyDecision.Deny(
                             reason = "Disallowed statement: $stmt",
                         )
                 }
             }
         }
 
-        return when (action) {
-            Action.ALLOW -> DatabaseQueryPolicyResult.Denied(reason = "No allowed statements found")
-            Action.DENY -> DatabaseQueryPolicyResult.Allowed(reason = "No disallowed statements found")
-        }
+        return PolicyDecision.NotApplicable
     }
 
     enum class Action { ALLOW, DENY }

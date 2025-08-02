@@ -1,4 +1,4 @@
-package com.github.l34130.netty.dbgw.policy.api
+package com.github.l34130.netty.dbgw.policy.api.config
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlin.reflect.KClass

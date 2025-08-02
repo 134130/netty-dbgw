@@ -5,6 +5,7 @@ import com.github.l34130.netty.dbgw.core.MessageAction
 import com.github.l34130.netty.dbgw.core.databaseCtx
 import com.github.l34130.netty.dbgw.core.gatewayConfig
 import com.github.l34130.netty.dbgw.core.utils.netty.peek
+import com.github.l34130.netty.dbgw.policy.api.PolicyDecision
 import com.github.l34130.netty.dbgw.policy.api.database.query.withQuery
 import com.github.l34130.netty.dbgw.protocol.mysql.MySqlGatewayState
 import com.github.l34130.netty.dbgw.protocol.mysql.Packet
@@ -75,7 +76,7 @@ internal class CommandPhaseState :
 
         ctx.gatewayConfig()?.let { config ->
             val result = config.policyEngine.evaluateQueryPolicy(ctx.databaseCtx()!!.withQuery(query))
-            if (!result.isAllowed) {
+            if (result is PolicyDecision.Deny) {
                 val errorPacket =
                     Packet.Error.of(
                         sequenceId = packet.sequenceId + 1,

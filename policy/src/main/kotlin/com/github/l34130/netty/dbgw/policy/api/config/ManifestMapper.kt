@@ -1,4 +1,4 @@
-package com.github.l34130.netty.dbgw.policy.api
+package com.github.l34130.netty.dbgw.policy.api.config
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory

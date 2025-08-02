@@ -1,6 +1,13 @@
 package com.github.l34130.netty.dbgw.test.mysql
 
 import com.github.l34130.netty.dbgw.core.config.DatabaseGatewayConfig
+import com.github.l34130.netty.dbgw.core.policy.DatabasePolicyChain
+import com.github.l34130.netty.dbgw.core.policy.PolicyEngine
+import com.github.l34130.netty.dbgw.policy.api.PolicyDecision
+import com.github.l34130.netty.dbgw.policy.api.database.DatabaseAuthenticationEvent
+import com.github.l34130.netty.dbgw.policy.api.database.DatabaseContext
+import com.github.l34130.netty.dbgw.policy.api.database.DatabasePolicyInterceptor
+import com.github.l34130.netty.dbgw.policy.api.database.query.DatabaseQueryContext
 import com.github.l34130.netty.dbgw.protocol.mysql.MySqlGateway
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -36,7 +43,25 @@ abstract class MySqlIntegrationTestBase(
                     upstreamPort = mysqlContainer.getMappedPort(3306),
                     upstreamDatabaseType = DatabaseGatewayConfig.UpstreamDatabaseType.MYSQL,
                     authenticationOverride = null,
-                ),
+                ).apply {
+                    policyEngine =
+                        PolicyEngine(
+                            policyChain =
+                                DatabasePolicyChain(
+                                    policies =
+                                        listOf(
+                                            object : DatabasePolicyInterceptor {
+                                                override fun onAuthentication(
+                                                    ctx: DatabaseContext,
+                                                    evt: DatabaseAuthenticationEvent,
+                                                ): PolicyDecision = PolicyDecision.Allow()
+
+                                                override fun onQuery(ctx: DatabaseQueryContext): PolicyDecision = PolicyDecision.Allow()
+                                            },
+                                        ),
+                                ),
+                        )
+                },
             )
         // Start the gateway before each test
         gateway.start()

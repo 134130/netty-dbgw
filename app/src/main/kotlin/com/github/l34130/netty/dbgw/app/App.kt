@@ -93,7 +93,7 @@ fun main(args: Array<String>) {
                 try {
                     gateway.start()
                 } finally {
-                    gateway.shutdown()
+//                    gateway.shutdown()
                 }
             }
             DatabaseGatewayConfig.UpstreamDatabaseType.POSTGRESQL -> {
@@ -101,7 +101,7 @@ fun main(args: Array<String>) {
                 try {
                     gateway.start()
                 } finally {
-                    gateway.shutdown()
+//                    gateway.shutdown()
                 }
             }
         }

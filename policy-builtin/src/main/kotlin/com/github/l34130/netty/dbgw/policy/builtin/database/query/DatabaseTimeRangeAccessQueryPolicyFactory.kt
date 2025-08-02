@@ -1,6 +1,6 @@
 package com.github.l34130.netty.dbgw.policy.builtin.database.query
 
-import com.github.l34130.netty.dbgw.policy.api.AbstractResourceFactory
+import com.github.l34130.netty.dbgw.policy.api.config.AbstractResourceFactory
 import java.time.Clock
 
 class DatabaseTimeRangeAccessQueryPolicyFactory :

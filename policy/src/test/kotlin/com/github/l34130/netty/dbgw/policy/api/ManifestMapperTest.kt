@@ -1,5 +1,7 @@
 package com.github.l34130.netty.dbgw.policy.api
 
+import com.github.l34130.netty.dbgw.policy.api.config.Manifest
+import com.github.l34130.netty.dbgw.policy.api.config.ManifestMapper
 import org.junit.jupiter.api.assertAll
 import kotlin.test.Test
 import kotlin.test.assertContentEquals

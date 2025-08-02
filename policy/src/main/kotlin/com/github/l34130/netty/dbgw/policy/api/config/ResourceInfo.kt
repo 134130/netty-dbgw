@@ -1,4 +1,4 @@
-package com.github.l34130.netty.dbgw.policy.api
+package com.github.l34130.netty.dbgw.policy.api.config
 
 import com.github.l34130.netty.dbgw.common.util.ValidationUtil
 
@@ -45,6 +45,8 @@ class ResourceInfo(
             version = version,
             resource = names.plural,
         )
+
+    fun isApplicable(gvk: GroupVersionKind): Boolean = group == gvk.group && version == gvk.version && names.kind == gvk.kind
 
     override fun toString(): String = "$group/$version, Names=(kind=${names.kind}, plural=${names.plural}, singular=${names.singular})"
 

@@ -1,6 +1,6 @@
-package com.github.l34130.netty.dbgw.policy.api
+package com.github.l34130.netty.dbgw.policy.api.config
 
-import com.github.l34130.netty.dbgw.policy.api.ResourceInfo.Names
+import com.github.l34130.netty.dbgw.policy.api.config.ResourceInfo.Names
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read

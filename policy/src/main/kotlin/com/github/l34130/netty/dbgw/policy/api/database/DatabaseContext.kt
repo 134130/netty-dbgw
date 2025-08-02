@@ -9,6 +9,4 @@ open class DatabaseContext(
     var connectionInfo: DatabaseConnectionInfo,
     var sessionInfo: SessionInfo,
     var attributes: MutableMap<String, Any> = mutableMapOf(),
-) {
-    companion object
-}
+)

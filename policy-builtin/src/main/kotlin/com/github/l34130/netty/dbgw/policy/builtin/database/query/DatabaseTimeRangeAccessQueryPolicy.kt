@@ -1,9 +1,9 @@
 package com.github.l34130.netty.dbgw.policy.builtin.database.query
 
-import com.github.l34130.netty.dbgw.policy.api.Resource
+import com.github.l34130.netty.dbgw.policy.api.PolicyDecision
+import com.github.l34130.netty.dbgw.policy.api.config.Resource
+import com.github.l34130.netty.dbgw.policy.api.database.DatabasePolicyInterceptor
 import com.github.l34130.netty.dbgw.policy.api.database.query.DatabaseQueryContext
-import com.github.l34130.netty.dbgw.policy.api.database.query.DatabaseQueryPolicy
-import com.github.l34130.netty.dbgw.policy.api.database.query.DatabaseQueryPolicyResult
 import java.time.Clock
 import java.time.LocalTime
 import java.util.regex.Pattern
@@ -23,7 +23,7 @@ data class DatabaseTimeRangeAccessQueryPolicy(
     private val endInclusive: Boolean,
     private val allowInRange: Boolean = true,
     private val clock: Clock,
-) : DatabaseQueryPolicy {
+) : DatabasePolicyInterceptor {
     private val rangeNotation: String =
         "${if (startInclusive) '[' else '('}$startTime, $endTime${if (endInclusive) ']' else ')'}"
 
@@ -33,7 +33,7 @@ data class DatabaseTimeRangeAccessQueryPolicy(
         }
     }
 
-    override fun evaluate(ctx: DatabaseQueryContext): DatabaseQueryPolicyResult {
+    override fun onQuery(ctx: DatabaseQueryContext): PolicyDecision {
         val currentTime = LocalTime.now(clock)
 
         val afterStart = if (startInclusive) !currentTime.isBefore(startTime) else currentTime.isAfter(startTime)
@@ -50,9 +50,9 @@ data class DatabaseTimeRangeAccessQueryPolicy(
 
         val shouldAllow = if (allowInRange) isWithinRange else !isWithinRange
         return if (shouldAllow) {
-            DatabaseQueryPolicyResult.Allowed()
+            PolicyDecision.Allow(reason = "current time is ${if (isWithinRange) "within" else "outside"} the allowed range $rangeNotation")
         } else {
-            DatabaseQueryPolicyResult.Denied(
+            PolicyDecision.Deny(
                 reason =
                     if (allowInRange) {
                         "current time is outside the allowed range $rangeNotation"

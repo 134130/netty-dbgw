@@ -1,7 +1,7 @@
 package com.github.l34130.netty.dbgw.core.config
 
 import com.github.l34130.netty.dbgw.core.policy.PolicyEngine
-import com.github.l34130.netty.dbgw.policy.api.Resource
+import com.github.l34130.netty.dbgw.policy.api.config.Resource
 import java.io.File
 import kotlin.reflect.full.findAnnotation
 
@@ -13,7 +13,7 @@ data class DatabaseGatewayConfig(
     val authenticationOverride: Authentication?,
     val policyFile: String? = null,
 ) {
-    val policyEngine: PolicyEngine = policyFile?.let { PolicyEngine.loadFromManifest(File(it)) } ?: PolicyEngine()
+    var policyEngine: PolicyEngine = policyFile?.let { PolicyEngine.loadFromManifest(File(it)) } ?: PolicyEngine()
 
     override fun toString(): String =
         buildString {
@@ -26,8 +26,8 @@ data class DatabaseGatewayConfig(
             }
             appendLine("    Policy File: ${policyFile ?: "None"}")
             if (policyFile != null) {
-                appendLine("    Policy Engine: ${policyEngine.queryPolicies.size} policies loaded")
-                for ((index, policy) in policyEngine.queryPolicies.withIndex()) {
+                appendLine("    Policy Engine: ${policyEngine.policyChain.policies.size} policies loaded")
+                for ((index, policy) in policyEngine.policyChain.policies.withIndex()) {
                     append("        Policy #$index: ")
                     val resourceInfo = policy::class.findAnnotation<Resource>()
                     if (resourceInfo != null) {
