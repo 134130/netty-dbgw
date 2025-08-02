@@ -15,6 +15,32 @@ The project is a multi-module Gradle project written in Kotlin. It is structured
 *   **`protocols:postgres`**: A module for the PostgreSQL protocol. It provides the implementation of the `PostgresGateway` class and the handlers for the PostgreSQL protocol.
 *   **`test`**: A module for testing. It contains unit tests and integration tests for the other modules.
 
+## High-Level Architecture
+
+The gateway is built on top of the Netty framework, which is a high-performance, asynchronous, and event-driven network application framework. The core of the gateway is the `AbstractGateway` class, which provides the basic functionality for listening for client connections and forwarding them to an upstream database.
+
+The `AbstractGateway` class is an abstract class that must be extended by a protocol-specific gateway class, such as `MySqlGateway` or `PostgresGateway`. The protocol-specific gateway class is responsible for providing the handlers for the specific protocol.
+
+### ProxyConnectionHandler
+
+The `ProxyConnectionHandler` is the first handler in the pipeline. It is responsible for:
+
+1.  **Connecting to the backend:** It creates a new connection to the upstream database.
+2.  **Setting up the pipelines:** It adds the protocol-specific handlers to the pipelines of both the frontend (client) and backend (database) connections.
+3.  **Establishing the session:** It creates a new session and sets the session attributes.
+
+### State Machine
+
+The state machine is a key component of the gateway. It is responsible for processing messages from the client and the database and for transitioning between states. The state machine is implemented as a set of `GatewayState` classes, where each class represents a state in the protocol.
+
+The `StateMachine` class is responsible for:
+
+1.  **Processing messages:** It receives messages from the `StateMachineHandler` and delegates them to the current state.
+2.  **Transitioning between states:** It transitions to the next state based on the result of the message processing.
+3.  **Executing interceptors:** It executes the message interceptors before processing the message.
+
+The state machine is executed in a separate thread pool to avoid blocking the Netty I/O threads.
+
 ## Main Flow Diagram
 
 The following diagram illustrates the main data flow of the application:
@@ -55,7 +81,6 @@ sequenceDiagram
 ### Cons
 
 *   **Limited Protocol Support:** Currently, only MySQL and PostgreSQL are supported. Adding support for other databases would require implementing the entire protocol from scratch.
-*   **Lack of Documentation:** While the code is relatively clean, there is a lack of high-level documentation explaining the architecture and design decisions.
 *   **Testing:** While there are some tests, the test coverage could be improved, especially for the protocol-specific logic.
 
 ## Technical Debt

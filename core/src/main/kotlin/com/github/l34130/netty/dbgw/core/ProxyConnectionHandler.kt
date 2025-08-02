@@ -24,48 +24,56 @@ class ProxyConnectionHandler(
 ) : ChannelInboundHandlerAdapter() {
     override fun channelActive(ctx: ChannelHandlerContext) {
         val frontend = ctx.channel()
+        logger.debug { "New client connection from ${frontend.remoteAddress()}" }
 
-        logger.debug { "Connected from frontend: ${frontend.remoteAddress()}" }
-
-        val backendFuture =
-            Bootstrap()
-                .group(frontend.eventLoop())
-                .channel(frontend.javaClass)
-                .handler(
-                    object : ChannelInitializer<Channel>() {
-                        override fun initChannel(ch: Channel) {
-                            ch.pipeline().addLast(
-                                *backendHandlers.toTypedArray(),
-                            )
-                            stateMachine?.let {
-                                ch.pipeline().addLast(
-                                    "state-machine-handler",
-                                    StateMachineHandler(it, MessageDirection.BACKEND),
-                                )
-                            }
-                        }
-                    },
-                ).connect(config.upstreamHost, config.upstreamPort)
-
+        val backendFuture = connectToBackend(frontend)
         val backend = backendFuture.channel()
+
         backendFuture.addListener { future ->
-            if (!future.isSuccess) {
+            if (future.isSuccess) {
+                logger.debug { "Successfully connected to backend: ${backend.remoteAddress()}" }
+                setupPipelines(frontend, backend)
+                establishSession(frontend, backend)
+                frontend.config().isAutoRead = true
+                frontend.read()
+            } else {
                 logger.error(future.cause()) { "Failed to connect to backend: ${config.upstreamHost}:${config.upstreamPort}" }
                 if (backend != null && backend.isActive) {
                     backend.close()
                 }
                 frontend.closeOnFlush()
-                return@addListener
             }
-
-            logger.debug { "Connected to backend: ${backend.remoteAddress()}" }
-
-            frontend.attr(GatewayAttrs.BACKEND_ATTR_KEY).set(backend)
-            backend.attr(GatewayAttrs.FRONTEND_ATTR_KEY).set(frontend)
-
-            frontend.config().isAutoRead = true
-            frontend.read()
         }
+
+        frontend.pipeline().remove(this)
+    }
+
+    private fun connectToBackend(frontend: Channel) =
+        Bootstrap()
+            .group(frontend.eventLoop())
+            .channel(frontend.javaClass)
+            .handler(
+                object : ChannelInitializer<Channel>() {
+                    override fun initChannel(ch: Channel) {
+                        ch.pipeline().addLast(
+                            *backendHandlers.toTypedArray(),
+                        )
+                        stateMachine?.let {
+                            ch.pipeline().addLast(
+                                "state-machine-handler",
+                                StateMachineHandler(it, MessageDirection.BACKEND),
+                            )
+                        }
+                    }
+                },
+            ).connect(config.upstreamHost, config.upstreamPort)
+
+    private fun setupPipelines(
+        frontend: Channel,
+        backend: Channel,
+    ) {
+        frontend.attr(GatewayAttrs.BACKEND_ATTR_KEY).set(backend)
+        backend.attr(GatewayAttrs.FRONTEND_ATTR_KEY).set(frontend)
 
         frontend.pipeline().addLast(
             *frontendHandlers.toTypedArray(),
@@ -76,7 +84,12 @@ class ProxyConnectionHandler(
                 StateMachineHandler(it, MessageDirection.FRONTEND),
             )
         }
+    }
 
+    private fun establishSession(
+        frontend: Channel,
+        backend: Channel,
+    ) {
         // Set the common gateway attributes for both frontend and backend channels
         val sessionInfo =
             SessionInfo(sessionId = UUID.randomUUID().toString()).also {
@@ -107,17 +120,14 @@ class ProxyConnectionHandler(
                 frontend.attr(GatewayAttrs.DATABASE_CONNECTION_INFO_ATTR_KEY).set(it)
                 backend.attr(GatewayAttrs.DATABASE_CONNECTION_INFO_ATTR_KEY).set(it)
             }
-        val databaseContext =
-            DatabaseContext(
-                clientInfo = clientInfo,
-                connectionInfo = databaseConnectionInfo,
-                sessionInfo = sessionInfo,
-            ).also { ctx ->
-                frontend.attr(GatewayAttrs.DATABASE_CONTEXT_ATTR_KEY).set(ctx)
-                backend.attr(GatewayAttrs.DATABASE_CONTEXT_ATTR_KEY).set(ctx)
-            }
-
-        frontend.pipeline().remove(this)
+        DatabaseContext(
+            clientInfo = clientInfo,
+            connectionInfo = databaseConnectionInfo,
+            sessionInfo = sessionInfo,
+        ).also { ctx ->
+            frontend.attr(GatewayAttrs.DATABASE_CONTEXT_ATTR_KEY).set(ctx)
+            backend.attr(GatewayAttrs.DATABASE_CONTEXT_ATTR_KEY).set(ctx)
+        }
     }
 
     companion object {
