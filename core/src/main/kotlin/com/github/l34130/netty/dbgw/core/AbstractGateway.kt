@@ -3,7 +3,6 @@ package com.github.l34130.netty.dbgw.core
 import com.github.l34130.netty.dbgw.core.config.DatabaseGatewayConfig
 import io.netty.bootstrap.ServerBootstrap
 import io.netty.channel.Channel
-import io.netty.channel.ChannelFuture
 import io.netty.channel.ChannelHandler
 import io.netty.channel.ChannelInitializer
 import io.netty.channel.MultiThreadIoEventLoopGroup
