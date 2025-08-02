@@ -33,73 +33,32 @@ class StateMachine(
         ctx: ChannelHandlerContext,
         msg: Any,
     ): Promise<MessageAction> {
-    return processMessage(ctx, msg, MessageDirection.FRONTEND) {
-        val interceptorResult = executeInterceptors(ctx, msg, MessageDirection.FRONTEND)
-        when (interceptorResult) {
-            is MessageInterceptor.InterceptResult.Complete -> {
-                logger.debug {
-                    "Intercepted message in FRONTEND direction: ${msg::class.java.simpleName}, action: ${interceptorResult.action}"
-                }
-                state = interceptorResult.nextState
-                interceptorResult.action
-            }
+        val promise: Promise<MessageAction> = ctx.executor().newPromise()
+        val executor: EventExecutorGroup =
+            if (isBusinessLogicAware) businessEventExecutorChooser.choose(ctx.channel()) else ctx.executor()
 
-            is MessageInterceptor.InterceptResult.Terminate -> {
-                MessageAction.Terminate(interceptorResult.reason)
-            }
+        executor.submit {
+            val result = runCatching { processMessage(ctx, msg, MessageDirection.FRONTEND) }
+            promise.setResultSafely(ctx, executor, result)
+        }
 
-            MessageInterceptor.InterceptResult.Continue -> processMessageInCurrentState(
-                ctx,
-                msg,
-                MessageDirection.FRONTEND
-            )
-        }
-        }
+        return promise
     }
 
     fun processBackendMessage(
         ctx: ChannelHandlerContext,
         msg: Any,
     ): Promise<MessageAction> {
-    return processMessage(ctx, msg, MessageDirection.BACKEND) {
-        val interceptorResult = executeInterceptors(ctx, msg, MessageDirection.BACKEND)
-        when (interceptorResult) {
-            is MessageInterceptor.InterceptResult.Complete -> {
-                logger.debug {
-                    "Intercepted message in BACKEND direction: ${msg::class.java.simpleName}, action: ${interceptorResult.action}"
-                }
-                state = interceptorResult.nextState
-                interceptorResult.action
-            }
+        val promise: Promise<MessageAction> = ctx.executor().newPromise()
+        val executor: EventExecutorGroup =
+            if (isBusinessLogicAware) businessEventExecutorChooser.choose(ctx.channel()) else ctx.executor()
 
-            is MessageInterceptor.InterceptResult.Terminate -> {
-                MessageAction.Terminate(interceptorResult.reason)
-                }
-
-            MessageInterceptor.InterceptResult.Continue -> processMessageInCurrentState(
-                ctx,
-                msg,
-                MessageDirection.BACKEND
-            )
-            }
-        }
-    }
-
-private fun processMessageInCurrentState(
-        ctx: ChannelHandlerContext,
-        msg: Any,
-    direction: MessageDirection,
-    processor: () -> MessageAction,
-): Promise<MessageAction> {
-    val promise: Promise<MessageAction> = ctx.executor().newPromise()
-    val executor = if (isBusinessLogicAware) businessEventExecutorChooser.choose(ctx.channel()) else ctx.executor()
-
-    executor.submit {
-        val result = runCatching { processor() }
-        promise.setResultSafely(ctx, executor, result)
+        executor.submit {
+            val result = runCatching { processMessage(ctx, msg, MessageDirection.BACKEND) }
+            promise.setResultSafely(ctx, executor, result)
         }
 
-    return promise
+        return promise
     }
 
     private fun processMessage(
@@ -107,29 +66,44 @@ private fun processMessageInCurrentState(
         msg: Any,
         direction: MessageDirection,
     ): MessageAction {
-        val matcher =
-            when (direction) {
-                MessageDirection.FRONTEND -> TypeParameterMatcher.find(state, GatewayState::class.java, "F")
-                MessageDirection.BACKEND -> TypeParameterMatcher.find(state, GatewayState::class.java, "B")
+        val interceptorResult = executeInterceptors(ctx, msg, direction)
+        return when (interceptorResult) {
+            is MessageInterceptor.InterceptResult.Complete -> {
+                logger.debug {
+                    "Intercepted message in $direction direction: ${msg::class.java.simpleName}, action: ${interceptorResult.action}"
+                }
+                state = interceptorResult.nextState
+                interceptorResult.action
             }
-    check(matcher.match(msg)) {
-        "Message type '${msg::class.java.simpleName}' does not match expected type for state '${state::class.java.simpleName}'"
-    }
-
-        @Suppress("UNCHECKED_CAST")
-        val state = state as GatewayState<Any, Any>
-        logger.trace { "[$direction] Processing message in state: ${state::class.java.simpleName}" }
-
-        val result =
-            when (direction) {
-                MessageDirection.FRONTEND -> state.onFrontendMessage(ctx, msg)
-                MessageDirection.BACKEND -> state.onBackendMessage(ctx, msg)
+            is MessageInterceptor.InterceptResult.Terminate -> {
+                MessageAction.Terminate(interceptorResult.reason)
             }
+            MessageInterceptor.InterceptResult.Continue -> {
+                val matcher =
+                    when (direction) {
+                        MessageDirection.FRONTEND -> TypeParameterMatcher.find(state, GatewayState::class.java, "F")
+                        MessageDirection.BACKEND -> TypeParameterMatcher.find(state, GatewayState::class.java, "B")
+                    }
+                check(matcher.match(msg)) {
+                    "Message type '${msg::class.java.simpleName}' does not match expected type for state '${state::class.java.simpleName}'"
+                }
 
-        logger.trace { "[$direction] Resulting action: ${result.action}, next state: ${result.nextState::class.java.simpleName}" }
+                @Suppress("UNCHECKED_CAST")
+                val state = state as GatewayState<Any, Any>
+                logger.trace { "[$direction] Processing message in state: ${state::class.java.simpleName}" }
 
-        this.state = result.nextState
-        return result.action
+                val result =
+                    when (direction) {
+                        MessageDirection.FRONTEND -> state.onFrontendMessage(ctx, msg)
+                        MessageDirection.BACKEND -> state.onBackendMessage(ctx, msg)
+                    }
+
+                logger.trace { "[$direction] Resulting action: ${result.action}, next state: ${result.nextState::class.java.simpleName}" }
+
+                this.state = result.nextState
+                result.action
+            }
+        }
     }
 
     private fun executeInterceptors(
