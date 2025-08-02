@@ -2,26 +2,27 @@ package com.github.l34130.netty.dbgw.policy.builtin.database.query
 
 import com.github.l34130.netty.dbgw.policy.api.PolicyDecision
 import com.github.l34130.netty.dbgw.policy.api.config.Resource
+import com.github.l34130.netty.dbgw.policy.api.database.DatabaseAuthenticationEvent
+import com.github.l34130.netty.dbgw.policy.api.database.DatabaseContext
 import com.github.l34130.netty.dbgw.policy.api.database.DatabasePolicyInterceptor
 import com.github.l34130.netty.dbgw.policy.api.database.query.DatabaseQueryContext
 import java.time.Clock
 import java.time.LocalTime
 import java.util.regex.Pattern
 
-// TODO: Make this policy as not query policy, but as a connection policy
 @Resource(
     group = "builtin",
     version = "v1",
-    kind = "DatabaseTimeRangeAccessQueryPolicy",
-    plural = "databasetimerangeaccessquerypolicies",
-    singular = "databasetimerangeaccessquerypolicy",
+    kind = "DatabaseTimeRangeAccessPolicy",
+    plural = "databasetimerangeaccesspolicies",
+    singular = "databasetimerangeaccesspolicy",
 )
-data class DatabaseTimeRangeAccessQueryPolicy(
+data class DatabaseTimeRangeAccessPolicy(
     private val startTime: LocalTime,
     private val endTime: LocalTime,
     private val startInclusive: Boolean,
     private val endInclusive: Boolean,
-    private val allowInRange: Boolean = true,
+    private val action: Action = Action.ALLOW,
     private val clock: Clock,
 ) : DatabasePolicyInterceptor {
     private val rangeNotation: String =
@@ -33,7 +34,14 @@ data class DatabaseTimeRangeAccessQueryPolicy(
         }
     }
 
-    override fun onQuery(ctx: DatabaseQueryContext): PolicyDecision {
+    override fun onAuthentication(
+        ctx: DatabaseContext,
+        evt: DatabaseAuthenticationEvent,
+    ): PolicyDecision = evaluate()
+
+    override fun onQuery(ctx: DatabaseQueryContext): PolicyDecision = evaluate()
+
+    private fun evaluate(): PolicyDecision {
         val currentTime = LocalTime.now(clock)
 
         val afterStart = if (startInclusive) !currentTime.isBefore(startTime) else currentTime.isAfter(startTime)
@@ -48,18 +56,17 @@ data class DatabaseTimeRangeAccessQueryPolicy(
                 afterStart || beforeEnd
             }
 
-        val shouldAllow = if (allowInRange) isWithinRange else !isWithinRange
-        return if (shouldAllow) {
-            PolicyDecision.Allow(reason = "current time is ${if (isWithinRange) "within" else "outside"} the allowed range $rangeNotation")
-        } else {
-            PolicyDecision.Deny(
-                reason =
-                    if (allowInRange) {
-                        "current time is outside the allowed range $rangeNotation"
-                    } else {
-                        "current time is within the blocked range $rangeNotation"
-                    },
-            )
+        if (!isWithinRange) return PolicyDecision.NotApplicable
+
+        return when (action) {
+            Action.ALLOW ->
+                PolicyDecision.Allow(
+                    reason = "current time is within the allowed range $rangeNotation",
+                )
+            Action.DENY ->
+                PolicyDecision.Deny(
+                    reason = "current time is within the denied range $rangeNotation",
+                )
         }
     }
 
@@ -68,15 +75,15 @@ data class DatabaseTimeRangeAccessQueryPolicy(
             Pattern.compile("""^([(\[])\s*(\d{2}:\d{2})\s*,\s*(\d{2}:\d{2})\s*([)\]])$""")
 
         /**
-         * Creates a [DatabaseTimeRangeAccessQueryPolicy] from a string representation of a time range
+         * Creates a [DatabaseTimeRangeAccessPolicy] from a string representation of a time range
          * @param range the time range string in the format `[HH:mm, HH:mm)`, `(HH:mm, HH:mm)`, `[HH:mm, HH:mm]`, or `(HH:mm, HH:mm]`
          * @param allowInRange if true, the policy allows access within the specified range; if false, it denies access within the specified range
          */
         fun from(
             range: String,
-            allowInRange: Boolean = true,
+            action: Action = Action.ALLOW,
             clock: Clock = Clock.systemDefaultZone(),
-        ): DatabaseTimeRangeAccessQueryPolicy {
+        ): DatabaseTimeRangeAccessPolicy {
             val matcher = RANGE_PATTERN.matcher(range)
             require(matcher.matches()) { "Range must be in format '[HH:mm, HH:mm)' or similar" }
 
@@ -85,14 +92,16 @@ data class DatabaseTimeRangeAccessQueryPolicy(
             val endTimeStr = matcher.group(3)
             val endBracket = matcher.group(4)
 
-            return DatabaseTimeRangeAccessQueryPolicy(
+            return DatabaseTimeRangeAccessPolicy(
                 startTime = LocalTime.parse(startTimeStr),
                 endTime = LocalTime.parse(endTimeStr),
                 startInclusive = startBracket == "[",
                 endInclusive = endBracket == "]",
-                allowInRange = allowInRange,
+                action = action,
                 clock = clock,
             )
         }
     }
+
+    enum class Action { ALLOW, DENY }
 }
