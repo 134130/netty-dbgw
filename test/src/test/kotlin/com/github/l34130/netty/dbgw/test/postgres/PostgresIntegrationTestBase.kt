@@ -31,19 +31,21 @@ abstract class PostgresIntegrationTestBase(
             .withExposedPorts(5432)
 
     private lateinit var gateway: PostgresGateway
-    private val gatewayPort: Int = 5432
+
+    protected fun createDatabaseGatewayConfig(): DatabaseGatewayConfig =
+        DatabaseGatewayConfig(
+            listenPort = 0,
+            upstreamHost = postgresContainer.host,
+            upstreamPort = postgresContainer.getMappedPort(5432),
+            upstreamDatabaseType = DatabaseGatewayConfig.UpstreamDatabaseType.POSTGRESQL,
+            authenticationOverride = null,
+        )
 
     @BeforeEach
     fun setup() {
         gateway =
             PostgresGateway(
-                DatabaseGatewayConfig(
-                    listenPort = gatewayPort,
-                    upstreamHost = postgresContainer.host,
-                    upstreamPort = postgresContainer.getMappedPort(5432),
-                    upstreamDatabaseType = DatabaseGatewayConfig.UpstreamDatabaseType.POSTGRESQL,
-                    authenticationOverride = null,
-                ).apply {
+                createDatabaseGatewayConfig().apply {
                     policyEngine =
                         PolicyEngine(
                             policyChain =
@@ -81,8 +83,11 @@ abstract class PostgresIntegrationTestBase(
                 setProperty("sslmode", "disable")
             }
         modifier(properties)
+
+        val port: Int = properties.getProperty("port")?.toIntOrNull() ?: gateway.port()
+
         return DriverManager.getConnection(
-            "jdbc:postgresql://localhost:5432/testdb",
+            "jdbc:postgresql://localhost:$port/testdb",
             properties,
         )
     }

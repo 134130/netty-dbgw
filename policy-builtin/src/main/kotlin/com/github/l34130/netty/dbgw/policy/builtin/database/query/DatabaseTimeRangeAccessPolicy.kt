@@ -53,7 +53,7 @@ data class DatabaseTimeRangeAccessPolicy(
                 afterStart && beforeEnd
             } else {
                 // 22:00 ~ 02:00 (crossing midnight)
-                afterStart || beforeEnd
+                !(beforeEnd && afterStart)
             }
 
         if (!isWithinRange) return PolicyDecision.NotApplicable

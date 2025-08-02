@@ -17,4 +17,5 @@ dependencies {
     testImplementation("org.testcontainers:postgresql:1.21.3")
     testRuntimeOnly("com.mysql:mysql-connector-j:9.3.0")
     testRuntimeOnly("org.postgresql:postgresql:42.7.7")
+    testImplementation(project(":policy-builtin"))
 }

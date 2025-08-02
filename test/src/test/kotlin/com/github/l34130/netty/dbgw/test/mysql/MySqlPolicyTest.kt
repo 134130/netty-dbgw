@@ -1,0 +1,47 @@
+package com.github.l34130.netty.dbgw.test.mysql
+
+import com.github.l34130.netty.dbgw.core.policy.DatabasePolicyChain
+import com.github.l34130.netty.dbgw.core.policy.PolicyEngine
+import com.github.l34130.netty.dbgw.policy.builtin.database.query.DatabaseTimeRangeAccessPolicy
+import com.github.l34130.netty.dbgw.protocol.mysql.MySqlGateway
+import com.github.l34130.netty.dbgw.test.ClockUtils
+import java.sql.SQLException
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+
+class MySqlPolicyTest : MySqlIntegrationTestBase("mysql:8.0") {
+    @Test
+    fun `test DatabaseTimeRangeAccessPolicy`() {
+        val gateway =
+            MySqlGateway(
+                createDatabaseGatewayConfig()
+                    .copy(listenPort = 0)
+                    .apply {
+                        policyEngine =
+                            PolicyEngine(
+                                DatabasePolicyChain(
+                                    listOf(
+                                        DatabaseTimeRangeAccessPolicy.from(
+                                            range = "[00:00, 00:01)",
+                                            action = DatabaseTimeRangeAccessPolicy.Action.ALLOW,
+                                            clock = ClockUtils.fixed("2023-10-01T00:03:00Z"),
+                                        ),
+                                    ),
+                                ),
+                            )
+                    },
+            )
+        gateway.start()
+
+        try {
+            val exception =
+                assertFailsWith<SQLException> {
+                    createConnection { props -> props.setProperty("port", gateway.port().toString()) }
+                }
+            assertEquals("Access denied: No policy allowed the authentication (implicit deny)", exception.message)
+        } finally {
+            gateway.shutdown()
+        }
+    }
+}

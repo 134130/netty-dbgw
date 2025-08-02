@@ -31,19 +31,21 @@ abstract class MySqlIntegrationTestBase(
             .withExposedPorts(3306)
 
     private lateinit var gateway: MySqlGateway
-    private val gatewayPort: Int = 3306
+
+    protected fun createDatabaseGatewayConfig(): DatabaseGatewayConfig =
+        DatabaseGatewayConfig(
+            listenPort = 0,
+            upstreamHost = mysqlContainer.host,
+            upstreamPort = mysqlContainer.getMappedPort(3306),
+            upstreamDatabaseType = DatabaseGatewayConfig.UpstreamDatabaseType.MYSQL,
+            authenticationOverride = null,
+        )
 
     @BeforeEach
     fun setup() {
         gateway =
             MySqlGateway(
-                DatabaseGatewayConfig(
-                    listenPort = gatewayPort,
-                    upstreamHost = mysqlContainer.host,
-                    upstreamPort = mysqlContainer.getMappedPort(3306),
-                    upstreamDatabaseType = DatabaseGatewayConfig.UpstreamDatabaseType.MYSQL,
-                    authenticationOverride = null,
-                ).apply {
+                createDatabaseGatewayConfig().apply {
                     policyEngine =
                         PolicyEngine(
                             policyChain =
@@ -82,8 +84,11 @@ abstract class MySqlIntegrationTestBase(
                 setProperty("allowPublicKeyRetrieval", "true") // For 'caching_sha2_password' and 'sha256_password'
             }
         modifier(properties)
+
+        val port: Int = properties.getProperty("port")?.toIntOrNull() ?: gateway.port()
+
         return DriverManager.getConnection(
-            "jdbc:mysql://localhost:3306/testdb",
+            "jdbc:mysql://localhost:$port/testdb",
             properties,
         )
     }

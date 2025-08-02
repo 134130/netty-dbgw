@@ -11,6 +11,7 @@ import io.netty.channel.nio.NioIoHandler
 import io.netty.channel.socket.nio.NioServerSocketChannel
 import io.netty.handler.logging.LogLevel
 import io.netty.handler.logging.LoggingHandler
+import java.net.InetSocketAddress
 
 abstract class AbstractGateway(
     protected val config: DatabaseGatewayConfig,
@@ -25,6 +26,8 @@ abstract class AbstractGateway(
     protected abstract fun createBackendHandlers(): List<ChannelHandler>
 
     protected open fun createStateMachine(): StateMachine? = null
+
+    fun port(): Int = (channel!!.localAddress() as InetSocketAddress).port
 
     fun start() {
         bossGroup = MultiThreadIoEventLoopGroup(1, NioIoHandler.newFactory())
