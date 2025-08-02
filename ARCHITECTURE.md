@@ -81,14 +81,17 @@ sequenceDiagram
 ### Cons
 
 *   **Limited Protocol Support:** Currently, only MySQL and PostgreSQL are supported. Adding support for other databases would require implementing the entire protocol from scratch.
-*   **Limited Error Handling:** The error handling is basic and could be improved to provide more informative error messages.
 *   **Testing:** While there are some tests, the test coverage could be improved, especially for the protocol-specific logic.
 
 ## Technical Debt
 
-*   **TODOs in the code:** There are several `TODO` comments in the code that indicate areas that need improvement or further implementation.
 *   **Hardcoded values:** There are some hardcoded values in the code that could be moved to configuration files.
 *   **Lack of connection pooling:** The gateway creates a new connection to the upstream database for each client connection.
 *   **Limited observability:** The application has basic logging, but it could be improved by adding more metrics and tracing.
 *   **Redundant code:** There is some code duplication between the `MySqlGateway` and `PostgresGateway` classes.
-*   **Potential for resource leaks:** The code for closing connections and releasing resources could be improved.
+
+## Security
+
+### SSL/TLS
+
+The gateway uses SSL/TLS to encrypt the communication between the client and the gateway, and between the gateway and the upstream database. The SSL contexts are created once and reused for all connections to improve performance.

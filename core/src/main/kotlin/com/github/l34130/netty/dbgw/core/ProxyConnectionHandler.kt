@@ -38,6 +38,9 @@ class ProxyConnectionHandler(
                 frontend.read()
             } else {
                 logger.error(future.cause()) { "Failed to connect to backend: ${config.upstreamHost}:${config.upstreamPort}" }
+                if (backend != null && backend.isActive) {
+                    backend.close()
+                }
                 frontend.closeOnFlush()
             }
         }

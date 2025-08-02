@@ -37,20 +37,9 @@ abstract class AbstractGateway(
         channel = future.channel()
     }
 
-    fun stop() {
-        try {
-            channel?.close()?.sync()
-                ?: throw IllegalStateException("Gateway is not running or has not been started.")
-        } finally {
-            workerGroup.shutdownGracefully()
-            bossGroup.shutdownGracefully()
-        }
-    }
-
     fun shutdown() {
         try {
-            channel?.closeFuture()?.sync()
-                ?: throw IllegalStateException("Gateway is not running or has not been started.")
+            channel?.close()?.sync()
         } finally {
             workerGroup.shutdownGracefully()
             bossGroup.shutdownGracefully()

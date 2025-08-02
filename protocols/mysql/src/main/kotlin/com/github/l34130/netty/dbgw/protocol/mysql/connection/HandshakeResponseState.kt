@@ -16,9 +16,7 @@ import com.github.l34130.netty.dbgw.protocol.mysql.readNullTerminatedString
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.buffer.Unpooled
 import io.netty.channel.ChannelHandlerContext
-import io.netty.handler.ssl.SslContextBuilder
 import io.netty.handler.ssl.SslHandler
-import io.netty.handler.ssl.util.InsecureTrustManagerFactory
 import java.util.EnumSet
 
 internal class HandshakeResponseState : MySqlGatewayState() {
@@ -33,9 +31,8 @@ internal class HandshakeResponseState : MySqlGatewayState() {
         val clientCapabilities: EnumSet<CapabilityFlag> = clientFlag.toEnumSet()
         ctx.capabilities().setClientCapabilities(clientCapabilities)
         if (!clientCapabilities.contains(CapabilityFlag.CLIENT_PROTOCOL_41)) {
-            logger.error { "Unsupported MySQL client protocol version: $clientFlag" }
             ctx.close()
-            TODO("Handle unsupported client protocol version")
+            throw IllegalStateException("Unsupported MySQL client protocol version: $clientFlag")
         }
         logger.trace { "Client Capabilities: $clientCapabilities" }
 
@@ -63,28 +60,11 @@ internal class HandshakeResponseState : MySqlGatewayState() {
         val frontend = ctx.channel()
         val backend = ctx.backend()
         if (ctx.capabilities().contains(CapabilityFlag.CLIENT_SSL) && frontend.pipeline().get("ssl-handler") == null) {
-            // TODO: Singletonize SSL context creation
-            val serverSslContext =
-                SslContextBuilder
-                    .forServer(
-                        this.javaClass.classLoader.getResourceAsStream("certificate.pem"),
-                        this.javaClass.classLoader.getResourceAsStream("private.key"),
-                    ).build()
-                    .newEngine(frontend.alloc())
-
-            // TODO: Use InsecureTrustManagerFactory for testing purposes only
-            val clientSslContext =
-                SslContextBuilder
-                    .forClient()
-                    .trustManager(InsecureTrustManagerFactory.INSTANCE)
-                    .build()
-                    .newEngine(backend.alloc())
-
             payload.resetReaderIndex()
             backend.writeAndFlush(msg)
             backend.pipeline().addFirst(
                 "ssl-handler",
-                SslHandler(clientSslContext).apply {
+                SslHandler(SslContextFactory.clientSslContext.newEngine(backend.alloc())).apply {
                     handshakeFuture().addListener { future ->
                         if (!future.isSuccess) {
                             logger.error(future.cause()) { "[Backend] SSL handshake failed." }
@@ -100,7 +80,7 @@ internal class HandshakeResponseState : MySqlGatewayState() {
 
             frontend.pipeline().addFirst(
                 "ssl-handler",
-                SslHandler(serverSslContext).apply {
+                SslHandler(SslContextFactory.serverSslContext.newEngine(frontend.alloc())).apply {
                     handshakeFuture().addListener { future ->
                         if (!future.isSuccess) {
                             logger.error(future.cause()) { "[Frontend] SSL handshake failed." }
