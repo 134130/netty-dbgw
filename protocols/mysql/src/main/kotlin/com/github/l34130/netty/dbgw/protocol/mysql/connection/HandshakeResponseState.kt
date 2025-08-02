@@ -3,11 +3,15 @@ package com.github.l34130.netty.dbgw.protocol.mysql.connection
 import com.github.l34130.netty.dbgw.core.MessageAction
 import com.github.l34130.netty.dbgw.core.backend
 import com.github.l34130.netty.dbgw.core.databaseCtx
+import com.github.l34130.netty.dbgw.core.gatewayConfig
 import com.github.l34130.netty.dbgw.core.utils.netty.closeOnFlush
 import com.github.l34130.netty.dbgw.core.utils.toEnumSet
+import com.github.l34130.netty.dbgw.policy.api.PolicyDecision
+import com.github.l34130.netty.dbgw.policy.api.database.DatabaseAuthenticationEvent
 import com.github.l34130.netty.dbgw.protocol.mysql.MySqlGatewayState
 import com.github.l34130.netty.dbgw.protocol.mysql.Packet
 import com.github.l34130.netty.dbgw.protocol.mysql.capabilities
+import com.github.l34130.netty.dbgw.protocol.mysql.command.CommandPhaseState
 import com.github.l34130.netty.dbgw.protocol.mysql.constant.CapabilityFlag
 import com.github.l34130.netty.dbgw.protocol.mysql.readFixedLengthInteger
 import com.github.l34130.netty.dbgw.protocol.mysql.readLenEncInteger
@@ -17,6 +21,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.buffer.Unpooled
 import io.netty.channel.ChannelHandlerContext
 import io.netty.handler.ssl.SslHandler
+import java.security.MessageDigest
 import java.util.EnumSet
 
 internal class HandshakeResponseState : MySqlGatewayState() {
@@ -100,8 +105,8 @@ internal class HandshakeResponseState : MySqlGatewayState() {
         }
 
         // login username
-        val username = payload.readNullTerminatedString()
-        logger.trace { "Username: ${username.toString(Charsets.US_ASCII)}" }
+        val username = payload.readNullTerminatedString().toString(Charsets.US_ASCII)
+        logger.trace { "Username: $username" }
 
         val authResponse =
             if (clientCapabilities.contains(CapabilityFlag.CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA)) {
@@ -125,12 +130,8 @@ internal class HandshakeResponseState : MySqlGatewayState() {
                 payload.readNullTerminatedString()
             } else {
                 null
-            }
-        logger.trace {
-            "Client Auth Plugin Name: ${clientPluginName?.toString(
-                Charsets.UTF_8,
-            )}"
-        }
+            }?.toString(Charsets.US_ASCII)
+        logger.trace { "Client Auth Plugin Name: $clientPluginName" }
 
         val clientConnectAttrs: Map<String, String> =
             if (clientCapabilities.contains(CapabilityFlag.CLIENT_CONNECT_ATTRS)) {
@@ -159,6 +160,33 @@ internal class HandshakeResponseState : MySqlGatewayState() {
                 0
             }
         logger.trace { "Zstd Compression Level: $zstdCompressionLevel" }
+
+        val result =
+            ctx.gatewayConfig()!!.policyEngine.evaluateAuthenticationPolicy(
+                ctx = ctx.databaseCtx()!!,
+                evt = DatabaseAuthenticationEvent(username = username),
+            )
+        if (result is PolicyDecision.Deny) {
+            val errorPacket =
+                Packet.Error.of(
+                    sequenceId = msg.sequenceId + 1,
+                    errorCode = 1U,
+                    sqlState = "DBGW_",
+                    message =
+                        buildString {
+                            append("Access denied")
+                            if (!result.reason.isNullOrBlank()) {
+                                append(": ${result.reason}")
+                            }
+                        },
+                    capabilities = ctx.capabilities().enumSet(),
+                )
+
+            return StateResult(
+                nextState = CommandPhaseState(),
+                action = MessageAction.Intercept(msg = errorPacket),
+            )
+        }
 
         return StateResult(
             nextState = AuthResultState(),
@@ -205,5 +233,18 @@ internal class HandshakeResponseState : MySqlGatewayState() {
 
     companion object {
         private val logger = KotlinLogging.logger {}
+
+        private fun encryptPassword(
+            pluginName: String?,
+            password: String,
+        ): String {
+            when (pluginName) {
+                "mysql_native_password" -> {
+                    val crypt = MessageDigest.getInstance("SHA-1")
+                    return crypt.digest(password.toByteArray()).toString(Charsets.US_ASCII)
+                }
+            }
+            throw NotImplementedError("Password encryption for plugin '$pluginName' is not implemented")
+        }
     }
 }

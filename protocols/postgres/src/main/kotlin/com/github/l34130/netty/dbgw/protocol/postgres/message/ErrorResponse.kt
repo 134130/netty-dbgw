@@ -3,12 +3,26 @@ package com.github.l34130.netty.dbgw.protocol.postgres.message
 import com.github.l34130.netty.dbgw.protocol.postgres.Message
 import com.github.l34130.netty.dbgw.protocol.postgres.constant.ErrorField
 import com.github.l34130.netty.dbgw.protocol.postgres.readUntilNull
+import io.netty.buffer.Unpooled
 
 class ErrorResponse(
     val type: ErrorField?,
     val value: String?,
 ) {
     override fun toString(): String = "ErrorResponse(type=$type, value='$value')"
+
+    fun asMessage(): Message =
+        Message(
+            type = TYPE,
+            content =
+                Unpooled.buffer().apply {
+                    writeByte(type?.code ?: 0) // Write the error field code, 0 if no error
+                    if (value != null) {
+                        writeBytes(value.toByteArray(Charsets.UTF_8)) // Write the error value
+                    }
+                    writeByte(0) // Null terminator for the string
+                },
+        )
 
     companion object {
         const val TYPE: Char = 'E' // ErrorResponse is represented by 'E' in the protocol
