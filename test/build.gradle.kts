@@ -11,10 +11,10 @@ dependencies {
     implementation("io.netty:netty-all:4.2.2.Final")
 
     implementation("ch.qos.logback:logback-classic:1.5.18")
-    testImplementation("org.testcontainers:testcontainers:1.21.3")
-    testImplementation("org.testcontainers:junit-jupiter:1.21.3")
-    testImplementation("org.testcontainers:mysql:1.21.3")
-    testImplementation("org.testcontainers:postgresql:1.21.3")
+    testImplementation("org.testcontainers:testcontainers:1.19.7")
+    testImplementation("org.testcontainers:junit-jupiter:1.19.7")
+    testImplementation("org.testcontainers:mysql:1.19.7")
+    testImplementation("org.testcontainers:postgresql:1.19.7")
     testRuntimeOnly("com.mysql:mysql-connector-j:9.3.0")
     testRuntimeOnly("org.postgresql:postgresql:42.7.7")
 }

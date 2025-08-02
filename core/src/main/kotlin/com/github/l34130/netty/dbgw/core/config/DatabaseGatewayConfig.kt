@@ -26,8 +26,8 @@ data class DatabaseGatewayConfig(
             }
             appendLine("    Policy File: ${policyFile ?: "None"}")
             if (policyFile != null) {
-                appendLine("    Policy Engine: ${policyEngine.queryPolicies.size} policies loaded")
-                for ((index, policy) in policyEngine.queryPolicies.withIndex()) {
+                appendLine("    Policy Engine: ${policyEngine.policies.size} policies loaded")
+                for ((index, policy) in policyEngine.policies.withIndex()) {
                     append("        Policy #$index: ")
                     val resourceInfo = policy::class.findAnnotation<Resource>()
                     if (resourceInfo != null) {

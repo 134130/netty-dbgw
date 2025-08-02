@@ -1,14 +1,18 @@
 package com.github.l34130.netty.dbgw.policy.builtin.database.query
 
-import com.github.l34130.netty.dbgw.policy.api.AbstractResourceFactory
-import java.time.Clock
+import com.fasterxml.jackson.databind.JsonNode
+import com.github.l34130.netty.dbgw.policy.api.ManifestMapper
+import com.github.l34130.netty.dbgw.policy.api.ResourceFactory
+import com.github.l34130.netty.dbgw.policy.api.convertValue
+import kotlin.reflect.KClass
 
 class DatabaseTimeRangeAccessQueryPolicyFactory :
-    AbstractResourceFactory<DatabaseTimeRangeAccessQueryPolicy>(DatabaseTimeRangeAccessQueryPolicy::class) {
-    override fun create(props: Map<String, Any>): DatabaseTimeRangeAccessQueryPolicy =
-        DatabaseTimeRangeAccessQueryPolicy.from(
-            range = props["range"] as String,
-            allowInRange = props["allowInRange"] as Boolean? ?: true,
-            clock = props["clock"] as? Clock ?: Clock.systemDefaultZone(),
-        )
+    ResourceFactory<DatabaseTimeRangeAccessQueryPolicy> {
+    override fun type(): KClass<DatabaseTimeRangeAccessQueryPolicy> {
+        return DatabaseTimeRangeAccessQueryPolicy::class
+    }
+
+    override fun create(spec: JsonNode): DatabaseTimeRangeAccessQueryPolicy {
+        return ManifestMapper.convertValue(spec)
+    }
 }

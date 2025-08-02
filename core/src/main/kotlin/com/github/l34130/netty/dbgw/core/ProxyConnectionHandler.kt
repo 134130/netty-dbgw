@@ -9,12 +9,17 @@ import com.github.l34130.netty.dbgw.policy.api.database.DatabaseContext
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.bootstrap.Bootstrap
 import io.netty.channel.Channel
+import io.netty.channel.ChannelDuplexHandler
 import io.netty.channel.ChannelHandler
 import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.ChannelInboundHandlerAdapter
 import io.netty.channel.ChannelInitializer
+import io.netty.handler.timeout.IdleState
+import io.netty.handler.timeout.IdleStateEvent
+import io.netty.handler.timeout.IdleStateHandler
 import java.net.InetSocketAddress
 import java.util.UUID
+import java.util.concurrent.TimeUnit
 
 class ProxyConnectionHandler(
     private val config: DatabaseGatewayConfig,
@@ -72,6 +77,21 @@ class ProxyConnectionHandler(
                 "state-machine-handler",
                 StateMachineHandler(it, MessageDirection.FRONTEND),
             )
+        }
+
+        config.policyEngine?.let { policyEngine ->
+            policyEngine.policies.find { it::class.simpleName == "DatabaseIdleTimeoutPolicy" }?.let { policy ->
+                val timeoutSeconds = policy::class.members.first { it.name == "timeoutSeconds" }.call(policy) as Int
+                frontend.pipeline().addFirst(
+                    "idle-state-handler",
+                    IdleStateHandler(0, 0, timeoutSeconds.toLong(), TimeUnit.SECONDS)
+                )
+                frontend.pipeline().addAfter(
+                    "idle-state-handler",
+                    "idle-timeout-handler",
+                    IdleTimeoutHandler()
+                )
+            }
         }
 
         // Set the common gateway attributes for both frontend and backend channels

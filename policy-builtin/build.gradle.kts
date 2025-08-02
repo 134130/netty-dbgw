@@ -10,4 +10,5 @@ dependencies {
     implementation(project(":policy"))
 
     implementation(libs.bundles.kotlinxEcosystem)
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.15.2")
 }

@@ -15,8 +15,7 @@ import java.util.Properties
 abstract class MySqlIntegrationTestBase(
     image: String,
 ) {
-    @Container
-    private val mysqlContainer =
+    protected val mysqlContainer =
         MySQLContainer(image)
             .withDatabaseName("testdb")
             .withUsername("testuser")
@@ -28,6 +27,7 @@ abstract class MySqlIntegrationTestBase(
 
     @BeforeEach
     fun setup() {
+        mysqlContainer.start()
         gateway =
             MySqlGateway(
                 DatabaseGatewayConfig(
@@ -43,9 +43,10 @@ abstract class MySqlIntegrationTestBase(
     }
 
     @AfterEach
-    fun tearDown() {
+    open fun tearDown() {
         // Stop the gateway after each test
         gateway.stop()
+        mysqlContainer.stop()
     }
 
     protected fun createConnection(modifier: (props: Properties) -> Unit = {}): Connection {
