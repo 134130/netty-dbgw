@@ -28,6 +28,18 @@ providing the capability to parse and handle protocol packets at a granular leve
 
 ## Features & Roadmap
 
+### Security Features
+
+- [ ] Connection Rate Limiting
+- [ ] Modifying Server Capabilities
+- [ ] Authentication Modification
+- [x] Preventing SQL Queries
+- [x] Modifying SQL Queries
+- [x] Query Logging and Auditing
+- [ ] Query Rate Limiting
+- [x] Modifying Result Sets
+- [x] Row-Level Security
+
 ### MySQL Protocol Features
 
 - [x] **Connection Phase**
@@ -78,21 +90,26 @@ providing the capability to parse and handle protocol packets at a granular leve
     - [ ] Binlog Event
     - [ ] COM_BINLOG_DUMP
 
-### Security Features
+### PostgreSQL Protocol Features
 
-- [ ] Connection Rate Limiting
-- [ ] Modifying Server Capabilities
-- [ ] Authentication Modification
-- [x] Preventing SQL Queries
-- [x] Modifying SQL Queries
-- [x] Query Logging and Auditing
-- [ ] Query Rate Limiting
-- [x] Modifying Result Sets
-- [x] Row-Level Security
-
-### Another Database Protocols
-
-- [x] PostgreSQL
+- [x] **Connection Phase**
+    - [x] Startup
+    - [x] Authentication
+        - [x] AuthenticationOk
+        - [x] MD5Password
+        - [x] SASL
+- [x] **Command Phase**
+    - [x] Simple Query
+    - [x] Extended Query
+        - [x] Parse
+        - [x] Bind
+        - [x] Execute
+        - [x] Describe
+        - [x] Sync
+        - [x] Close
+- [x] **Security Features**
+    - [x] Row-Level Security
+    - [x] Result Set Masking
 
 ## Benchmarks
 
