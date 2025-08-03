@@ -30,7 +30,7 @@ class MySqlGateway(
         frontend: Channel,
         backend: Channel,
     ) {
-        DatabasePolicyChain(policyConfigurationLoader.load().map { Pair(it, it.createInterceptor()) })
+        DatabasePolicyChain(policyConfigurationLoader.load().map { it.createPolicy() })
             .also {
                 policyConfigurationLoader.watchForChanges(it)
                 frontend.attr(GatewayAttrs.DATABASE_POLICY_CHAIN_ATTR_KEY).set(it)

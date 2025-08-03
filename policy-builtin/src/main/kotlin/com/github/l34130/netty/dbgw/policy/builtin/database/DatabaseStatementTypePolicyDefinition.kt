@@ -2,7 +2,7 @@ package com.github.l34130.netty.dbgw.policy.builtin.database
 
 import com.github.l34130.netty.dbgw.policy.api.PolicyDefinition
 import com.github.l34130.netty.dbgw.policy.api.config.Resource
-import com.github.l34130.netty.dbgw.policy.api.database.DatabasePolicyInterceptor
+import com.github.l34130.netty.dbgw.policy.api.database.DatabasePolicy
 
 @Resource(
     group = "builtin",
@@ -15,8 +15,9 @@ data class DatabaseStatementTypePolicyDefinition(
     val statements: List<String>,
     val action: Action,
 ) : PolicyDefinition {
-    override fun createInterceptor(): DatabasePolicyInterceptor =
+    override fun createPolicy(): DatabasePolicy =
         DatabaseStatementTypePolicy(
+            definition = this,
             statements = statements,
             action = action,
         )

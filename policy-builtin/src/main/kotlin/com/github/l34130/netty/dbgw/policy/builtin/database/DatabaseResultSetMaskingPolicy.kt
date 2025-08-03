@@ -1,12 +1,16 @@
 package com.github.l34130.netty.dbgw.policy.builtin.database
 
-import com.github.l34130.netty.dbgw.policy.api.database.DatabasePolicyInterceptor
+import com.github.l34130.netty.dbgw.policy.api.PolicyDefinition
+import com.github.l34130.netty.dbgw.policy.api.database.DatabasePolicy
 import com.github.l34130.netty.dbgw.policy.api.database.query.DatabaseResultRowContext
 import com.github.l34130.netty.dbgw.policy.builtin.util.IntRangeSet
 
 class DatabaseResultSetMaskingPolicy(
+    private val definition: DatabaseResultSetMaskingPolicyDefinition,
     val maskingRegex: Regex,
-) : DatabasePolicyInterceptor {
+) : DatabasePolicy {
+    override fun definition(): PolicyDefinition = definition
+
     override fun onResultRow(ctx: DatabaseResultRowContext) {
         ctx.addRowProcessorFactory { originalRow: List<String?> ->
             { row: Sequence<String?> ->

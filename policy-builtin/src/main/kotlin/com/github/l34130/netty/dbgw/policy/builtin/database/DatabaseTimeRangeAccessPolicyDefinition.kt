@@ -2,7 +2,7 @@ package com.github.l34130.netty.dbgw.policy.builtin.database
 
 import com.github.l34130.netty.dbgw.policy.api.PolicyDefinition
 import com.github.l34130.netty.dbgw.policy.api.config.Resource
-import com.github.l34130.netty.dbgw.policy.api.database.DatabasePolicyInterceptor
+import com.github.l34130.netty.dbgw.policy.api.database.DatabasePolicy
 import java.time.Clock
 import java.time.LocalTime
 import java.util.regex.Pattern
@@ -22,8 +22,9 @@ data class DatabaseTimeRangeAccessPolicyDefinition(
     private val action: Action = Action.ALLOW,
     private val clock: Clock,
 ) : PolicyDefinition {
-    override fun createInterceptor(): DatabasePolicyInterceptor =
+    override fun createPolicy(): DatabasePolicy =
         DatabaseTimeRangeAccessPolicy(
+            definition = this,
             startTime = startTime,
             endTime = endTime,
             startInclusive = startInclusive,

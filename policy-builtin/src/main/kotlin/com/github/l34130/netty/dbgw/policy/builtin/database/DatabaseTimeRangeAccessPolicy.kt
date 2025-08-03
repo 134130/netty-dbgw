@@ -3,21 +3,24 @@ package com.github.l34130.netty.dbgw.policy.builtin.database
 import com.github.l34130.netty.dbgw.policy.api.PolicyDecision
 import com.github.l34130.netty.dbgw.policy.api.database.DatabaseAuthenticationEvent
 import com.github.l34130.netty.dbgw.policy.api.database.DatabaseContext
-import com.github.l34130.netty.dbgw.policy.api.database.DatabasePolicyInterceptor
+import com.github.l34130.netty.dbgw.policy.api.database.DatabasePolicy
 import com.github.l34130.netty.dbgw.policy.api.database.query.DatabaseQueryContext
 import java.time.Clock
 import java.time.LocalTime
 
 data class DatabaseTimeRangeAccessPolicy(
+    private val definition: DatabaseTimeRangeAccessPolicyDefinition,
     private val startTime: LocalTime,
     private val endTime: LocalTime,
     private val startInclusive: Boolean,
     private val endInclusive: Boolean,
     private val action: DatabaseTimeRangeAccessPolicyDefinition.Action = DatabaseTimeRangeAccessPolicyDefinition.Action.ALLOW,
     private val clock: Clock,
-) : DatabasePolicyInterceptor {
+) : DatabasePolicy {
     private val rangeNotation: String =
         "${if (startInclusive) '[' else '('}$startTime, $endTime${if (endInclusive) ']' else ')'}"
+
+    override fun definition(): DatabaseTimeRangeAccessPolicyDefinition = definition
 
     override fun onAuthentication(
         ctx: DatabaseContext,

@@ -47,7 +47,7 @@ class DatabaseTimeRangeAccessPolicyTest {
                             range = "[09:00, 17:00)",
                             action = DatabaseTimeRangeAccessPolicyDefinition.Action.ALLOW,
                             clock = clock,
-                        ).createInterceptor()
+                        ).createPolicy()
                 val result = policy.onQuery(ctx)
                 assertIs<PolicyDecision.Allow>(result)
             },
@@ -59,7 +59,7 @@ class DatabaseTimeRangeAccessPolicyTest {
                             range = "[09:00, 17:00)",
                             action = DatabaseTimeRangeAccessPolicyDefinition.Action.ALLOW,
                             clock = clock,
-                        ).createInterceptor()
+                        ).createPolicy()
                 val result = policy.onQuery(ctx)
                 assertIs<PolicyDecision.NotApplicable>(result)
             },
@@ -71,7 +71,7 @@ class DatabaseTimeRangeAccessPolicyTest {
                             range = "[09:00, 17:00)",
                             action = DatabaseTimeRangeAccessPolicyDefinition.Action.DENY,
                             clock = clock,
-                        ).createInterceptor()
+                        ).createPolicy()
                 val result = policy.onQuery(ctx)
                 assertIs<PolicyDecision.Deny>(result)
             },
@@ -83,7 +83,7 @@ class DatabaseTimeRangeAccessPolicyTest {
                             range = "[22:00, 02:00)",
                             action = DatabaseTimeRangeAccessPolicyDefinition.Action.ALLOW,
                             clock = clock,
-                        ).createInterceptor()
+                        ).createPolicy()
                 val result = policy.onQuery(ctx)
                 assertIs<PolicyDecision.Allow>(result)
             },
@@ -95,7 +95,7 @@ class DatabaseTimeRangeAccessPolicyTest {
                             range = "[22:00, 02:00)",
                             action = DatabaseTimeRangeAccessPolicyDefinition.Action.ALLOW,
                             clock = clock,
-                        ).createInterceptor()
+                        ).createPolicy()
                 val result = policy.onQuery(ctx)
                 assertIs<PolicyDecision.NotApplicable>(result)
             },
@@ -108,7 +108,7 @@ class DatabaseTimeRangeAccessPolicyTest {
                             range = "(09:00, 17:00)",
                             action = DatabaseTimeRangeAccessPolicyDefinition.Action.ALLOW,
                             clock = clock,
-                        ).createInterceptor()
+                        ).createPolicy()
                 val result = policy.onQuery(ctx)
                 assertIs<PolicyDecision.NotApplicable>(result)
             },
@@ -120,7 +120,7 @@ class DatabaseTimeRangeAccessPolicyTest {
                             range = "(09:00, 17:00)",
                             action = DatabaseTimeRangeAccessPolicyDefinition.Action.ALLOW,
                             clock = clock,
-                        ).createInterceptor()
+                        ).createPolicy()
                 val result = policy.onQuery(ctx)
                 assertIs<PolicyDecision.Allow>(result)
             },
@@ -133,7 +133,7 @@ class DatabaseTimeRangeAccessPolicyTest {
                             range = "[09:00, 17:00]",
                             action = DatabaseTimeRangeAccessPolicyDefinition.Action.ALLOW,
                             clock = clock,
-                        ).createInterceptor()
+                        ).createPolicy()
                 val result = policy.onQuery(ctx)
                 assertIs<PolicyDecision.Allow>(result)
             },
@@ -145,7 +145,7 @@ class DatabaseTimeRangeAccessPolicyTest {
                             range = "[09:00, 17:00]",
                             action = DatabaseTimeRangeAccessPolicyDefinition.Action.ALLOW,
                             clock = clock,
-                        ).createInterceptor()
+                        ).createPolicy()
                 val result = policy.onQuery(ctx)
                 assertIs<PolicyDecision.NotApplicable>(result)
             },
@@ -158,7 +158,7 @@ class DatabaseTimeRangeAccessPolicyTest {
                             range = "(09:00, 17:00]",
                             action = DatabaseTimeRangeAccessPolicyDefinition.Action.ALLOW,
                             clock = clock,
-                        ).createInterceptor()
+                        ).createPolicy()
                 val result = policy.onQuery(ctx)
                 assertIs<PolicyDecision.NotApplicable>(result)
             },
@@ -170,7 +170,7 @@ class DatabaseTimeRangeAccessPolicyTest {
                             range = "(09:00, 17:00]",
                             action = DatabaseTimeRangeAccessPolicyDefinition.Action.ALLOW,
                             clock = clock,
-                        ).createInterceptor()
+                        ).createPolicy()
                 val result = policy.onQuery(ctx)
                 assertIs<PolicyDecision.Allow>(result)
             },
