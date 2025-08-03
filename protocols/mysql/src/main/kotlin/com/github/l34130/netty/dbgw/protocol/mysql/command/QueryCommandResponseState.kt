@@ -1,7 +1,10 @@
 package com.github.l34130.netty.dbgw.protocol.mysql.command
 
 import com.github.l34130.netty.dbgw.core.MessageAction
+import com.github.l34130.netty.dbgw.core.databaseCtx
+import com.github.l34130.netty.dbgw.core.databasePolicyChain
 import com.github.l34130.netty.dbgw.core.utils.netty.peek
+import com.github.l34130.netty.dbgw.policy.api.database.query.withResultRow
 import com.github.l34130.netty.dbgw.protocol.mysql.MySqlGatewayState
 import com.github.l34130.netty.dbgw.protocol.mysql.Packet
 import com.github.l34130.netty.dbgw.protocol.mysql.capabilities
@@ -146,20 +149,22 @@ internal class QueryCommandResponseState : MySqlGatewayState() {
             ctx: ChannelHandlerContext,
             packet: Packet,
         ): StateResult {
-            val payload = packet.payload
-
             handleTerminator(ctx, packet)?.let { nextState ->
                 return nextState // If terminator was handled, return the next state
             }
 
-            logger.trace {
-                val rowData = payload.readTextResultsetRow(columnCount)
-                "Row Data: $rowData"
-            }
+            val resultSetRow = ResultSetRow.readFrom(packet, columnCount)
+            logger.trace { "Row Data: $resultSetRow" }
+
+            val resultRowCtx = ctx.databaseCtx()!!.withResultRow(resultSetRow.columns)
+            ctx.databasePolicyChain()!!.onResultRow(resultRowCtx)
 
             return StateResult(
                 nextState = this,
-                action = MessageAction.Forward,
+                action =
+                    MessageAction.Transform(
+                        newMsg = ResultSetRow(columns = resultRowCtx.resultRow().toList()).asPacket(packet.sequenceId),
+                    ),
             ) // Continue in the same state for more rows
         }
 
@@ -218,7 +223,7 @@ internal class QueryCommandResponseState : MySqlGatewayState() {
                 }
 
                 if (this.peek { it.readUnsignedByte() }?.toInt() == 0xFB) {
-                    this.skipBytes(1) // 0xFB indicates the end of the row
+                    this.skipBytes(1) // 0xFB indicates NULL value
                     // NULL
                     result.add(null)
                 } else {

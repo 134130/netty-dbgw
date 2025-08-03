@@ -58,6 +58,25 @@ internal fun ByteBuf.readLenEncInteger(): ULong {
     }
 }
 
+internal fun ByteBuf.writeLenEncInteger(value: ULong): ByteBuf {
+    when {
+        value <= 0xFBUL -> writeByte(value.toInt())
+        value <= 0xFFFFUL -> {
+            writeByte(0xFC)
+            writeShortLE(value.toInt())
+        }
+        value <= 0xFFFFFFUL -> {
+            writeByte(0xFD)
+            writeMediumLE(value.toInt())
+        }
+        else -> {
+            writeByte(0xFE)
+            writeLongLE(value.toLong())
+        }
+    }
+    return this
+}
+
 // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_basic_dt_strings.html#sect_protocol_basic_dt_string_fix
 internal fun ByteBuf.readFixedLengthString(length: Int): String = readString(length, Charsets.UTF_8)
 
@@ -101,4 +120,11 @@ internal fun ByteBuf.readLenEncString(): ByteBuf {
         length <= 0UL -> Unpooled.EMPTY_BUFFER
         else -> readSlice(length.toInt())
     }
+}
+
+internal fun ByteBuf.writeLenEncString(value: String): ByteBuf {
+    val bytes = value.toByteArray(Charsets.UTF_8)
+    writeLenEncInteger(bytes.size.toULong())
+    writeBytes(bytes)
+    return this
 }

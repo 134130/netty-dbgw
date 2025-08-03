@@ -6,6 +6,7 @@ import com.github.l34130.netty.dbgw.policy.api.database.DatabaseAuthenticationEv
 import com.github.l34130.netty.dbgw.policy.api.database.DatabaseContext
 import com.github.l34130.netty.dbgw.policy.api.database.DatabasePolicyInterceptor
 import com.github.l34130.netty.dbgw.policy.api.database.query.DatabaseQueryContext
+import com.github.l34130.netty.dbgw.policy.api.database.query.DatabaseResultRowContext
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.util.concurrent.CopyOnWriteArrayList
 
@@ -38,6 +39,12 @@ class DatabasePolicyChain(
         return PolicyDecision.Deny(
             reason = "No policy allowed the query (implicit deny)",
         )
+    }
+
+    override fun onResultRow(ctx: DatabaseResultRowContext) {
+        for (policy in policies.map { it.second }) {
+            policy.onResultRow(ctx)
+        }
     }
 
     override fun onPolicyAdded(policy: PolicyDefinition) {

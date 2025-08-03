@@ -37,4 +37,6 @@ class IntRangeSet : Iterable<Int> {
     }
 
     override fun iterator(): Iterator<Int> = ranges.flatMap { it.asIterable() }.iterator()
+
+    override fun toString(): String = ranges.joinToString(", ") { "[${it.first}, ${it.last}]" }
 }
