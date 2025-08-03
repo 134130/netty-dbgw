@@ -46,6 +46,7 @@ class FilePolicyConfigurationLoader(
                     val absoluteFile = file.resolve(context)
                     if (file.isFile && absoluteFile != file) {
                         // Skip events for the main file if it's a directory
+                        key.reset()
                         return@forEach
                     }
 
