@@ -1,4 +1,4 @@
-package com.github.l34130.netty.dbgw.policy.builtin.database.query
+package com.github.l34130.netty.dbgw.policy.builtin.database
 
 import com.github.l34130.netty.dbgw.policy.api.database.DatabasePolicyInterceptor
 import com.github.l34130.netty.dbgw.policy.api.database.query.DatabaseResultRowContext
