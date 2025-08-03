@@ -1,5 +1,6 @@
 package com.github.l34130.netty.dbgw.protocol.mysql.command
 
+import com.github.l34130.netty.dbgw.common.sql.ColumnDefinition
 import com.github.l34130.netty.dbgw.core.MessageAction
 import com.github.l34130.netty.dbgw.core.databaseCtx
 import com.github.l34130.netty.dbgw.core.databasePolicyChain
@@ -12,9 +13,7 @@ import com.github.l34130.netty.dbgw.protocol.mysql.constant.CapabilityFlag
 import com.github.l34130.netty.dbgw.protocol.mysql.constant.ServerStatusFlag
 import com.github.l34130.netty.dbgw.protocol.mysql.readFixedLengthInteger
 import com.github.l34130.netty.dbgw.protocol.mysql.readLenEncInteger
-import com.github.l34130.netty.dbgw.protocol.mysql.readLenEncString
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.netty.buffer.ByteBuf
 import io.netty.channel.ChannelHandlerContext
 
 internal class QueryCommandResponseState : MySqlGatewayState() {
@@ -60,7 +59,10 @@ internal class QueryCommandResponseState : MySqlGatewayState() {
         private var state: State = State.FIELD_COUNT
         private var columnCount: ULong = 0UL
         private var metadataFollows: Boolean = false
-        private var columnDefinitionCount: ULong = 0UL
+        private val columnDefinitions = mutableListOf<ColumnDefinition41>()
+        private val commonColumnDefinitions: List<ColumnDefinition> by lazy {
+            columnDefinitions.map { it.toColumnDefinition() }
+        }
 
         override fun onBackendMessage(
             ctx: ChannelHandlerContext,
@@ -105,13 +107,12 @@ internal class QueryCommandResponseState : MySqlGatewayState() {
             val payload = packet.payload
 
             // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_com_query_response_text_resultset_column_definition.html
-            logger.trace {
-                val columnDefinition = ColumnDefinition41.readFrom(payload)
-                columnDefinition.toString()
-            }
+            val columnDefinition = ColumnDefinition41.readFrom(payload)
+            columnDefinitions.add(columnDefinition)
+            logger.trace { columnDefinition.toString() }
 
             state =
-                if (++columnDefinitionCount < columnCount) {
+                if (columnDefinitions.size.toULong() < columnCount) {
                     State.FIELD // Continue to next column definition
                 } else {
                     State.EOF // All column definitions processed, move to EOF state
@@ -156,7 +157,11 @@ internal class QueryCommandResponseState : MySqlGatewayState() {
             val resultSetRow = ResultSetRow.readFrom(packet, columnCount)
             logger.trace { "Row Data: $resultSetRow" }
 
-            val resultRowCtx = ctx.databaseCtx()!!.withResultRow(resultSetRow.columns)
+            val resultRowCtx =
+                ctx.databaseCtx()!!.withResultRow(
+                    columnDefinitions = commonColumnDefinitions,
+                    resultRow = resultSetRow.columns,
+                )
             ctx.databasePolicyChain()!!.onResultRow(resultRowCtx)
 
             return StateResult(
@@ -210,29 +215,6 @@ internal class QueryCommandResponseState : MySqlGatewayState() {
                 nextState = nextState,
                 action = MessageAction.Forward,
             )
-        }
-
-        // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_com_query_response_text_resultset_row.html
-        private fun ByteBuf.readTextResultsetRow(columnCount: ULong): List<String?> {
-            val result = mutableListOf<String?>()
-
-            for (i in 0UL until columnCount) {
-                if (this.readableBytes() == 0) {
-                    logger.warn { "No more data to read for column $i (expected $columnCount columns)" }
-                    return result
-                }
-
-                if (this.peek { it.readUnsignedByte() }?.toInt() == 0xFB) {
-                    this.skipBytes(1) // 0xFB indicates NULL value
-                    // NULL
-                    result.add(null)
-                } else {
-                    val value = this.readLenEncString()
-                    result.add(value.toString(Charsets.UTF_8))
-                }
-            }
-
-            return result
         }
 
         companion object {

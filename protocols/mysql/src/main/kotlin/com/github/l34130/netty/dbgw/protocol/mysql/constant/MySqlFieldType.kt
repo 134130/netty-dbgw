@@ -1,5 +1,7 @@
 package com.github.l34130.netty.dbgw.protocol.mysql.constant
 
+import java.sql.Types
+
 // https://dev.mysql.com/doc/dev/mysql-server/latest/field__types_8h.html
 internal enum class MySqlFieldType(
     val value: Int,
@@ -50,6 +52,28 @@ internal enum class MySqlFieldType(
     MYSQL_TYPE_STRING(254),
     MYSQL_TYPE_GEOMETRY(255),
     ;
+
+    fun toJavaSqlType(): Int =
+        when (this) {
+            MYSQL_TYPE_DECIMAL -> Types.DECIMAL
+            MYSQL_TYPE_TINY -> Types.TINYINT
+            MYSQL_TYPE_SHORT -> Types.SMALLINT
+            MYSQL_TYPE_LONG -> Types.INTEGER
+            MYSQL_TYPE_FLOAT -> Types.FLOAT
+            MYSQL_TYPE_DOUBLE -> Types.DOUBLE
+            MYSQL_TYPE_NULL -> Types.NULL
+            MYSQL_TYPE_TIMESTAMP, MYSQL_TYPE_TIMESTAMP2 -> Types.TIMESTAMP
+            MYSQL_TYPE_LONGLONG -> Types.BIGINT
+            MYSQL_TYPE_INT24 -> Types.INTEGER // MySQL's INT24 is equivalent to Java's INTEGER
+            MYSQL_TYPE_DATE -> Types.DATE
+            MYSQL_TYPE_TIME, MYSQL_TYPE_TIME2 -> Types.TIME
+            MYSQL_TYPE_DATETIME, MYSQL_TYPE_DATETIME2 -> Types.TIMESTAMP
+            MYSQL_TYPE_YEAR -> Types.SMALLINT // MySQL's YEAR is equivalent to Java's SMALLINT
+            MYSQL_TYPE_VARCHAR, MYSQL_TYPE_VAR_STRING, MYSQL_TYPE_STRING -> Types.VARCHAR
+            MYSQL_TYPE_BIT -> Types.BIT
+            MYSQL_TYPE_JSON -> Types.OTHER // JSON is treated as OTHER in JDBC
+            else -> throw IllegalArgumentException("Unsupported MySQL field type: $this")
+        }
 
     companion object {
         private val valuesMap = entries.associateBy(MySqlFieldType::value)

@@ -1,5 +1,6 @@
 package com.github.l34130.netty.dbgw.policy.builtin.database
 
+import com.github.l34130.netty.dbgw.common.sql.ColumnDefinition
 import com.github.l34130.netty.dbgw.policy.api.PolicyDefinition
 import com.github.l34130.netty.dbgw.policy.api.database.DatabasePolicy
 import com.github.l34130.netty.dbgw.policy.api.database.query.DatabaseResultRowContext
@@ -12,13 +13,17 @@ class DatabaseResultSetMaskingPolicy(
     override fun definition(): PolicyDefinition = definition
 
     override fun onResultRow(ctx: DatabaseResultRowContext) {
-        ctx.addRowProcessorFactory { originalRow: List<String?> ->
+        ctx.addRowProcessorFactory { columnDefinitions: List<ColumnDefinition>, originalRow: List<String?> ->
             { row: Sequence<String?> ->
                 val rangeSets: List<IntRangeSet?> =
                     originalRow
-                        .map { column ->
+                        .mapIndexed { index, column ->
                             if (column == null) {
-                                return@map null
+                                return@mapIndexed null
+                            }
+                            if (columnDefinitions[index].columnType.targetClass != String::class) {
+                                // If the column is not a String, we do not apply regex masking
+                                return@mapIndexed null
                             }
 
                             maskingRegex
@@ -33,8 +38,10 @@ class DatabaseResultSetMaskingPolicy(
                     if (column == null) {
                         return@mapIndexed null
                     }
-
-                    val rangeSet = rangeSets[index]!!
+                    val rangeSet = rangeSets[index]
+                    if (rangeSet == null) {
+                        return@mapIndexed column // No masking needed
+                    }
 
                     buildString {
                         column.forEachIndexed { index, char ->

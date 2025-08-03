@@ -1,5 +1,6 @@
 package com.github.l34130.netty.dbgw.policy.api.database.query
 
+import com.github.l34130.netty.dbgw.common.sql.ColumnDefinition
 import com.github.l34130.netty.dbgw.policy.api.ClientInfo
 import com.github.l34130.netty.dbgw.policy.api.SessionInfo
 import com.github.l34130.netty.dbgw.policy.api.database.DatabaseConnectionInfo
@@ -10,6 +11,7 @@ class DatabaseResultRowContext internal constructor(
     connectionInfo: DatabaseConnectionInfo,
     sessionInfo: SessionInfo,
     attributes: MutableMap<String, Any>,
+    private val columnDefinitions: List<ColumnDefinition>,
     private val resultRow: List<String?>,
 ) : DatabaseContext(
         clientInfo,
@@ -25,16 +27,25 @@ class DatabaseResultRowContext internal constructor(
                 processor(acc)
             }.toList()
 
-    fun addRowProcessorFactory(processorFactory: (originalRow: List<String?>) -> (Sequence<String?>) -> Sequence<String?>) {
-        processors.add(processorFactory(resultRow))
+    fun addRowProcessorFactory(
+        processorFactory: (
+            columnDefinitions: List<ColumnDefinition>,
+            originalRow: List<String?>,
+        ) -> (Sequence<String?>) -> Sequence<String?>,
+    ) {
+        processors.add(processorFactory(columnDefinitions, resultRow))
     }
 }
 
-fun DatabaseContext.withResultRow(resultRow: List<String?>): DatabaseResultRowContext =
+fun DatabaseContext.withResultRow(
+    columnDefinitions: List<ColumnDefinition>,
+    resultRow: List<String?>,
+): DatabaseResultRowContext =
     DatabaseResultRowContext(
         clientInfo = this.clientInfo,
         connectionInfo = this.connectionInfo,
         sessionInfo = this.sessionInfo,
         attributes = this.attributes,
+        columnDefinitions = columnDefinitions,
         resultRow = resultRow,
     )

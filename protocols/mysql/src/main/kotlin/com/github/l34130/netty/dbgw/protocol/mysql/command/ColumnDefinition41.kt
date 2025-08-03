@@ -1,5 +1,7 @@
 package com.github.l34130.netty.dbgw.protocol.mysql.command
 
+import com.github.l34130.netty.dbgw.common.sql.ColumnDefinition
+import com.github.l34130.netty.dbgw.common.sql.SqlType
 import com.github.l34130.netty.dbgw.protocol.mysql.constant.MySqlFieldType
 import com.github.l34130.netty.dbgw.protocol.mysql.readFixedLengthInteger
 import com.github.l34130.netty.dbgw.protocol.mysql.readFixedLengthString
@@ -22,6 +24,17 @@ internal class ColumnDefinition41(
     val flags: Int,
     val decimals: Int, // max shown decimal digits
 ) {
+    fun toColumnDefinition(): ColumnDefinition =
+        ColumnDefinition(
+            database = schema,
+            schema = schema,
+            table = orgTable,
+            orgTable = orgTable,
+            column = name,
+            orgColumn = orgName,
+            columnType = requireNotNull(SqlType.fromCode(type.toJavaSqlType())) { "Unsupported MySQL field type: $type" },
+        )
+
     override fun toString(): String =
         buildString {
             append("ColumnDefinition41(catalog='$catalog', schema='$schema', table='$table', orgTable='$orgTable', ")

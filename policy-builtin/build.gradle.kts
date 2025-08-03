@@ -7,6 +7,7 @@ plugins {
 }
 
 dependencies {
+    implementation(project(":common"))
     implementation(project(":policy"))
 
     implementation(libs.bundles.kotlinxEcosystem)
