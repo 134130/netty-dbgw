@@ -63,8 +63,6 @@ class StartupState : GatewayState<ByteBuf, Message>() {
                         ).asMessage(),
                     ),
             )
-        } else {
-            logger.info { "Authentication allowed for user '${startupMsg.user}'" }
         }
 
         return StateResult(

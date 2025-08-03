@@ -168,6 +168,20 @@ class QueryCycleStatus :
                     action = MessageAction.Forward,
                 )
             }
+            NoData.TYPE -> {
+                logger.trace { "No data message received" }
+                return StateResult(
+                    nextState = this,
+                    action = MessageAction.Forward,
+                )
+            }
+            EmptyQueryResponse.TYPE -> {
+                logger.trace { "Empty query response received" }
+                return StateResult(
+                    nextState = this,
+                    action = MessageAction.Forward,
+                )
+            }
             else -> error("Unexpected backend message type '${msg.type}'")
         }
     }

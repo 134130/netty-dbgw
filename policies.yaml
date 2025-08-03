@@ -3,7 +3,7 @@ kind: DatabaseTimeRangeAccessPolicy
 metadata: {}
 spec:
   range: "[00:00, 23:59]"
-  action: DENY
+  action: ALLOW
 ---
 apiVersion: builtin/v1
 kind: DatabaseStatementTypePolicy
