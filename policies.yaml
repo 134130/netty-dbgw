@@ -34,7 +34,7 @@ metadata: {}
 spec:
   column: .*id
   filterRegex: "[0-9]"
-  action: DENY
+  action: ALLOW
 ---
 apiVersion: builtin/v1
 kind: DatabaseRowLevelSecurityPolicy

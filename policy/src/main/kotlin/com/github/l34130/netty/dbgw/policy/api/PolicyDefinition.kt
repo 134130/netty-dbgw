@@ -4,6 +4,7 @@ import com.github.l34130.netty.dbgw.policy.api.database.DatabaseAuthenticationEv
 import com.github.l34130.netty.dbgw.policy.api.database.DatabaseContext
 import com.github.l34130.netty.dbgw.policy.api.database.DatabasePolicy
 import com.github.l34130.netty.dbgw.policy.api.database.query.DatabaseQueryContext
+import com.github.l34130.netty.dbgw.policy.api.database.query.DatabaseResultRowContext
 
 interface PolicyDefinition {
     fun createPolicy(): DatabasePolicy
@@ -22,6 +23,11 @@ interface PolicyDefinition {
 
                         override fun onQuery(ctx: DatabaseQueryContext): PolicyDecision =
                             PolicyDecision.Allow(reason = "All queries are allowed")
+
+                        override fun onResultRow(ctx: DatabaseResultRowContext): PolicyDecision =
+                            PolicyDecision.Allow(
+                                reason = "All result rows are allowed",
+                            )
                     }
             }
     }
