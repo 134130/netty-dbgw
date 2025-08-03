@@ -44,6 +44,8 @@ class DataRow(
                     val length = content.readInt()
                     if (length == -1) {
                         null
+                    } else if (length == 0) {
+                        ""
                     } else {
                         content.readSlice(length).toString(Charsets.UTF_8)
                     }

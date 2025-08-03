@@ -22,7 +22,7 @@ class DatabaseRowLevelSecurityPolicy(
 
     override fun onResultRow(ctx: DatabaseResultRowContext): PolicyDecision {
         ctx.columnDefinitions.forEachIndexed { index, columnDef ->
-            if (!columnMatcher.matches(columnDef.orgColumn)) {
+            if (!columnMatcher.matches(columnDef.orgColumn.takeIf { it.isNotEmpty() } ?: columnDef.column)) {
                 return@forEachIndexed
             }
 

@@ -10,9 +10,11 @@ kind: DatabaseStatementTypePolicy
 metadata: {}
 spec:
   statements:
+    - "SELECT"
     - "UPDATE"
+    - "CREATE"
     - "DELETE"
-  action: DENY
+  action: ALLOW
 ---
 apiVersion: builtin/v1
 kind: DatabaseResultSetMaskingPolicy
