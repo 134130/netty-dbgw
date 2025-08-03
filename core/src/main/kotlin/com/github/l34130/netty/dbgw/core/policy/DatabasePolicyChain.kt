@@ -42,10 +42,15 @@ class DatabasePolicyChain(
         )
     }
 
-    override fun onResultRow(ctx: DatabaseResultRowContext) {
+    override fun onResultRow(ctx: DatabaseResultRowContext): PolicyDecision {
         for (policy in policies) {
-            policy.onResultRow(ctx)
+            val decision = policy.onResultRow(ctx)
+            if (decision is PolicyDecision.NotApplicable) continue
+            return decision
         }
+        return PolicyDecision.Deny(
+            reason = "No policy allowed the result row (implicit deny)",
+        )
     }
 
     override fun onPolicyAdded(policy: PolicyDefinition) {

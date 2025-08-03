@@ -30,6 +30,14 @@ apiVersion: builtin/v1
 kind: DatabaseRowLevelSecurityPolicy
 metadata: {}
 spec:
-  column: id
+  column: .*id
   filterRegex: "[0-9]"
+  action: DENY
+---
+apiVersion: builtin/v1
+kind: DatabaseRowLevelSecurityPolicy
+metadata: {}
+spec:
+  column: .*
+  filterRegex: .*
   action: ALLOW

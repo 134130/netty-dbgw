@@ -1,6 +1,7 @@
 package com.github.l34130.netty.dbgw.policy.builtin.database
 
 import com.github.l34130.netty.dbgw.common.sql.ColumnDefinition
+import com.github.l34130.netty.dbgw.policy.api.PolicyDecision
 import com.github.l34130.netty.dbgw.policy.api.PolicyDefinition
 import com.github.l34130.netty.dbgw.policy.api.database.DatabasePolicy
 import com.github.l34130.netty.dbgw.policy.api.database.query.DatabaseResultRowContext
@@ -12,7 +13,7 @@ class DatabaseResultSetMaskingPolicy(
 ) : DatabasePolicy {
     override fun definition(): PolicyDefinition = definition
 
-    override fun onResultRow(ctx: DatabaseResultRowContext) {
+    override fun onResultRow(ctx: DatabaseResultRowContext): PolicyDecision {
         ctx.addRowProcessorFactory { columnDefinitions: List<ColumnDefinition>, originalRow: List<String?> ->
             { row: Sequence<String?> ->
                 val rangeSets: List<IntRangeSet?> =
@@ -55,5 +56,7 @@ class DatabaseResultSetMaskingPolicy(
                 }
             }
         }
+
+        return PolicyDecision.NotApplicable // Not applicable as we are modifying the result row in place
     }
 }

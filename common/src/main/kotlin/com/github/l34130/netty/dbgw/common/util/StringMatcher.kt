@@ -1,5 +1,7 @@
 package com.github.l34130.netty.dbgw.common.util
 
+import java.util.WeakHashMap
+
 abstract class StringMatcher<T>(
     protected val target: T,
 ) {
@@ -31,12 +33,17 @@ abstract class StringMatcher<T>(
                             branch = branch.substring(4).lowercase()
                         }
                         if (branch.endsWith(".*")) {
-                            endsWith = true
+                            startsWith = true
                             branch = branch.substring(0, branch.length - 2)
                         }
                         if (branch.startsWith(".*")) {
-                            startsWith = true
+                            endsWith = true
                             branch = branch.substring(2)
+                        }
+
+                        val isRegex = target.any { it != '_' && it != '-' && !Character.isLetterOrDigit(it) }
+                        if (isRegex) {
+                            return Cache(Pattern(target))
                         }
 
                         var matcher: StringMatcher<*> =
@@ -81,6 +88,16 @@ abstract class StringMatcher<T>(
         override fun getPattern(): String = target.pattern
     }
 
+    private class Cache(
+        target: StringMatcher<*>,
+    ) : StringMatcher<StringMatcher<*>>(target) {
+        private val cache = WeakHashMap<String, Boolean>()
+
+        override fun matches(value: String): Boolean = cache.getOrPut(value) { target.matches(value) }
+
+        override fun getPattern(): String = target.getPattern()
+    }
+
     private class Equals(
         target: String,
     ) : Simple(target) {
@@ -122,12 +139,12 @@ abstract class StringMatcher<T>(
     class MatcherSet(
         private val matchers: Set<StringMatcher<*>>,
     ) : StringMatcher<Set<StringMatcher<*>>>(matchers) {
-        private val pattern: String by lazy {
+        private val _pattern: String by lazy {
             matchers.joinToString(separator = "|") { it.getPattern() }
         }
 
         override fun matches(value: String): Boolean = matchers.any { it.matches(value) }
 
-        override fun getPattern(): String = pattern
+        override fun getPattern(): String = _pattern
     }
 }

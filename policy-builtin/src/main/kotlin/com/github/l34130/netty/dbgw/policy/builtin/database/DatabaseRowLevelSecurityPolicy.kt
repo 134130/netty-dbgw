@@ -17,26 +17,25 @@ class DatabaseRowLevelSecurityPolicy(
 ) : DatabasePolicy {
     override fun definition(): PolicyDefinition = definition
 
-    private val matcher: StringMatcher<*> = StringMatcher.create(filterRegex)
+    private val columnMatcher: StringMatcher<*> = StringMatcher.create(column)
+    private val dataMatcher: StringMatcher<*> = StringMatcher.create(filterRegex)
 
     override fun onResultRow(ctx: DatabaseResultRowContext): PolicyDecision {
         ctx.columnDefinitions.forEachIndexed { index, columnDef ->
-            if (columnDef.column != column) {
+            if (!columnMatcher.matches(columnDef.orgColumn)) {
                 return@forEachIndexed
             }
 
             val columnData = ctx.resultRow[index] ?: return@forEachIndexed // Skip if column data is null
 
             // Check if the column data matches the filter regex
-            val matches = matcher.matches(columnData)
+            val matches = dataMatcher.matches(columnData)
             if (matches) {
                 return when (action) {
-                    DatabaseRowLevelSecurityPolicyDefinition.Action.ALLOW -> {
+                    DatabaseRowLevelSecurityPolicyDefinition.Action.ALLOW ->
                         PolicyDecision.Allow(reason = "Row matches filter for column '$column' with regex '$filterRegex'.")
-                    }
-                    DatabaseRowLevelSecurityPolicyDefinition.Action.DENY -> {
+                    DatabaseRowLevelSecurityPolicyDefinition.Action.DENY ->
                         PolicyDecision.Deny(reason = "Row does not match filter for column '$column' with regex '$filterRegex'.")
-                    }
                 }
             }
         }

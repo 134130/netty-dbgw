@@ -141,6 +141,7 @@ class FilePolicyConfigurationLoader(
         ServiceLoader.load(ResourceFactory::class.java).forEach { factory ->
             for ((gvk, manifest) in manifests) {
                 if (factory.isApplicable(gvk)) {
+                    logger.debug { "Creating policy definition for $gvk from file ${file.absolutePath}" }
                     policyDefinitions.add(file to factory.create(manifest.spec) as PolicyDefinition)
                 }
             }

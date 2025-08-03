@@ -6,10 +6,14 @@ class DatabaseRowLevelSecurityPolicyDefinitionFactory :
     AbstractResourceFactory<DatabaseRowLevelSecurityPolicyDefinition>(DatabaseRowLevelSecurityPolicyDefinition::class) {
     override fun create(props: Map<String, Any>): DatabaseRowLevelSecurityPolicyDefinition =
         DatabaseRowLevelSecurityPolicyDefinition(
-            policyName = props["policyName"] as String,
-            tableName = props["tableName"] as String,
-            filterExpression = props["filterExpression"] as String,
-            withCheckOption = props["withCheckOption"] as Boolean? ?: false,
-            roles = (props["roles"] as? List<String>) ?: emptyList(),
+            database = props["database"] as String?,
+            schema = props["schema"] as String?,
+            table = props["table"] as String?,
+            column = props["column"] as String,
+            filterRegex = props["filterRegex"] as String,
+            action =
+                DatabaseRowLevelSecurityPolicyDefinition.Action.valueOf(
+                    props["action"] as String,
+                ),
         )
 }

@@ -5,6 +5,7 @@ import com.github.l34130.netty.dbgw.core.MessageAction
 import com.github.l34130.netty.dbgw.core.databaseCtx
 import com.github.l34130.netty.dbgw.core.databasePolicyChain
 import com.github.l34130.netty.dbgw.core.utils.netty.peek
+import com.github.l34130.netty.dbgw.policy.api.PolicyDecision
 import com.github.l34130.netty.dbgw.policy.api.database.query.withResultRow
 import com.github.l34130.netty.dbgw.protocol.mysql.MySqlGatewayState
 import com.github.l34130.netty.dbgw.protocol.mysql.Packet
@@ -162,7 +163,14 @@ internal class QueryCommandResponseState : MySqlGatewayState() {
                     columnDefinitions = commonColumnDefinitions,
                     resultRow = resultSetRow.columns,
                 )
-            ctx.databasePolicyChain()!!.onResultRow(resultRowCtx)
+
+            val result = ctx.databasePolicyChain()!!.onResultRow(resultRowCtx)
+            if (result is PolicyDecision.Deny) {
+                return StateResult(
+                    nextState = this,
+                    action = MessageAction.Drop,
+                )
+            }
 
             return StateResult(
                 nextState = this,
