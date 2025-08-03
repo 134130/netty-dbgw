@@ -13,3 +13,15 @@ spec:
     - "UPDATE"
     - "DELETE"
   action: DENY
+---
+apiVersion: builtin/v1
+kind: DatabaseResultSetMaskingPolicy
+metadata: {}
+spec:
+  maskingRegex: "1234"
+---
+apiVersion: builtin/v1
+kind: DatabaseResultSetMaskingPolicy
+metadata: {}
+spec:
+  maskingRegex: "4567"
