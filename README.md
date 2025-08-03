@@ -88,6 +88,7 @@ providing the capability to parse and handle protocol packets at a granular leve
 - [x] Query Logging and Auditing
 - [ ] Query Rate Limiting
 - [x] Modifying Result Sets
+- [x] Row-Level Security
 
 ### Another Database Protocols
 
