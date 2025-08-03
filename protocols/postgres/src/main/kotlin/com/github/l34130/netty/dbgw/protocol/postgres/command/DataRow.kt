@@ -1,11 +1,30 @@
 package com.github.l34130.netty.dbgw.protocol.postgres.command
 
 import com.github.l34130.netty.dbgw.protocol.postgres.Message
+import io.netty.buffer.Unpooled
 
 class DataRow(
     // TODO: Optimize to use ByteBuf or similar for better performance
     val columnValues: List<String?>,
 ) {
+    fun asMessage(): Message =
+        Message(
+            type = TYPE,
+            content =
+                Unpooled.buffer().apply {
+                    writeShort(columnValues.size)
+                    columnValues.forEach { value ->
+                        if (value == null) {
+                            writeInt(-1) // Null value
+                        } else {
+                            val bytes = value.toByteArray(Charsets.UTF_8)
+                            writeInt(bytes.size)
+                            writeBytes(bytes)
+                        }
+                    }
+                },
+        )
+
     override fun toString(): String = "DataRow(columnValues=$columnValues)"
 
     companion object {

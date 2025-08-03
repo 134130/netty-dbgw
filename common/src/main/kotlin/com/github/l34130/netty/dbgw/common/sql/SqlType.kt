@@ -1,6 +1,7 @@
 package com.github.l34130.netty.dbgw.common.sql
 
 import java.math.BigDecimal
+import java.sql.ResultSet
 import java.sql.Types
 import kotlin.reflect.KClass
 
@@ -45,7 +46,7 @@ enum class SqlType(
     LONGNVARCHAR(Types.LONGNVARCHAR, String::class),
     NCLOB(Types.NCLOB, String::class),
     SQLXML(Types.SQLXML, String::class),
-    REF_CURSOR(Types.REF_CURSOR, Any::class),
+    REF_CURSOR(Types.REF_CURSOR, ResultSet::class),
     TIME_WITH_TIMEZONE(Types.TIME_WITH_TIMEZONE, java.sql.Time::class),
     TIMESTAMP_WITH_TIMEZONE(Types.TIMESTAMP_WITH_TIMEZONE, java.sql.Timestamp::class),
     ;

@@ -1,5 +1,6 @@
 package com.github.l34130.netty.dbgw.protocol.postgres.command
 
+import com.github.l34130.netty.dbgw.common.sql.ColumnDefinition
 import com.github.l34130.netty.dbgw.core.BusinessLogicAware
 import com.github.l34130.netty.dbgw.core.GatewayState
 import com.github.l34130.netty.dbgw.core.MessageAction
@@ -7,6 +8,7 @@ import com.github.l34130.netty.dbgw.core.databaseCtx
 import com.github.l34130.netty.dbgw.core.databasePolicyChain
 import com.github.l34130.netty.dbgw.policy.api.PolicyDecision
 import com.github.l34130.netty.dbgw.policy.api.database.query.withQuery
+import com.github.l34130.netty.dbgw.policy.api.database.query.withResultRow
 import com.github.l34130.netty.dbgw.protocol.postgres.Message
 import com.github.l34130.netty.dbgw.protocol.postgres.message.ErrorResponse
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -16,6 +18,11 @@ import io.netty.channel.ChannelHandlerContext
 class QueryCycleStatus :
     GatewayState<Message, Message>(),
     BusinessLogicAware {
+    private val rowDescriptionFields = mutableListOf<RowDescription.Field>()
+    private val columnDefinitions: List<ColumnDefinition> by lazy {
+        rowDescriptionFields.map { it.toColumnDefinition() }
+    }
+
     override fun onFrontendMessage(
         ctx: ChannelHandlerContext,
         msg: Message,
@@ -155,14 +162,25 @@ class QueryCycleStatus :
             DataRow.TYPE -> {
                 val dataRow = DataRow.readFrom(msg)
                 logger.trace { "Data row: $dataRow" }
+
+                val resultRowCtx = ctx.databaseCtx()!!.withResultRow(columnDefinitions, dataRow.columnValues)
+                ctx.databasePolicyChain()!!.onResultRow(resultRowCtx)
                 return StateResult(
                     nextState = this,
-                    action = MessageAction.Forward,
+                    action =
+                        MessageAction.Transform(
+                            DataRow(
+                                columnValues = resultRowCtx.resultRow(),
+                            ).asMessage(),
+                        ),
                 )
             }
             RowDescription.TYPE -> {
                 val rowDescription = RowDescription.readFrom(msg)
                 logger.trace { "Row description: $rowDescription" }
+
+                rowDescriptionFields.addAll(rowDescription.fields)
+
                 return StateResult(
                     nextState = this,
                     action = MessageAction.Forward,
