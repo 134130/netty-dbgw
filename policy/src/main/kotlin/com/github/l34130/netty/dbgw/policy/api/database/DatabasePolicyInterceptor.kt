@@ -12,5 +12,5 @@ interface DatabasePolicyInterceptor {
 
     fun onQuery(ctx: DatabaseQueryContext): PolicyDecision = PolicyDecision.NotApplicable
 
-    fun onResultRow(ctx: DatabaseResultRowContext): Unit = Unit
+    fun onResultRow(ctx: DatabaseResultRowContext): PolicyDecision = PolicyDecision.NotApplicable
 }

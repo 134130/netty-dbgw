@@ -11,8 +11,8 @@ class DatabaseResultRowContext internal constructor(
     connectionInfo: DatabaseConnectionInfo,
     sessionInfo: SessionInfo,
     attributes: MutableMap<String, Any>,
-    private val columnDefinitions: List<ColumnDefinition>,
-    private val resultRow: List<String?>,
+    val columnDefinitions: List<ColumnDefinition>,
+    val resultRow: List<String?>,
 ) : DatabaseContext(
         clientInfo,
         connectionInfo,
