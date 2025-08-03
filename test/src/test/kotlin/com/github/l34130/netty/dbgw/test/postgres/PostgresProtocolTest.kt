@@ -24,7 +24,7 @@ abstract class PostgresProtocolTest(
 
         val result = conn.executeQuery("SELECT 1")
         assert(result.isNotEmpty()) { "Result should not be empty" }
-        assertEquals(1L, result[1][0], "Expected result to be 1, got ${result[1][0]}")
+        assertEquals(1, result[1][0], "Expected result to be 1, got ${result[1][0]}")
 
         assertTrue(conn.isValid(2), "Connection should still be valid after query execution")
     }
@@ -201,38 +201,18 @@ abstract class PostgresProtocolTest(
                             assertEquals(2, table.size, "Expected 2 rows in the result set")
                             assertEquals("col1", table[0][0], "Expected column name to be 'col1'")
                             val col1Value = table[1][0]
-                            when (col1Value) {
-                                is Long -> {
-                                    // MySQL 5.7 returns Long for integer addition
-                                    assertEquals(3, col1Value, "Expected concatenated value to be 3")
-                                }
-                                is Double -> {
-                                    // MySQL 8.0 returns Double for addition
-                                    assertEquals(3.0, col1Value, "Expected concatenated value to be 3.0")
-                                }
-                                else -> fail("Unexpected type for addition value: ${col1Value?.javaClass?.name}")
-                            }
+                            assertEquals(3, col1Value, "Expected addition value to be 3, got $col1Value")
                         }
 
-                        stmt.setObject(1, "Hello")
-                        stmt.setObject(2, " World")
+                        stmt.setObject(1, 3)
+                        stmt.setObject(2, 4)
 
                         stmt.executeQuery().use { rs ->
                             val table = rs.readAsTable()
                             assertEquals(2, table.size, "Expected 2 rows in the result set")
                             assertEquals("col1", table[0][0], "Expected column name to be 'col1'")
                             val col1Value = table[1][0]
-                            when (col1Value) {
-                                is Double -> {
-                                    // MySQL 8.0 returns Double for string concatenation
-                                    assertEquals(0.0, col1Value, "Expected concatenated value to be '0.0'")
-                                }
-                                is String -> {
-                                    // MySQL 5.7 returns String for concatenated values
-                                    assertEquals("Hello World", col1Value, "Expected concatenated value to be 'Hello World'")
-                                }
-                                else -> fail("Unexpected type for concatenated value: ${col1Value?.javaClass?.name}")
-                            }
+                            assertEquals(7, col1Value, "Expected addition value to be 7, got $col1Value")
                         }
                     }
                 }

@@ -90,7 +90,7 @@ providing the capability to parse and handle protocol packets at a granular leve
 
 ### Another Database Protocols
 
-- [ ] PostgreSQL
+- [x] PostgreSQL
 
 ## Benchmarks
 

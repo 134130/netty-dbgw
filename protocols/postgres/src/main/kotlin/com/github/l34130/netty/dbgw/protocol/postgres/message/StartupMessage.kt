@@ -24,6 +24,7 @@ data class StartupMessage(
             val majorVersion = buf.readShort()
             val minorVersion = buf.readShort()
             check(majorVersion == 3.toShort() && minorVersion == 0.toShort()) {
+                // TODO: Support SSL
                 "Unsupported PostgreSQL protocol version: $majorVersion.$minorVersion. Only version 3.0 is supported."
             }
 
