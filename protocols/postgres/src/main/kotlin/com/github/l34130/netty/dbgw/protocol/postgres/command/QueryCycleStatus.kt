@@ -164,7 +164,13 @@ class QueryCycleStatus :
                 logger.trace { "Data row: $dataRow" }
 
                 val resultRowCtx = ctx.databaseCtx()!!.withResultRow(columnDefinitions, dataRow.columnValues)
-                ctx.databasePolicyChain()!!.onResultRow(resultRowCtx)
+                val result = ctx.databasePolicyChain()!!.onResultRow(resultRowCtx)
+                if (result is PolicyDecision.Deny) {
+                    return StateResult(
+                        nextState = this,
+                        action = MessageAction.Drop,
+                    )
+                }
                 return StateResult(
                     nextState = this,
                     action =

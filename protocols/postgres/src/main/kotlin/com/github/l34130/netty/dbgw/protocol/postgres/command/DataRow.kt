@@ -40,7 +40,7 @@ class DataRow(
             }
 
             val columnValues =
-                List(columnCount) {
+                (0 until columnCount).map {
                     val length = content.readInt()
                     if (length == -1) {
                         null
