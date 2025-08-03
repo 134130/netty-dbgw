@@ -1,2 +1,3 @@
-com.github.l34130.netty.dbgw.policy.builtin.database.query.DatabaseStatementTypePolicyFactory
+com.github.l34130.netty.dbgw.policy.builtin.database.query.DatabaseResultSetMaskingPolicyDefinitionFactory
+com.github.l34130.netty.dbgw.policy.builtin.database.query.DatabaseStatementTypePolicyDefinitionFactory
 com.github.l34130.netty.dbgw.policy.builtin.database.query.DatabaseTimeRangeAccessPolicyDefinitionFactory
