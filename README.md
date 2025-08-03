@@ -30,25 +30,26 @@ providing the capability to parse and handle protocol packets at a granular leve
 
 ### MySQL Protocol Features
 
-- [ ] **Connection Phase**
-    - [ ] Initial Handshake
+- [x] **Connection Phase**
+    - [x] Initial Handshake
         - [x] Plain Handshake
-        - [ ] SSL Handshake
+        - [x] SSL Handshake
             - [x] TLS Handshake
             - [ ] mTLS Handshake 
         - [x] Capability Negotiation
     - [ ] Authentication Phase Fast Path
     - [x] Authentication Method Mismatch
     - [ ] COM_CHANGE_USER
-    - [ ] Authentication Methods
-        - [ ] Old Password Authentication
+    - [x] Authentication Methods
+        - [x] Old Password Authentication
         - [x] caching_sha2_password
+        - [x] sha256_password
         - [x] Clear text client plugin
         - [ ] Windows Native Authentication
         - [ ] authentication_webauthn
     - [ ] Multi-Factor Authentication (MFA)
-- [ ] **Command Phase**
-    - [ ] Text Protocol: `COM_QUERY`
+- [x] **Command Phase**
+    - [x] Text Protocol: `COM_QUERY`
         - [ ] LOCAL INFILE Request
         - [x] Text Resultset Response
     - [ ] Utility Commands
@@ -61,7 +62,7 @@ providing the capability to parse and handle protocol packets at a granular leve
         - [ ] COM_CHANGE_USER
         - [ ] COM_RESET_CONNECTION
         - [ ] COM_SET_OPTION
-    - [ ] Prepared Statements 
+    - [x] Prepared Statements 
         - [x] COM_STMT_PREPARE
         - [x] COM_STMT_EXECUTE
         - [x] COM_STMT_CLOSE
@@ -82,11 +83,11 @@ providing the capability to parse and handle protocol packets at a granular leve
 - [ ] Connection Rate Limiting
 - [ ] Modifying Server Capabilities
 - [ ] Authentication Modification
-- [ ] Preventing SQL Queries
-- [ ] Modifying SQL Queries
+- [x] Preventing SQL Queries
+- [x] Modifying SQL Queries
 - [x] Query Logging and Auditing
 - [ ] Query Rate Limiting
-- [ ] Modifying Result Sets
+- [x] Modifying Result Sets
 
 ### Another Database Protocols
 
