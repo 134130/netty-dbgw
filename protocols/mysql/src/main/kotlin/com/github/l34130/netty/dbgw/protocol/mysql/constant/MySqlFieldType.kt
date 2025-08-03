@@ -71,8 +71,20 @@ internal enum class MySqlFieldType(
             MYSQL_TYPE_YEAR -> Types.SMALLINT // MySQL's YEAR is equivalent to Java's SMALLINT
             MYSQL_TYPE_VARCHAR, MYSQL_TYPE_VAR_STRING, MYSQL_TYPE_STRING -> Types.VARCHAR
             MYSQL_TYPE_BIT -> Types.BIT
-            MYSQL_TYPE_JSON -> Types.OTHER // JSON is treated as OTHER in JDBC
-            else -> throw IllegalArgumentException("Unsupported MySQL field type: $this")
+            MYSQL_TYPE_JSON -> Types.OTHER
+            MYSQL_TYPE_NEWDATE -> Types.DATE
+            MYSQL_TYPE_TYPED_ARRAY -> Types.ARRAY
+            MYSQL_TYPE_VECTOR -> Types.OTHER
+            MYSQL_TYPE_INVALID -> Types.OTHER // Not a valid type, but we map it to OTHER
+            MYSQL_TYPE_BOOL -> Types.BOOLEAN
+            MYSQL_TYPE_NEWDECIMAL -> Types.DECIMAL
+            MYSQL_TYPE_ENUM -> Types.VARCHAR
+            MYSQL_TYPE_SET -> Types.VARCHAR
+            MYSQL_TYPE_TINY_BLOB -> Types.BLOB
+            MYSQL_TYPE_MEDIUM_BLOB -> Types.BLOB
+            MYSQL_TYPE_LONG_BLOB -> Types.BLOB
+            MYSQL_TYPE_BLOB -> Types.BLOB
+            MYSQL_TYPE_GEOMETRY -> Types.OTHER
         }
 
     companion object {
