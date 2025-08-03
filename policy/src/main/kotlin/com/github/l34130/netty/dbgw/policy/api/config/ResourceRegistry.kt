@@ -2,6 +2,7 @@ package com.github.l34130.netty.dbgw.policy.api.config
 
 import com.github.l34130.netty.dbgw.policy.api.config.ResourceInfo.Names
 import io.github.oshai.kotlinlogging.KotlinLogging
+import java.util.ServiceLoader
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
 import kotlin.concurrent.write
@@ -94,5 +95,11 @@ interface ResourceRegistry {
 
                 override fun getAllResources(): List<ResourceInfo> = lock.read { resourcesByGvr.values.toList() }
             }
+
+        init {
+            ServiceLoader.load(ResourceFactory::class.java).forEach { factory ->
+                DEFAULT.registerResourceAnnotated(factory.type())
+            }
+        }
     }
 }

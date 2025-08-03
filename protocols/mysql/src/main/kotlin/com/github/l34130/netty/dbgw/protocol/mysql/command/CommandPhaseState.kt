@@ -3,7 +3,7 @@ package com.github.l34130.netty.dbgw.protocol.mysql.command
 import com.github.l34130.netty.dbgw.core.BusinessLogicAware
 import com.github.l34130.netty.dbgw.core.MessageAction
 import com.github.l34130.netty.dbgw.core.databaseCtx
-import com.github.l34130.netty.dbgw.core.gatewayConfig
+import com.github.l34130.netty.dbgw.core.databasePolicyChain
 import com.github.l34130.netty.dbgw.core.utils.netty.peek
 import com.github.l34130.netty.dbgw.policy.api.PolicyDecision
 import com.github.l34130.netty.dbgw.policy.api.database.query.withQuery
@@ -74,8 +74,8 @@ internal class CommandPhaseState :
         val query = payload.readRestOfPacketString().toString(Charsets.UTF_8)
         logger.debug { "COM_QUERY: query='$query'" }
 
-        ctx.gatewayConfig()?.let { config ->
-            val result = config.policyEngine.evaluateQueryPolicy(ctx.databaseCtx()!!.withQuery(query))
+        ctx.databasePolicyChain()?.let { chain ->
+            val result = chain.onQuery(ctx.databaseCtx()!!.withQuery(query))
             if (result is PolicyDecision.Deny) {
                 val errorPacket =
                     Packet.Error.of(

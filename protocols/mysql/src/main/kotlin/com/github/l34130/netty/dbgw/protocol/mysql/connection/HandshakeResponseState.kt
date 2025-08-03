@@ -3,7 +3,7 @@ package com.github.l34130.netty.dbgw.protocol.mysql.connection
 import com.github.l34130.netty.dbgw.core.MessageAction
 import com.github.l34130.netty.dbgw.core.backend
 import com.github.l34130.netty.dbgw.core.databaseCtx
-import com.github.l34130.netty.dbgw.core.gatewayConfig
+import com.github.l34130.netty.dbgw.core.databasePolicyChain
 import com.github.l34130.netty.dbgw.core.utils.netty.closeOnFlush
 import com.github.l34130.netty.dbgw.core.utils.toEnumSet
 import com.github.l34130.netty.dbgw.policy.api.PolicyDecision
@@ -162,7 +162,7 @@ internal class HandshakeResponseState : MySqlGatewayState() {
         logger.trace { "Zstd Compression Level: $zstdCompressionLevel" }
 
         val result =
-            ctx.gatewayConfig()!!.policyEngine.evaluateAuthenticationPolicy(
+            ctx.databasePolicyChain()!!.onAuthentication(
                 ctx = ctx.databaseCtx()!!,
                 evt = DatabaseAuthenticationEvent(username = username),
             )

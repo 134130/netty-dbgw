@@ -2,6 +2,8 @@ package com.github.l34130.netty.dbgw.app
 
 import com.github.l34130.netty.dbgw.core.config.DatabaseGatewayConfig
 import com.github.l34130.netty.dbgw.core.config.GatewayConfigLoader
+import com.github.l34130.netty.dbgw.core.policy.FilePolicyConfigurationLoader
+import com.github.l34130.netty.dbgw.core.policy.PolicyConfigurationLoader
 import com.github.l34130.netty.dbgw.protocol.mysql.MySqlGateway
 import com.github.l34130.netty.dbgw.protocol.postgres.PostgresGateway
 import com.xenomachina.argparser.ArgParser
@@ -87,24 +89,22 @@ fun main(args: Array<String>) {
             "Starting gateway with configuration: $config"
         }
 
-        when (config.upstreamDatabaseType) {
-            DatabaseGatewayConfig.UpstreamDatabaseType.MYSQL -> {
-                val gateway = MySqlGateway(config)
-                try {
-                    gateway.start()
-                } finally {
-//                    gateway.shutdown()
+        val policyConfigurationLoader =
+            config.policyFile?.let {
+                FilePolicyConfigurationLoader(File(it))
+            } ?: PolicyConfigurationLoader.NOOP
+
+        val gateway =
+            when (config.upstreamDatabaseType) {
+                DatabaseGatewayConfig.UpstreamDatabaseType.MYSQL -> {
+                    MySqlGateway(config, policyConfigurationLoader)
+                }
+                DatabaseGatewayConfig.UpstreamDatabaseType.POSTGRESQL -> {
+                    PostgresGateway(config, policyConfigurationLoader)
                 }
             }
-            DatabaseGatewayConfig.UpstreamDatabaseType.POSTGRESQL -> {
-                val gateway = PostgresGateway(config)
-                try {
-                    gateway.start()
-                } finally {
-//                    gateway.shutdown()
-                }
-            }
-        }
+
+        gateway.start()
     }
 }
 

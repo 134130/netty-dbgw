@@ -2,7 +2,7 @@ package com.github.l34130.netty.dbgw.policy.api.config
 
 import com.fasterxml.jackson.annotation.JsonIgnore
 
-class Manifest {
+class ResourceManifest {
     @JsonIgnore
     val group: String
 

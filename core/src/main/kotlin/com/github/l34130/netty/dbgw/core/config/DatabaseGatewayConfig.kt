@@ -1,10 +1,5 @@
 package com.github.l34130.netty.dbgw.core.config
 
-import com.github.l34130.netty.dbgw.core.policy.PolicyEngine
-import com.github.l34130.netty.dbgw.policy.api.config.Resource
-import java.io.File
-import kotlin.reflect.full.findAnnotation
-
 data class DatabaseGatewayConfig(
     val listenPort: Int,
     val upstreamHost: String,
@@ -13,8 +8,6 @@ data class DatabaseGatewayConfig(
     val authenticationOverride: Authentication?,
     val policyFile: String? = null,
 ) {
-    var policyEngine: PolicyEngine = policyFile?.let { PolicyEngine.loadFromManifest(File(it)) } ?: PolicyEngine()
-
     override fun toString(): String =
         buildString {
             appendLine()
@@ -25,18 +18,6 @@ data class DatabaseGatewayConfig(
                 appendLine("    Authentication Override: None (user input will be used)")
             }
             appendLine("    Policy File: ${policyFile ?: "None"}")
-            if (policyFile != null) {
-                appendLine("    Policy Engine: ${policyEngine.policyChain.policies.size} policies loaded")
-                for ((index, policy) in policyEngine.policyChain.policies.withIndex()) {
-                    append("        Policy #$index: ")
-                    val resourceInfo = policy::class.findAnnotation<Resource>()
-                    if (resourceInfo != null) {
-                        appendLine("${resourceInfo.group}/${resourceInfo.version}, Kind=${resourceInfo.kind}")
-                    } else {
-                        appendLine("No Resource annotation")
-                    }
-                }
-            }
         }
 
     class Wrapper(

@@ -4,7 +4,7 @@ import com.github.l34130.netty.dbgw.core.BusinessLogicAware
 import com.github.l34130.netty.dbgw.core.GatewayState
 import com.github.l34130.netty.dbgw.core.MessageAction
 import com.github.l34130.netty.dbgw.core.databaseCtx
-import com.github.l34130.netty.dbgw.core.gatewayConfig
+import com.github.l34130.netty.dbgw.core.databasePolicyChain
 import com.github.l34130.netty.dbgw.policy.api.PolicyDecision
 import com.github.l34130.netty.dbgw.policy.api.database.query.withQuery
 import com.github.l34130.netty.dbgw.protocol.postgres.Message
@@ -25,8 +25,8 @@ class QueryCycleStatus :
                 val query = Query.readFrom(msg)
                 logger.debug { "Query: $query" }
 
-                ctx.gatewayConfig()?.let { config ->
-                    val result = config.policyEngine.evaluateQueryPolicy(ctx.databaseCtx()!!.withQuery(query.query))
+                ctx.databasePolicyChain()?.let { chain ->
+                    val result = chain.onQuery(ctx.databaseCtx()!!.withQuery(query.query))
                     // TODO: Intercept the message and send an error response
                     if (result is PolicyDecision.Deny) {
                         StateResult(
@@ -48,8 +48,8 @@ class QueryCycleStatus :
                 val parse = Parse.readFrom(msg)
                 logger.debug { "Parse: $parse" }
 
-                ctx.gatewayConfig()?.let { config ->
-                    val result = config.policyEngine.evaluateQueryPolicy(ctx.databaseCtx()!!.withQuery(parse.query))
+                ctx.databasePolicyChain()?.let { chain ->
+                    val result = chain.onQuery(ctx.databaseCtx()!!.withQuery(parse.query))
                     // TODO: Intercept the message and send an error response
                     if (result is PolicyDecision.Deny) {
                         StateResult(

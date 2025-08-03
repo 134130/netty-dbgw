@@ -1,6 +1,6 @@
 package com.github.l34130.netty.dbgw.core
 
-import com.github.l34130.netty.dbgw.core.config.DatabaseGatewayConfig
+import com.github.l34130.netty.dbgw.core.policy.DatabasePolicyChain
 import com.github.l34130.netty.dbgw.policy.api.ClientInfo
 import com.github.l34130.netty.dbgw.policy.api.SessionInfo
 import com.github.l34130.netty.dbgw.policy.api.database.DatabaseConnectionInfo
@@ -16,7 +16,7 @@ object GatewayAttrs {
     val FRONTEND_ATTR_KEY: AttributeKey<Channel> = AttributeKey.newInstance("frontend")
     val BACKEND_ATTR_KEY: AttributeKey<Channel> = AttributeKey.newInstance("backend")
 
-    val DATABASE_GATEWAY_CONFIG_ATTR_KEY: AttributeKey<DatabaseGatewayConfig> = AttributeKey.newInstance("database-gateway-config")
+    val DATABASE_POLICY_CHAIN_ATTR_KEY: AttributeKey<DatabasePolicyChain> = AttributeKey.newInstance("database-policy-chain")
     val DATABASE_CONNECTION_INFO_ATTR_KEY: AttributeKey<DatabaseConnectionInfo> = AttributeKey.newInstance("database-connection-info")
     val DATABASE_CONTEXT_ATTR_KEY: AttributeKey<DatabaseContext> = AttributeKey.newInstance("database-context")
 }
@@ -41,7 +41,8 @@ fun ChannelHandlerContext.backend(): Channel =
         "Backend channel is not set in the context. Maybe trying to access already in the backend handler? If so, use ctx.channel() instead"
     }
 
-fun ChannelHandlerContext.gatewayConfig(): DatabaseGatewayConfig? = this.channel().attr(GatewayAttrs.DATABASE_GATEWAY_CONFIG_ATTR_KEY).get()
+fun ChannelHandlerContext.databasePolicyChain(): DatabasePolicyChain? =
+    this.channel().attr(GatewayAttrs.DATABASE_POLICY_CHAIN_ATTR_KEY).get()
 
 fun ChannelHandlerContext.databaseConnectionInfo(): DatabaseConnectionInfo? =
     this.channel().attr(GatewayAttrs.DATABASE_CONNECTION_INFO_ATTR_KEY).get()

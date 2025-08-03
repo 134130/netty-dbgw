@@ -1,13 +1,9 @@
 package com.github.l34130.netty.dbgw.test.postgres
 
 import com.github.l34130.netty.dbgw.core.config.DatabaseGatewayConfig
-import com.github.l34130.netty.dbgw.core.policy.DatabasePolicyChain
-import com.github.l34130.netty.dbgw.core.policy.PolicyEngine
-import com.github.l34130.netty.dbgw.policy.api.PolicyDecision
-import com.github.l34130.netty.dbgw.policy.api.database.DatabaseAuthenticationEvent
-import com.github.l34130.netty.dbgw.policy.api.database.DatabaseContext
-import com.github.l34130.netty.dbgw.policy.api.database.DatabasePolicyInterceptor
-import com.github.l34130.netty.dbgw.policy.api.database.query.DatabaseQueryContext
+import com.github.l34130.netty.dbgw.core.policy.PolicyChangeListener
+import com.github.l34130.netty.dbgw.core.policy.PolicyConfigurationLoader
+import com.github.l34130.netty.dbgw.policy.api.PolicyDefinition
 import com.github.l34130.netty.dbgw.protocol.postgres.PostgresGateway
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -45,25 +41,16 @@ abstract class PostgresIntegrationTestBase(
     fun setup() {
         gateway =
             PostgresGateway(
-                createDatabaseGatewayConfig().apply {
-                    policyEngine =
-                        PolicyEngine(
-                            policyChain =
-                                DatabasePolicyChain(
-                                    policies =
-                                        listOf(
-                                            object : DatabasePolicyInterceptor {
-                                                override fun onAuthentication(
-                                                    ctx: DatabaseContext,
-                                                    evt: DatabaseAuthenticationEvent,
-                                                ): PolicyDecision = PolicyDecision.Allow()
+                config = createDatabaseGatewayConfig(),
+                policyConfigurationLoader =
+                    object : PolicyConfigurationLoader {
+                        override fun load(): List<PolicyDefinition> = listOf(PolicyDefinition.ALLOW_ALL)
 
-                                                override fun onQuery(ctx: DatabaseQueryContext): PolicyDecision = PolicyDecision.Allow()
-                                            },
-                                        ),
-                                ),
-                        )
-                },
+                        override fun watchForChanges(listener: PolicyChangeListener): AutoCloseable =
+                            AutoCloseable {
+                                // No-op for this test
+                            }
+                    },
             )
         // Start the gateway before each test
         gateway.start()

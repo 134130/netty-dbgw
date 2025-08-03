@@ -9,7 +9,7 @@ import java.io.File
 import java.io.InputStream
 import java.io.StringWriter
 
-object ManifestMapper {
+object ResourceManifestMapper {
     private val yamlMapper =
         ObjectMapper(
             YAMLFactory().apply {
@@ -20,15 +20,15 @@ object ManifestMapper {
             registerKotlinModule()
         }
 
-    fun readValues(file: File) = yamlMapper.readValues<Manifest>(file)
+    fun readValues(file: File) = yamlMapper.readValues<ResourceManifest>(file)
 
-    fun readValues(inputStream: InputStream) = yamlMapper.readValues<Manifest>(inputStream)
+    fun readValues(inputStream: InputStream) = yamlMapper.readValues<ResourceManifest>(inputStream)
 
-    fun readValues(content: String) = yamlMapper.readValues<Manifest>(content)
+    fun readValues(content: String) = yamlMapper.readValues<ResourceManifest>(content)
 
-    fun writeValueAsString(manifest: Manifest): String = yamlMapper.writeValueAsString(manifest)
+    fun writeValueAsString(manifest: ResourceManifest): String = yamlMapper.writeValueAsString(manifest)
 
-    fun writeValuesAsString(manifests: List<Manifest>): String {
+    fun writeValuesAsString(manifests: List<ResourceManifest>): String {
         val sw = StringWriter()
         val writer = yamlMapper.writer()
         writer.writeValues(sw).use { sequenceWriter ->

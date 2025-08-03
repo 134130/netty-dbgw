@@ -1,7 +1,7 @@
 package com.github.l34130.netty.dbgw.policy.api
 
-import com.github.l34130.netty.dbgw.policy.api.config.Manifest
-import com.github.l34130.netty.dbgw.policy.api.config.ManifestMapper
+import com.github.l34130.netty.dbgw.policy.api.config.ResourceManifest
+import com.github.l34130.netty.dbgw.policy.api.config.ResourceManifestMapper
 import org.junit.jupiter.api.assertAll
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
@@ -23,7 +23,7 @@ class ManifestMapperTest {
               action: DENY
             """.trimIndent()
 
-        val parsed = ManifestMapper.readValues(yaml)
+        val parsed = ResourceManifestMapper.readValues(yaml)
 
         assertEquals(1, parsed.size)
         val manifest = parsed[0]
@@ -43,7 +43,7 @@ class ManifestMapperTest {
     @Test
     fun `test writeValueAsString`() {
         val manifest =
-            Manifest(
+            ResourceManifest(
                 apiVersion = "builtin/v1",
                 kind = "DatabaseStatementTypePolicy",
                 metadata = mapOf("name" to "reject-modify-stmt-policy"),
@@ -54,7 +54,7 @@ class ManifestMapperTest {
                     ),
             )
 
-        val yaml = ManifestMapper.writeValueAsString(manifest)
+        val yaml = ResourceManifestMapper.writeValueAsString(manifest)
         assertEquals(
             """
             apiVersion: "builtin/v1"
@@ -76,7 +76,7 @@ class ManifestMapperTest {
     fun `test writeValuesAsString`() {
         val manifests =
             listOf(
-                Manifest(
+                ResourceManifest(
                     apiVersion = "builtin/v1",
                     kind = "DatabaseStatementTypePolicy",
                     metadata = mapOf("name" to "reject-select-stmt-policy"),
@@ -86,7 +86,7 @@ class ManifestMapperTest {
                             "action" to "DENY",
                         ),
                 ),
-                Manifest(
+                ResourceManifest(
                     apiVersion = "builtin/v1",
                     kind = "DatabaseStatementTypePolicy",
                     metadata = mapOf("name" to "allow-modify-stmt-policy"),
@@ -98,7 +98,7 @@ class ManifestMapperTest {
                 ),
             )
 
-        val yaml = ManifestMapper.writeValuesAsString(manifests)
+        val yaml = ResourceManifestMapper.writeValuesAsString(manifests)
         assertEquals(
             """
             apiVersion: "builtin/v1"

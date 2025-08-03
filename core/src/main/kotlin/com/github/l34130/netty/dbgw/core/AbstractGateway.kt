@@ -14,7 +14,7 @@ import io.netty.handler.logging.LoggingHandler
 import java.net.InetSocketAddress
 
 abstract class AbstractGateway(
-    protected val config: DatabaseGatewayConfig,
+    private val config: DatabaseGatewayConfig,
 ) {
     private var bossGroup: IoEventLoopGroup? = null
     private var workerGroup: IoEventLoopGroup? = null
@@ -26,6 +26,11 @@ abstract class AbstractGateway(
     protected abstract fun createBackendHandlers(): List<ChannelHandler>
 
     protected open fun createStateMachine(): StateMachine? = null
+
+    protected open fun onConnectionEstablished(
+        frontend: Channel,
+        backend: Channel,
+    ): Unit = Unit
 
     fun port(): Int = (channel!!.localAddress() as InetSocketAddress).port
 
@@ -57,15 +62,16 @@ abstract class AbstractGateway(
             val frontend = ch
 
             frontend.config().isAutoRead = false
-
             frontend
                 .pipeline()
                 .addLast(
                     ProxyConnectionHandler(
-                        config = config,
+                        upstreamHost = config.upstreamHost,
+                        upstreamPort = config.upstreamPort,
                         frontendHandlers = createFrontendHandlers(),
                         backendHandlers = createBackendHandlers(),
                         stateMachine = createStateMachine(),
+                        onConnectionEstablished = ::onConnectionEstablished,
                     ),
                 )
         }

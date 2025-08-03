@@ -4,7 +4,7 @@ import com.github.l34130.netty.dbgw.core.GatewayState
 import com.github.l34130.netty.dbgw.core.MessageAction
 import com.github.l34130.netty.dbgw.core.backend
 import com.github.l34130.netty.dbgw.core.databaseCtx
-import com.github.l34130.netty.dbgw.core.gatewayConfig
+import com.github.l34130.netty.dbgw.core.databasePolicyChain
 import com.github.l34130.netty.dbgw.policy.api.PolicyDecision
 import com.github.l34130.netty.dbgw.policy.api.database.DatabaseAuthenticationEvent
 import com.github.l34130.netty.dbgw.protocol.postgres.Message
@@ -44,7 +44,7 @@ class StartupState : GatewayState<ByteBuf, Message>() {
         }
 
         val result =
-            ctx.gatewayConfig()!!.policyEngine.evaluateAuthenticationPolicy(
+            ctx.databasePolicyChain()!!.onAuthentication(
                 ctx.databaseCtx()!!,
                 evt =
                     DatabaseAuthenticationEvent(

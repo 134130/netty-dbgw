@@ -1,11 +1,8 @@
 package com.github.l34130.netty.dbgw.core
 
-import com.github.l34130.netty.dbgw.core.config.DatabaseGatewayConfig
 import com.github.l34130.netty.dbgw.core.utils.netty.closeOnFlush
 import com.github.l34130.netty.dbgw.policy.api.ClientInfo
 import com.github.l34130.netty.dbgw.policy.api.SessionInfo
-import com.github.l34130.netty.dbgw.policy.api.database.DatabaseConnectionInfo
-import com.github.l34130.netty.dbgw.policy.api.database.DatabaseContext
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.bootstrap.Bootstrap
 import io.netty.channel.Channel
@@ -17,10 +14,12 @@ import java.net.InetSocketAddress
 import java.util.UUID
 
 class ProxyConnectionHandler(
-    private val config: DatabaseGatewayConfig,
+    private val upstreamHost: String,
+    private val upstreamPort: Int,
     private val frontendHandlers: List<ChannelHandler>,
     private val backendHandlers: List<ChannelHandler>,
     private val stateMachine: StateMachine?,
+    private val onConnectionEstablished: (Channel, Channel) -> Unit = { _, _ -> },
 ) : ChannelInboundHandlerAdapter() {
     override fun channelActive(ctx: ChannelHandlerContext) {
         val frontend = ctx.channel()
@@ -34,10 +33,11 @@ class ProxyConnectionHandler(
                 logger.debug { "Successfully connected to backend: ${backend.remoteAddress()}" }
                 setupPipelines(frontend, backend)
                 establishSession(frontend, backend)
+                onConnectionEstablished(frontend, backend)
                 frontend.config().isAutoRead = true
                 frontend.read()
             } else {
-                logger.error(future.cause()) { "Failed to connect to backend: ${config.upstreamHost}:${config.upstreamPort}" }
+                logger.error(future.cause()) { "Failed to connect to backend: $upstreamHost:$upstreamPort" }
                 if (backend != null && backend.isActive) {
                     backend.close()
                 }
@@ -66,7 +66,7 @@ class ProxyConnectionHandler(
                         }
                     }
                 },
-            ).connect(config.upstreamHost, config.upstreamPort)
+            ).connect(upstreamHost, upstreamPort)
 
     private fun setupPipelines(
         frontend: Channel,
@@ -107,27 +107,6 @@ class ProxyConnectionHandler(
                 frontend.attr(GatewayAttrs.CLIENT_INFO_ATTR_KEY).set(it)
                 backend.attr(GatewayAttrs.CLIENT_INFO_ATTR_KEY).set(it)
             }
-
-        // TODO: Only for Database Connection Handler
-        // Set the database connection info attribute for both frontend and backend channels
-        frontend.attr(GatewayAttrs.DATABASE_GATEWAY_CONFIG_ATTR_KEY).set(config)
-        backend.attr(GatewayAttrs.DATABASE_GATEWAY_CONFIG_ATTR_KEY).set(config)
-
-        val databaseConnectionInfo =
-            DatabaseConnectionInfo(
-                databaseType = config.upstreamDatabaseType.toString(),
-            ).also {
-                frontend.attr(GatewayAttrs.DATABASE_CONNECTION_INFO_ATTR_KEY).set(it)
-                backend.attr(GatewayAttrs.DATABASE_CONNECTION_INFO_ATTR_KEY).set(it)
-            }
-        DatabaseContext(
-            clientInfo = clientInfo,
-            connectionInfo = databaseConnectionInfo,
-            sessionInfo = sessionInfo,
-        ).also { ctx ->
-            frontend.attr(GatewayAttrs.DATABASE_CONTEXT_ATTR_KEY).set(ctx)
-            backend.attr(GatewayAttrs.DATABASE_CONTEXT_ATTR_KEY).set(ctx)
-        }
     }
 
     companion object {
