@@ -5,10 +5,10 @@ import com.github.l34130.netty.dbgw.core.policy.PolicyChangeListener
 import com.github.l34130.netty.dbgw.core.policy.PolicyConfigurationLoader
 import com.github.l34130.netty.dbgw.policy.api.PolicyDefinition
 import com.github.l34130.netty.dbgw.protocol.postgres.PostgresGateway
+import com.github.l34130.netty.dbgw.test.TestContainerUtils
+import com.github.l34130.netty.dbgw.test.TestContainerUtils.databaseGatewayConfig
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
-import org.testcontainers.containers.PostgreSQLContainer
-import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
 import java.sql.Connection
 import java.sql.DriverManager
@@ -16,26 +16,11 @@ import java.util.Properties
 
 @Testcontainers
 abstract class PostgresIntegrationTestBase(
-    image: String,
+    private val image: String,
 ) {
-    @Container
-    private val postgresContainer =
-        PostgreSQLContainer(image)
-            .withDatabaseName("testdb")
-            .withUsername("testuser")
-            .withPassword("testpass")
-            .withExposedPorts(5432)
-
     private lateinit var gateway: PostgresGateway
 
-    protected fun createDatabaseGatewayConfig(): DatabaseGatewayConfig =
-        DatabaseGatewayConfig(
-            listenPort = 0,
-            upstreamHost = postgresContainer.host,
-            upstreamPort = postgresContainer.getMappedPort(5432),
-            upstreamDatabaseType = DatabaseGatewayConfig.UpstreamDatabaseType.POSTGRESQL,
-            authenticationOverride = null,
-        )
+    protected fun createDatabaseGatewayConfig(): DatabaseGatewayConfig = TestContainerUtils.get(image).databaseGatewayConfig()
 
     @BeforeEach
     fun setup() {

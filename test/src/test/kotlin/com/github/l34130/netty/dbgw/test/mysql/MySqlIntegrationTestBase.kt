@@ -5,10 +5,10 @@ import com.github.l34130.netty.dbgw.core.policy.PolicyChangeListener
 import com.github.l34130.netty.dbgw.core.policy.PolicyConfigurationLoader
 import com.github.l34130.netty.dbgw.policy.api.PolicyDefinition
 import com.github.l34130.netty.dbgw.protocol.mysql.MySqlGateway
+import com.github.l34130.netty.dbgw.test.TestContainerUtils
+import com.github.l34130.netty.dbgw.test.TestContainerUtils.databaseGatewayConfig
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
-import org.testcontainers.containers.MySQLContainer
-import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
 import java.sql.Connection
 import java.sql.DriverManager
@@ -16,26 +16,11 @@ import java.util.Properties
 
 @Testcontainers
 abstract class MySqlIntegrationTestBase(
-    image: String,
+    private val image: String,
 ) {
-    @Container
-    private val mysqlContainer =
-        MySQLContainer(image)
-            .withDatabaseName("testdb")
-            .withUsername("testuser")
-            .withPassword("testpass")
-            .withExposedPorts(3306)
-
     private lateinit var gateway: MySqlGateway
 
-    protected fun createDatabaseGatewayConfig(): DatabaseGatewayConfig =
-        DatabaseGatewayConfig(
-            listenPort = 0,
-            upstreamHost = mysqlContainer.host,
-            upstreamPort = mysqlContainer.getMappedPort(3306),
-            upstreamDatabaseType = DatabaseGatewayConfig.UpstreamDatabaseType.MYSQL,
-            authenticationOverride = null,
-        )
+    protected fun createDatabaseGatewayConfig(): DatabaseGatewayConfig = TestContainerUtils.get(image).databaseGatewayConfig()
 
     @BeforeEach
     fun setup() {
