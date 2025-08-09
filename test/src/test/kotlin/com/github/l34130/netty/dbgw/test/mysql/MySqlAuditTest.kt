@@ -13,14 +13,7 @@ import kotlin.test.assertEquals
 class MySqlAuditTest : MySqlIntegrationTestBase("mysql:8.0") {
     @Test
     fun `test QueryStartEvent`() {
-        val auditSink =
-            object : AuditSink {
-                val events = mutableListOf<AuditEvent>()
-
-                override fun emit(event: AuditEvent) {
-                    events.add(event)
-                }
-            }
+        val auditSink = auditSink()
         val gateway =
             MySqlGateway(
                 config = createDatabaseGatewayConfig(),

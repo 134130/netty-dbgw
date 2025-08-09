@@ -12,16 +12,18 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class PostgresAuditTest : PostgresIntegrationTestBase("postgres:15") {
+    private fun auditSink() =
+        object : AuditSink {
+            val events = mutableListOf<AuditEvent>()
+
+            override fun emit(event: AuditEvent) {
+                events.add(event)
+            }
+        }
+
     @Test
     fun `test QueryStartEvent`() {
-        val auditSink =
-            object : AuditSink {
-                val events = mutableListOf<AuditEvent>()
-
-                override fun emit(event: AuditEvent) {
-                    events.add(event)
-                }
-            }
+        val auditSink = auditSink()
         val gateway =
             PostgresGateway(
                 config = createDatabaseGatewayConfig(),
