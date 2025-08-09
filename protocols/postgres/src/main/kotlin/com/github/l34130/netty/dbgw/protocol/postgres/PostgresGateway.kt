@@ -3,7 +3,7 @@ package com.github.l34130.netty.dbgw.protocol.postgres
 import com.github.l34130.netty.dbgw.core.AbstractGateway
 import com.github.l34130.netty.dbgw.core.GatewayAttrs
 import com.github.l34130.netty.dbgw.core.StateMachine
-import com.github.l34130.netty.dbgw.core.audit.StdoutAuditSink
+import com.github.l34130.netty.dbgw.core.audit.AuditSink
 import com.github.l34130.netty.dbgw.core.config.DatabaseGatewayConfig
 import com.github.l34130.netty.dbgw.core.policy.DatabasePolicyChain
 import com.github.l34130.netty.dbgw.core.policy.PolicyConfigurationLoader
@@ -16,6 +16,7 @@ import io.netty.channel.ChannelHandler
 class PostgresGateway(
     config: DatabaseGatewayConfig,
     private val policyConfigurationLoader: PolicyConfigurationLoader = PolicyConfigurationLoader.NOOP,
+    private val auditSink: AuditSink = AuditSink.NOOP,
 ) : AbstractGateway(config) {
     override fun createFrontendHandlers(): List<ChannelHandler> = listOf()
 
@@ -34,7 +35,7 @@ class PostgresGateway(
         frontend: Channel,
         backend: Channel,
     ) {
-        StdoutAuditSink.also { sink ->
+        auditSink.also { sink ->
             frontend.attr(GatewayAttrs.AUDIT_ATTR_KEY).set(sink)
             backend.attr(GatewayAttrs.AUDIT_ATTR_KEY).set(sink)
         }

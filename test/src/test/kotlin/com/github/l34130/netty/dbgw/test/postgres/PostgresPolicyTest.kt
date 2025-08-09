@@ -60,9 +60,7 @@ class PostgresPolicyTest : PostgresProtocolTest("postgres:15") {
         gateway.start()
 
         try {
-            createConnection { props ->
-                props.setProperty("port", gateway.port().toString())
-            }.use { conn ->
+            gateway.createConnection().use { conn ->
                 val stringResult = conn.executeQuery("SELECT '123456789' AS str_col")
                 val intResult = conn.executeQuery("SELECT 123456789 AS int_col")
                 val floatResult = conn.executeQuery("SELECT 123456.789::float AS float_col")
@@ -108,9 +106,7 @@ class PostgresPolicyTest : PostgresProtocolTest("postgres:15") {
         gateway.start()
 
         try {
-            createConnection { props ->
-                props.setProperty("port", gateway.port().toString())
-            }.use { conn ->
+            gateway.createConnection().use { conn ->
                 val result =
                     conn.executeQuery(
                         """

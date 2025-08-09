@@ -1,10 +1,10 @@
 package com.github.l34130.netty.dbgw.test.postgres
 
+import com.github.l34130.netty.dbgw.core.AbstractGateway
 import com.github.l34130.netty.dbgw.core.config.DatabaseGatewayConfig
-import com.github.l34130.netty.dbgw.core.policy.PolicyChangeListener
 import com.github.l34130.netty.dbgw.core.policy.PolicyConfigurationLoader
-import com.github.l34130.netty.dbgw.policy.api.PolicyDefinition
 import com.github.l34130.netty.dbgw.protocol.postgres.PostgresGateway
+import com.github.l34130.netty.dbgw.test.ALLOW_ALL
 import com.github.l34130.netty.dbgw.test.TestContainerUtils
 import com.github.l34130.netty.dbgw.test.TestContainerUtils.databaseGatewayConfig
 import org.junit.jupiter.api.AfterEach
@@ -27,15 +27,7 @@ abstract class PostgresIntegrationTestBase(
         gateway =
             PostgresGateway(
                 config = createDatabaseGatewayConfig(),
-                policyConfigurationLoader =
-                    object : PolicyConfigurationLoader {
-                        override fun load(): List<PolicyDefinition> = listOf(PolicyDefinition.ALLOW_ALL)
-
-                        override fun watchForChanges(listener: PolicyChangeListener): AutoCloseable =
-                            AutoCloseable {
-                                // No-op for this test
-                            }
-                    },
+                policyConfigurationLoader = PolicyConfigurationLoader.ALLOW_ALL,
             )
         // Start the gateway before each test
         gateway.start()
@@ -63,4 +55,10 @@ abstract class PostgresIntegrationTestBase(
             properties,
         )
     }
+
+    protected fun AbstractGateway.createConnection(modifier: (props: Properties) -> Unit = {}): Connection =
+        this@PostgresIntegrationTestBase.createConnection {
+            it.setProperty("port", this.port().toString())
+            modifier(it)
+        }
 }

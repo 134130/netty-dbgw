@@ -1,5 +1,6 @@
 package com.github.l34130.netty.dbgw.app
 
+import com.github.l34130.netty.dbgw.core.audit.StdoutAuditSink
 import com.github.l34130.netty.dbgw.core.config.DatabaseGatewayConfig
 import com.github.l34130.netty.dbgw.core.config.GatewayConfigLoader
 import com.github.l34130.netty.dbgw.core.policy.FilePolicyConfigurationLoader
@@ -97,10 +98,10 @@ fun main(args: Array<String>) {
         val gateway =
             when (config.upstreamDatabaseType) {
                 DatabaseGatewayConfig.UpstreamDatabaseType.MYSQL -> {
-                    MySqlGateway(config, policyConfigurationLoader)
+                    MySqlGateway(config, policyConfigurationLoader, StdoutAuditSink)
                 }
                 DatabaseGatewayConfig.UpstreamDatabaseType.POSTGRESQL -> {
-                    PostgresGateway(config, policyConfigurationLoader)
+                    PostgresGateway(config, policyConfigurationLoader, StdoutAuditSink)
                 }
             }
 

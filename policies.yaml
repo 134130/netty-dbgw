@@ -33,6 +33,6 @@ apiVersion: builtin/v1
 kind: DatabaseRowLevelSecurityPolicy
 metadata: {}
 spec:
-  column: .*id
-  filter: "[4-9]"
+  column: .*
+  filter: .*
   action: ALLOW

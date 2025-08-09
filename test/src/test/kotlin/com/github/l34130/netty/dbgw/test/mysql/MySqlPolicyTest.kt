@@ -63,9 +63,7 @@ class MySqlPolicyTest : MySqlIntegrationTestBase("mysql:8.0") {
         gateway.start()
 
         try {
-            createConnection { props ->
-                props.setProperty("port", gateway.port().toString())
-            }.use { conn ->
+            gateway.createConnection().use { conn ->
                 val stringResult = conn.executeQuery("SELECT '123456789' AS str_col")
                 val intResult = conn.executeQuery("SELECT 123456789 AS int_col")
                 val dateResult = conn.executeQuery("SELECT DATE '2024-06-09' AS date_col")
@@ -109,9 +107,7 @@ class MySqlPolicyTest : MySqlIntegrationTestBase("mysql:8.0") {
         gateway.start()
 
         try {
-            createConnection { props ->
-                props.setProperty("port", gateway.port().toString())
-            }.use { conn ->
+            gateway.createConnection().use { conn ->
                 val result =
                     conn.executeQuery(
                         """
