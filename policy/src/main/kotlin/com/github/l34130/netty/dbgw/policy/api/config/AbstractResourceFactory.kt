@@ -1,5 +1,6 @@
 package com.github.l34130.netty.dbgw.policy.api.config
 
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlin.reflect.KClass
 import kotlin.reflect.full.findAnnotation
@@ -24,5 +25,11 @@ abstract class AbstractResourceFactory<T : Any>(
         return resource.group == resourceAnnotation.group &&
             resource.version == resourceAnnotation.version &&
             resource.names.kind == resourceAnnotation.kind
+    }
+
+    override fun create(props: Map<String, Any>): T = objectMapper.convertValue(props, policyClass.java)
+
+    companion object {
+        protected val objectMapper = jacksonObjectMapper()
     }
 }

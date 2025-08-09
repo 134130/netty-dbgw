@@ -1,5 +1,6 @@
 package com.github.l34130.netty.dbgw.policy.builtin.database
 
+import com.fasterxml.jackson.annotation.JsonCreator
 import com.github.l34130.netty.dbgw.policy.api.PolicyDefinition
 import com.github.l34130.netty.dbgw.policy.api.config.Resource
 import com.github.l34130.netty.dbgw.policy.api.database.DatabasePolicy
@@ -48,6 +49,8 @@ data class DatabaseTimeRangeAccessPolicyDefinition(
          * @param range the time range string in the format `[HH:mm, HH:mm)`, `(HH:mm, HH:mm)`, `[HH:mm, HH:mm]`, or `(HH:mm, HH:mm]`
          * @param allowInRange if true, the policy allows access within the specified range; if false, it denies access within the specified range
          */
+        @JvmStatic
+        @JsonCreator
         fun from(
             range: String,
             action: Action = Action.ALLOW,

@@ -11,4 +11,5 @@ dependencies {
     implementation(project(":policy"))
 
     implementation(libs.bundles.kotlinxEcosystem)
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.19.0")
 }
