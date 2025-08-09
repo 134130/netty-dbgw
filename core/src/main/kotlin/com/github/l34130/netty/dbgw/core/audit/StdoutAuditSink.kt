@@ -8,7 +8,7 @@ object StdoutAuditSink : AuditSink {
     override fun emit(event: AuditEvent) {
         when (event) {
             is QueryStartAuditEvent -> {
-                logger.info { "Query: ${event.query}" }
+                logger.info { "Query: ${event.ctx.query}" }
             }
             // Handle other AuditEvent types if needed
             else -> logger.warn { "Unhandled audit event type: $event" }
