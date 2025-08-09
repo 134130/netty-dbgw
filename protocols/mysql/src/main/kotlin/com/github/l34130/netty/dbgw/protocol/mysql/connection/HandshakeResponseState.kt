@@ -19,7 +19,6 @@ import com.github.l34130.netty.dbgw.protocol.mysql.command.CommandPhaseState
 import com.github.l34130.netty.dbgw.protocol.mysql.constant.CapabilityFlag
 import com.github.l34130.netty.dbgw.protocol.mysql.readFixedLengthInteger
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.netty.buffer.ByteBufUtil
 import io.netty.buffer.Unpooled
 import io.netty.channel.ChannelHandlerContext
 import io.netty.handler.ssl.SslHandler
@@ -103,7 +102,7 @@ internal class HandshakeResponseState(
 
             return StateResult(
                 nextState = this, // Wait for the HandshakeResponse packet again
-                action = MessageAction.Drop, // Drop the original packet as we are handled it with SSL
+                action = MessageAction.Handled, // Drop the original packet as we are handled it with SSL
             )
         }
 
@@ -157,18 +156,8 @@ internal class HandshakeResponseState(
             policyCtx.password
                 ?.let {
                     when (packet.clientPluginName) {
-                        "mysql_native_password" -> {
-                            MySqlNativePasswordEncoder.encode(salt, it).apply {
-                                println("Old password: ${ByteBufUtil.getBytes(packet.authResponse).joinToString { it.toString(16) }}")
-                                println("New password: ${this.joinToString { it.toString(16) }}")
-                            }
-                        }
-                        "caching_sha2_password" -> {
-                            CachingSha256PasswordEncoder.encode(salt, it).apply {
-                                println("Old password: ${ByteBufUtil.getBytes(packet.authResponse).joinToString { it.toString(16) }}")
-                                println("New password: ${this.joinToString { it.toString(16) }}")
-                            }
-                        }
+                        "mysql_native_password" -> MySqlNativePasswordEncoder.encode(salt, it)
+                        "caching_sha2_password" -> CachingSha256PasswordEncoder.encode(salt, it)
                         else -> throw NotImplementedError("Authentication plugin '${packet.clientPluginName}' is not supported")
                     }
                 }?.let {

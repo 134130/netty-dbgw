@@ -27,12 +27,8 @@ internal class AuthSwitchState(
                             resp.copy(
                                 responseData =
                                     when (req.pluginName) {
-                                        "mysql_native_password" -> {
-                                            MySqlNativePasswordEncoder.encode(req.pluginProvidedData, password)
-                                        }
-                                        "caching_sha2_password" -> {
-                                            CachingSha256PasswordEncoder.encode(req.pluginProvidedData, password)
-                                        }
+                                        "mysql_native_password" -> MySqlNativePasswordEncoder.encode(req.pluginProvidedData, password)
+                                        "caching_sha2_password" -> CachingSha256PasswordEncoder.encode(req.pluginProvidedData, password)
                                         else -> throw NotImplementedError("Unsupported authentication plugin: ${req.pluginName}")
                                     },
                             ),

@@ -42,8 +42,7 @@ class StateMachineHandler(
                     return@addListener
                 }
 
-                val action: MessageAction = processFuture.resultNow() as MessageAction
-                when (action) {
+                when (val action: MessageAction = processFuture.resultNow() as MessageAction) {
                     MessageAction.Forward -> {
                         relay.write(msg) // Forward the message as is.
                     }
@@ -62,6 +61,9 @@ class StateMachineHandler(
                         ReferenceCountUtil.release(msg) // Release the original message as we are terminating the processing.
                         logger.info { "Terminating processing: ${action.reason ?: "no reason provided"}" }
                         ctx.channel().closeOnFlush() // Close the channel on flush.
+                    }
+                    MessageAction.Handled -> {
+                        // The message has been handled and released by the state machine, so do nothing.
                     }
                 }
             } finally {

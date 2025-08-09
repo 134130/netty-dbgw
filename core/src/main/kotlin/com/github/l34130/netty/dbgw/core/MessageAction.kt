@@ -26,4 +26,8 @@ sealed class MessageAction {
     ) : MessageAction() {
         override fun toString(): String = "Terminate(reason='$reason')"
     }
+
+    object Handled : MessageAction() {
+        override fun toString(): String = "Handled"
+    }
 }
