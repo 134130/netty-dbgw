@@ -162,7 +162,7 @@ abstract class PostgresProtocolTest(
         listOf(
             dynamicTest("test prepared statement") {
                 createConnection { props ->
-                    props.setProperty("useServerPrepStmts", "true")
+                    props.setProperty("prepareThreshold", "-1")
                 }.use { conn ->
                     conn.prepareStatement("SELECT CONCAT(?, ?) AS col1").use { stmt ->
                         stmt.setObject(1, 1)
