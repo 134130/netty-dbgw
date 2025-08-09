@@ -8,7 +8,9 @@ import com.github.l34130.netty.dbgw.core.databaseCtx
 import com.github.l34130.netty.dbgw.core.databasePolicyChain
 import com.github.l34130.netty.dbgw.core.utils.netty.peek
 import com.github.l34130.netty.dbgw.policy.api.PolicyDecision
+import com.github.l34130.netty.dbgw.policy.api.database.DatabasePolicyContext.Companion.toPolicyContext
 import com.github.l34130.netty.dbgw.policy.api.database.DatabaseQueryEvent
+import com.github.l34130.netty.dbgw.policy.api.database.DatabaseQueryPolicyContext.Companion.toQueryPolicyContext
 import com.github.l34130.netty.dbgw.protocol.mysql.MySqlGatewayState
 import com.github.l34130.netty.dbgw.protocol.mysql.Packet
 import com.github.l34130.netty.dbgw.protocol.mysql.capabilities
@@ -80,27 +82,29 @@ internal class CommandPhaseState :
         ctx.audit().emit(QueryStartAuditEvent(ctx.databaseCtx()!!, DatabaseQueryEvent(query)))
 
         ctx.databasePolicyChain()?.let { chain ->
-            val result = chain.onQuery(ctx.databaseCtx()!!, DatabaseQueryEvent(query))
-            if (result is PolicyDecision.Deny) {
-                val errorPacket =
-                    Packet.Error.of(
-                        sequenceId = packet.sequenceId + 1,
-                        errorCode = 1U,
-                        sqlState = "DBGW_",
-                        message =
-                            buildString {
-                                append("Access denied")
-                                if (!result.reason.isNullOrBlank()) {
-                                    append(": ${result.reason}")
-                                }
-                            },
-                        capabilities = ctx.capabilities().enumSet(),
+            val policyCtx = ctx.databaseCtx()!!.toPolicyContext().toQueryPolicyContext(query)
+            chain.onQuery(policyCtx)
+            policyCtx.decision.let { decision ->
+                if (decision is PolicyDecision.Deny) {
+                    val errorPacket =
+                        Packet.Error.of(
+                            sequenceId = packet.sequenceId + 1,
+                            errorCode = 1U,
+                            sqlState = "DBGW_",
+                            message =
+                                buildString {
+                                    append("Access denied")
+                                    if (!decision.reason.isNullOrBlank()) {
+                                        append(": ${decision.reason}")
+                                    }
+                                },
+                            capabilities = ctx.capabilities().enumSet(),
+                        )
+                    return StateResult(
+                        nextState = CommandPhaseState(),
+                        action = MessageAction.Intercept(msg = errorPacket),
                     )
-
-                return StateResult(
-                    nextState = CommandPhaseState(),
-                    action = MessageAction.Intercept(msg = errorPacket),
-                )
+                }
             }
         }
 

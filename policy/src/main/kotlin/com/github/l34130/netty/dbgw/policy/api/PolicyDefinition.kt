@@ -1,10 +1,9 @@
 package com.github.l34130.netty.dbgw.policy.api
 
-import com.github.l34130.netty.dbgw.policy.api.database.DatabaseAuthenticationEvent
-import com.github.l34130.netty.dbgw.policy.api.database.DatabaseContext
+import com.github.l34130.netty.dbgw.policy.api.database.DatabaseAuthenticationPolicyContext
 import com.github.l34130.netty.dbgw.policy.api.database.DatabasePolicy
-import com.github.l34130.netty.dbgw.policy.api.database.DatabaseQueryEvent
-import com.github.l34130.netty.dbgw.policy.api.database.query.DatabaseResultRowContext
+import com.github.l34130.netty.dbgw.policy.api.database.DatabaseQueryPolicyContext
+import com.github.l34130.netty.dbgw.policy.api.database.DatabaseResultRowPolicyContext
 
 interface PolicyDefinition {
     fun createPolicy(): DatabasePolicy
@@ -16,20 +15,26 @@ interface PolicyDefinition {
                     object : DatabasePolicy {
                         override fun definition(): PolicyDefinition = ALLOW_ALL
 
-                        override fun onAuthentication(
-                            ctx: DatabaseContext,
-                            evt: DatabaseAuthenticationEvent,
-                        ): PolicyDecision = PolicyDecision.Allow(reason = "All authentications are allowed")
+                        override fun onAuthentication(ctx: DatabaseAuthenticationPolicyContext) {
+                            ctx.decision =
+                                PolicyDecision.Allow(
+                                    reason = "All authentications are allowed",
+                                )
+                        }
 
-                        override fun onQuery(
-                            ctx: DatabaseContext,
-                            evt: DatabaseQueryEvent,
-                        ): PolicyDecision = PolicyDecision.Allow(reason = "All queries are allowed")
+                        override fun onQuery(ctx: DatabaseQueryPolicyContext) {
+                            ctx.decision =
+                                PolicyDecision.Allow(
+                                    reason = "All queries are allowed",
+                                )
+                        }
 
-                        override fun onResultRow(ctx: DatabaseResultRowContext): PolicyDecision =
-                            PolicyDecision.Allow(
-                                reason = "All result rows are allowed",
-                            )
+                        override fun onResultRow(ctx: DatabaseResultRowPolicyContext) {
+                            ctx.decision =
+                                PolicyDecision.Allow(
+                                    reason = "All result rows are allowed",
+                                )
+                        }
                     }
             }
     }

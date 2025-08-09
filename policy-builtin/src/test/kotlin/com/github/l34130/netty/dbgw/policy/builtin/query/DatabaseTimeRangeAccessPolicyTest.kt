@@ -5,7 +5,8 @@ import com.github.l34130.netty.dbgw.policy.api.PolicyDecision
 import com.github.l34130.netty.dbgw.policy.api.SessionInfo
 import com.github.l34130.netty.dbgw.policy.api.database.DatabaseConnectionInfo
 import com.github.l34130.netty.dbgw.policy.api.database.DatabaseContext
-import com.github.l34130.netty.dbgw.policy.api.database.query.withQuery
+import com.github.l34130.netty.dbgw.policy.api.database.DatabasePolicyContext.Companion.toPolicyContext
+import com.github.l34130.netty.dbgw.policy.api.database.DatabaseQueryPolicyContext.Companion.toQueryPolicyContext
 import com.github.l34130.netty.dbgw.policy.builtin.database.DatabaseTimeRangeAccessPolicyDefinition
 import org.junit.jupiter.api.DynamicTest.dynamicTest
 import org.junit.jupiter.api.TestFactory
@@ -31,7 +32,7 @@ class DatabaseTimeRangeAccessPolicyTest {
                     userId = "",
                     username = "",
                 ),
-        ).withQuery("SELECT 1")
+        ).toPolicyContext().toQueryPolicyContext("SELECT 1")
 
     private fun fixedClock(text: String): Clock = Clock.fixed(Instant.parse(text), ZoneId.of("UTC"))
 

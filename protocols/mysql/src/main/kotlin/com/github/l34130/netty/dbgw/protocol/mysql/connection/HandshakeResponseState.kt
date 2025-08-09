@@ -10,6 +10,8 @@ import com.github.l34130.netty.dbgw.core.utils.netty.closeOnFlush
 import com.github.l34130.netty.dbgw.core.utils.toEnumSet
 import com.github.l34130.netty.dbgw.policy.api.PolicyDecision
 import com.github.l34130.netty.dbgw.policy.api.database.DatabaseAuthenticationEvent
+import com.github.l34130.netty.dbgw.policy.api.database.DatabaseAuthenticationPolicyContext.Companion.toAuthenticationPolicyContext
+import com.github.l34130.netty.dbgw.policy.api.database.DatabasePolicyContext.Companion.toPolicyContext
 import com.github.l34130.netty.dbgw.protocol.mysql.MySqlGatewayState
 import com.github.l34130.netty.dbgw.protocol.mysql.Packet
 import com.github.l34130.netty.dbgw.protocol.mysql.capabilities
@@ -170,11 +172,14 @@ internal class HandshakeResponseState : MySqlGatewayState() {
             ),
         )
 
-        val result =
-            ctx.databasePolicyChain()!!.onAuthentication(
-                ctx = ctx.databaseCtx()!!,
-                evt = DatabaseAuthenticationEvent(username = username),
-            )
+        val policyCtx =
+            ctx
+                .databaseCtx()!!
+                .toPolicyContext()
+                .toAuthenticationPolicyContext(username, authResponse.toString(Charsets.UTF_8))
+
+        ctx.databasePolicyChain()!!.onAuthentication(policyCtx)
+        val result = policyCtx.decision
         if (result is PolicyDecision.Deny) {
             val errorPacket =
                 Packet.Error.of(

@@ -2,58 +2,54 @@ package com.github.l34130.netty.dbgw.core.policy
 
 import com.github.l34130.netty.dbgw.policy.api.PolicyDecision
 import com.github.l34130.netty.dbgw.policy.api.PolicyDefinition
-import com.github.l34130.netty.dbgw.policy.api.database.DatabaseAuthenticationEvent
-import com.github.l34130.netty.dbgw.policy.api.database.DatabaseContext
+import com.github.l34130.netty.dbgw.policy.api.database.DatabaseAuthenticationPolicyContext
+import com.github.l34130.netty.dbgw.policy.api.database.DatabaseInterceptor
 import com.github.l34130.netty.dbgw.policy.api.database.DatabasePolicy
-import com.github.l34130.netty.dbgw.policy.api.database.DatabasePolicyInterceptor
-import com.github.l34130.netty.dbgw.policy.api.database.DatabaseQueryEvent
-import com.github.l34130.netty.dbgw.policy.api.database.query.DatabaseResultRowContext
+import com.github.l34130.netty.dbgw.policy.api.database.DatabaseQueryPolicyContext
+import com.github.l34130.netty.dbgw.policy.api.database.DatabaseResultRowPolicyContext
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.util.concurrent.CopyOnWriteArrayList
 
 class DatabasePolicyChain(
     initialPolicies: List<DatabasePolicy> = emptyList(),
-) : DatabasePolicyInterceptor,
+) : DatabaseInterceptor,
     PolicyChangeListener {
     private val policies: CopyOnWriteArrayList<DatabasePolicy> = CopyOnWriteArrayList(initialPolicies)
 
-    override fun onAuthentication(
-        ctx: DatabaseContext,
-        evt: DatabaseAuthenticationEvent,
-    ): PolicyDecision {
+    override fun onAuthentication(ctx: DatabaseAuthenticationPolicyContext) {
         for (policy in policies) {
-            val decision = policy.onAuthentication(ctx, evt)
-            if (decision is PolicyDecision.NotApplicable) continue
-            return decision
+            policy.onAuthentication(ctx)
+            if (ctx.decision is PolicyDecision.NotApplicable) continue
+            return
         }
-        return PolicyDecision.Deny(
-            reason = "No policy allowed the authentication (implicit deny)",
-        )
+        ctx.decision =
+            PolicyDecision.Deny(
+                reason = "No policy allowed the authentication (implicit deny)",
+            )
     }
 
-    override fun onQuery(
-        ctx: DatabaseContext,
-        evt: DatabaseQueryEvent,
-    ): PolicyDecision {
+    override fun onQuery(ctx: DatabaseQueryPolicyContext) {
         for (policy in policies) {
-            val decision = policy.onQuery(ctx, evt)
-            if (decision is PolicyDecision.NotApplicable) continue
-            return decision
+            policy.onQuery(ctx)
+            if (ctx.decision is PolicyDecision.NotApplicable) continue
+            return
         }
-        return PolicyDecision.Deny(
-            reason = "No policy allowed the query (implicit deny)",
-        )
+        ctx.decision =
+            PolicyDecision.Deny(
+                reason = "No policy allowed the query (implicit deny)",
+            )
     }
 
-    override fun onResultRow(ctx: DatabaseResultRowContext): PolicyDecision {
+    override fun onResultRow(ctx: DatabaseResultRowPolicyContext) {
         for (policy in policies) {
-            val decision = policy.onResultRow(ctx)
-            if (decision is PolicyDecision.NotApplicable) continue
-            return decision
+            policy.onResultRow(ctx)
+            if (ctx.decision is PolicyDecision.NotApplicable) continue
+            return
         }
-        return PolicyDecision.Deny(
-            reason = "No policy allowed the result row (implicit deny)",
-        )
+        ctx.decision =
+            PolicyDecision.Deny(
+                reason = "No policy allowed the result row (implicit deny)",
+            )
     }
 
     override fun onPolicyAdded(policy: PolicyDefinition) {

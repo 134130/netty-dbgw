@@ -9,6 +9,8 @@ import com.github.l34130.netty.dbgw.core.databaseCtx
 import com.github.l34130.netty.dbgw.core.databasePolicyChain
 import com.github.l34130.netty.dbgw.policy.api.PolicyDecision
 import com.github.l34130.netty.dbgw.policy.api.database.DatabaseAuthenticationEvent
+import com.github.l34130.netty.dbgw.policy.api.database.DatabaseAuthenticationPolicyContext.Companion.toAuthenticationPolicyContext
+import com.github.l34130.netty.dbgw.policy.api.database.DatabasePolicyContext.Companion.toPolicyContext
 import com.github.l34130.netty.dbgw.protocol.postgres.Message
 import com.github.l34130.netty.dbgw.protocol.postgres.MessageDecoder
 import com.github.l34130.netty.dbgw.protocol.postgres.MessageEncoder
@@ -55,26 +57,21 @@ class StartupState : GatewayState<ByteBuf, Message>() {
             ),
         )
 
-        val result =
-            ctx.databasePolicyChain()!!.onAuthentication(
-                ctx = ctx.databaseCtx()!!,
-                evt =
-                    DatabaseAuthenticationEvent(
-                        username = startupMsg.user,
-                    ),
-            )
-
-        if (result is PolicyDecision.Deny) {
-            return StateResult(
-                nextState = this,
-                action =
-                    MessageAction.Intercept(
-                        ErrorResponse(
-                            type = ErrorField.M,
-                            value = "Access denied: ${result.reason}",
-                        ).asMessage(),
-                    ),
-            )
+        val policyCtx = ctx.databaseCtx()!!.toPolicyContext().toAuthenticationPolicyContext(startupMsg.user, "TODO: password")
+        ctx.databasePolicyChain()!!.onAuthentication(policyCtx)
+        policyCtx.decision.let { decision ->
+            if (decision is PolicyDecision.Deny) {
+                return StateResult(
+                    nextState = this,
+                    action =
+                        MessageAction.Intercept(
+                            ErrorResponse(
+                                type = ErrorField.M,
+                                value = "Access denied: ${decision.reason}",
+                            ).asMessage(),
+                        ),
+                )
+            }
         }
 
         return StateResult(

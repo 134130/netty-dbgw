@@ -9,4 +9,11 @@ open class DatabaseContext(
     var connectionInfo: DatabaseConnectionInfo,
     var sessionInfo: SessionInfo,
     var attributes: MutableMap<String, Any> = mutableMapOf(),
-)
+) {
+    protected constructor(ctx: DatabaseContext) : this(
+        clientInfo = ctx.clientInfo,
+        connectionInfo = ctx.connectionInfo,
+        sessionInfo = ctx.sessionInfo,
+        attributes = ctx.attributes,
+    )
+}

@@ -6,7 +6,8 @@ import com.github.l34130.netty.dbgw.core.databaseCtx
 import com.github.l34130.netty.dbgw.core.databasePolicyChain
 import com.github.l34130.netty.dbgw.core.utils.netty.peek
 import com.github.l34130.netty.dbgw.policy.api.PolicyDecision
-import com.github.l34130.netty.dbgw.policy.api.database.query.withResultRow
+import com.github.l34130.netty.dbgw.policy.api.database.DatabasePolicyContext.Companion.toPolicyContext
+import com.github.l34130.netty.dbgw.policy.api.database.DatabaseResultRowPolicyContext.Companion.toResultRowPolicyContext
 import com.github.l34130.netty.dbgw.protocol.mysql.MySqlGatewayState
 import com.github.l34130.netty.dbgw.protocol.mysql.Packet
 import com.github.l34130.netty.dbgw.protocol.mysql.capabilities
@@ -158,13 +159,14 @@ internal class QueryCommandResponseState : MySqlGatewayState() {
             val resultSetRow = ResultSetRow.readFrom(packet, columnCount)
             logger.trace { "Row Data: $resultSetRow" }
 
-            val resultRowCtx =
-                ctx.databaseCtx()!!.withResultRow(
+            val policyCtx =
+                ctx.databaseCtx()!!.toPolicyContext().toResultRowPolicyContext(
                     columnDefinitions = commonColumnDefinitions,
                     resultRow = resultSetRow.columns,
                 )
 
-            val result = ctx.databasePolicyChain()!!.onResultRow(resultRowCtx)
+            ctx.databasePolicyChain()!!.onResultRow(policyCtx)
+            val result = policyCtx.decision
             if (result is PolicyDecision.Deny) {
                 return StateResult(
                     nextState = this,
@@ -176,7 +178,7 @@ internal class QueryCommandResponseState : MySqlGatewayState() {
                 nextState = this,
                 action =
                     MessageAction.Transform(
-                        newMsg = ResultSetRow(columns = resultRowCtx.resultRow().toList()).asPacket(packet.sequenceId),
+                        newMsg = ResultSetRow(columns = policyCtx.resultRow().toList()).asPacket(packet.sequenceId),
                     ),
             ) // Continue in the same state for more rows
         }

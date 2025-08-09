@@ -1,10 +1,9 @@
 package com.github.l34130.netty.dbgw.policy.builtin.database
 
 import com.github.l34130.netty.dbgw.policy.api.PolicyDecision
-import com.github.l34130.netty.dbgw.policy.api.database.DatabaseAuthenticationEvent
-import com.github.l34130.netty.dbgw.policy.api.database.DatabaseContext
+import com.github.l34130.netty.dbgw.policy.api.database.DatabaseAuthenticationPolicyContext
 import com.github.l34130.netty.dbgw.policy.api.database.DatabasePolicy
-import com.github.l34130.netty.dbgw.policy.api.database.DatabaseQueryEvent
+import com.github.l34130.netty.dbgw.policy.api.database.DatabaseQueryPolicyContext
 import java.time.Clock
 import java.time.LocalTime
 
@@ -22,15 +21,13 @@ data class DatabaseTimeRangeAccessPolicy(
 
     override fun definition(): DatabaseTimeRangeAccessPolicyDefinition = definition
 
-    override fun onAuthentication(
-        ctx: DatabaseContext,
-        evt: DatabaseAuthenticationEvent,
-    ): PolicyDecision = evaluate()
+    override fun onAuthentication(ctx: DatabaseAuthenticationPolicyContext) {
+        ctx.decision = evaluate()
+    }
 
-    override fun onQuery(
-        ctx: DatabaseContext,
-        evt: DatabaseQueryEvent,
-    ): PolicyDecision = evaluate()
+    override fun onQuery(ctx: DatabaseQueryPolicyContext) {
+        ctx.decision = evaluate()
+    }
 
     private fun evaluate(): PolicyDecision {
         val currentTime = LocalTime.now(clock)

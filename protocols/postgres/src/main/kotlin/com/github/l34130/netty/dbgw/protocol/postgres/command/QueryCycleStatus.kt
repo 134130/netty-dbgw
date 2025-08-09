@@ -9,8 +9,10 @@ import com.github.l34130.netty.dbgw.core.audit.QueryStartAuditEvent
 import com.github.l34130.netty.dbgw.core.databaseCtx
 import com.github.l34130.netty.dbgw.core.databasePolicyChain
 import com.github.l34130.netty.dbgw.policy.api.PolicyDecision
+import com.github.l34130.netty.dbgw.policy.api.database.DatabasePolicyContext.Companion.toPolicyContext
 import com.github.l34130.netty.dbgw.policy.api.database.DatabaseQueryEvent
-import com.github.l34130.netty.dbgw.policy.api.database.query.withResultRow
+import com.github.l34130.netty.dbgw.policy.api.database.DatabaseQueryPolicyContext.Companion.toQueryPolicyContext
+import com.github.l34130.netty.dbgw.policy.api.database.DatabaseResultRowPolicyContext.Companion.toResultRowPolicyContext
 import com.github.l34130.netty.dbgw.protocol.postgres.Message
 import com.github.l34130.netty.dbgw.protocol.postgres.message.ErrorResponse
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -37,18 +39,21 @@ class QueryCycleStatus :
                 ctx.audit().emit(QueryStartAuditEvent(ctx.databaseCtx()!!, DatabaseQueryEvent(query.query)))
 
                 ctx.databasePolicyChain()?.let { chain ->
-                    val result = chain.onQuery(ctx.databaseCtx()!!, DatabaseQueryEvent(query.query))
+                    val policyCtx = ctx.databaseCtx()!!.toPolicyContext().toQueryPolicyContext(query.query)
+                    chain.onQuery(policyCtx)
                     // TODO: Intercept the message and send an error response
-                    if (result is PolicyDecision.Deny) {
-                        StateResult(
-                            nextState = QueryCycleStatus(),
-                            action =
-                                MessageAction.Terminate(
-                                    reason = "Query policy violation: ${result.reason}",
-                                ),
-                        )
-                    } else {
-                        null
+                    policyCtx.decision.let { decision ->
+                        if (decision is PolicyDecision.Deny) {
+                            StateResult(
+                                nextState = QueryCycleStatus(),
+                                action =
+                                    MessageAction.Terminate(
+                                        reason = "Query policy violation: ${decision.reason}",
+                                    ),
+                            )
+                        } else {
+                            null
+                        }
                     }
                 } ?: StateResult(
                     nextState = this,
@@ -62,18 +67,21 @@ class QueryCycleStatus :
                 ctx.audit().emit(QueryStartAuditEvent(ctx.databaseCtx()!!, DatabaseQueryEvent(parse.query)))
 
                 ctx.databasePolicyChain()?.let { chain ->
-                    val result = chain.onQuery(ctx.databaseCtx()!!, DatabaseQueryEvent(parse.query))
+                    val policyCtx = ctx.databaseCtx()!!.toPolicyContext().toQueryPolicyContext(parse.query)
+                    chain.onQuery(policyCtx)
                     // TODO: Intercept the message and send an error response
-                    if (result is PolicyDecision.Deny) {
-                        StateResult(
-                            nextState = QueryCycleStatus(),
-                            action =
-                                MessageAction.Terminate(
-                                    reason = "Query policy violation: ${result.reason}",
-                                ),
-                        )
-                    } else {
-                        null
+                    policyCtx.decision.let { decision ->
+                        if (decision is PolicyDecision.Deny) {
+                            StateResult(
+                                nextState = QueryCycleStatus(),
+                                action =
+                                    MessageAction.Terminate(
+                                        reason = "Query policy violation: ${decision.reason}",
+                                    ),
+                            )
+                        } else {
+                            null
+                        }
                     }
                 } ?: StateResult(
                     nextState = this,
@@ -169,20 +177,22 @@ class QueryCycleStatus :
                 val dataRow = DataRow.readFrom(msg)
                 logger.trace { "Data row: $dataRow" }
 
-                val resultRowCtx = ctx.databaseCtx()!!.withResultRow(columnDefinitions, dataRow.columnValues)
-                val result = ctx.databasePolicyChain()!!.onResultRow(resultRowCtx)
-                if (result is PolicyDecision.Deny) {
-                    return StateResult(
-                        nextState = this,
-                        action = MessageAction.Drop,
-                    )
+                val policyCtx = ctx.databaseCtx()!!.toPolicyContext().toResultRowPolicyContext(columnDefinitions, dataRow.columnValues)
+                ctx.databasePolicyChain()!!.onResultRow(policyCtx)
+                policyCtx.decision.let { decision ->
+                    if (decision is PolicyDecision.Deny) {
+                        return StateResult(
+                            nextState = this,
+                            action = MessageAction.Drop,
+                        )
+                    }
                 }
                 return StateResult(
                     nextState = this,
                     action =
                         MessageAction.Transform(
                             DataRow(
-                                columnValues = resultRowCtx.resultRow(),
+                                columnValues = policyCtx.resultRow(),
                             ).asMessage(),
                         ),
                 )
