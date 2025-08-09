@@ -49,7 +49,7 @@ class RowDescription(
     ) {
         fun toColumnDefinition(): ColumnDefinition =
             ColumnDefinition(
-                database = "",
+                catalog = "",
                 schema = "",
                 table = "",
                 orgTable = "",

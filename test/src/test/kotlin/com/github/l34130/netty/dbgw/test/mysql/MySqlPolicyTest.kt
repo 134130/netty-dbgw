@@ -93,11 +93,11 @@ class MySqlPolicyTest : MySqlIntegrationTestBase("mysql:8.0") {
                         override fun load(): List<PolicyDefinition> =
                             listOf(
                                 DatabaseRowLevelSecurityPolicyDefinition(
-                                    database = null,
+                                    catalog = null,
                                     schema = null,
                                     table = null,
                                     column = ".*id",
-                                    filterRegex = "[1-5]",
+                                    filter = "[1-5]",
                                     action = DatabaseRowLevelSecurityPolicyDefinition.Action.DENY,
                                 ),
                                 PolicyDefinition.ALLOW_ALL,

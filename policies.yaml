@@ -40,6 +40,6 @@ apiVersion: builtin/v1
 kind: DatabaseRowLevelSecurityPolicy
 metadata: {}
 spec:
-  column: .*
-  filterRegex: .*
+  column: actor_id
+  filter: '[1-9]'
   action: ALLOW

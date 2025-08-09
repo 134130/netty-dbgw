@@ -26,7 +26,7 @@ internal class ColumnDefinition41(
 ) {
     fun toColumnDefinition(): ColumnDefinition =
         ColumnDefinition(
-            database = schema,
+            catalog = schema,
             schema = schema,
             table = orgTable,
             orgTable = orgTable,
