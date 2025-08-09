@@ -92,9 +92,6 @@ class PostgresPolicyTest : PostgresProtocolTest("postgres:15") {
                         override fun load(): List<PolicyDefinition> =
                             listOf(
                                 DatabaseRowLevelSecurityPolicyDefinition(
-                                    catalog = null,
-                                    schema = null,
-                                    table = null,
                                     column = ".*id",
                                     filter = "[1-5]",
                                     action = DatabaseRowLevelSecurityPolicyDefinition.Action.DENY,
