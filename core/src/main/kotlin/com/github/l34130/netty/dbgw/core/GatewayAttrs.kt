@@ -1,5 +1,6 @@
 package com.github.l34130.netty.dbgw.core
 
+import com.github.l34130.netty.dbgw.core.audit.AuditSink
 import com.github.l34130.netty.dbgw.core.policy.DatabasePolicyChain
 import com.github.l34130.netty.dbgw.policy.api.ClientInfo
 import com.github.l34130.netty.dbgw.policy.api.SessionInfo
@@ -15,6 +16,8 @@ object GatewayAttrs {
 
     val FRONTEND_ATTR_KEY: AttributeKey<Channel> = AttributeKey.newInstance("frontend")
     val BACKEND_ATTR_KEY: AttributeKey<Channel> = AttributeKey.newInstance("backend")
+
+    val AUDIT_ATTR_KEY: AttributeKey<AuditSink> = AttributeKey.newInstance("audit-sink")
 
     val DATABASE_POLICY_CHAIN_ATTR_KEY: AttributeKey<DatabasePolicyChain> = AttributeKey.newInstance("database-policy-chain")
     val DATABASE_CONNECTION_INFO_ATTR_KEY: AttributeKey<DatabaseConnectionInfo> = AttributeKey.newInstance("database-connection-info")
@@ -39,6 +42,11 @@ fun ChannelHandlerContext.frontend(): Channel =
 fun ChannelHandlerContext.backend(): Channel =
     checkNotNull(this.channel().attr(GatewayAttrs.BACKEND_ATTR_KEY).get()) {
         "Backend channel is not set in the context. Maybe trying to access already in the backend handler? If so, use ctx.channel() instead"
+    }
+
+fun ChannelHandlerContext.audit(): AuditSink =
+    checkNotNull(this.channel().attr(GatewayAttrs.AUDIT_ATTR_KEY).get()) {
+        "Audit sink is not set in the context"
     }
 
 fun ChannelHandlerContext.databasePolicyChain(): DatabasePolicyChain? =

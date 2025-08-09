@@ -10,6 +10,7 @@ kind: DatabaseStatementTypePolicy
 metadata: {}
 spec:
   statements:
+    - "SHOW"
     - "SELECT"
     - "UPDATE"
     - "CREATE"
@@ -33,13 +34,5 @@ kind: DatabaseRowLevelSecurityPolicy
 metadata: {}
 spec:
   column: .*id
-  filterRegex: "[0-9]"
-  action: ALLOW
----
-apiVersion: builtin/v1
-kind: DatabaseRowLevelSecurityPolicy
-metadata: {}
-spec:
-  column: actor_id
-  filter: '[1-9]'
+  filter: "[4-9]"
   action: ALLOW

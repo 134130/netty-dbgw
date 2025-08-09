@@ -3,6 +3,7 @@ package com.github.l34130.netty.dbgw.protocol.mysql
 import com.github.l34130.netty.dbgw.core.AbstractGateway
 import com.github.l34130.netty.dbgw.core.GatewayAttrs
 import com.github.l34130.netty.dbgw.core.StateMachine
+import com.github.l34130.netty.dbgw.core.audit.StdoutAuditSink
 import com.github.l34130.netty.dbgw.core.config.DatabaseGatewayConfig
 import com.github.l34130.netty.dbgw.core.frontend
 import com.github.l34130.netty.dbgw.core.policy.DatabasePolicyChain
@@ -30,6 +31,11 @@ class MySqlGateway(
         frontend: Channel,
         backend: Channel,
     ) {
+        StdoutAuditSink.also { sink ->
+            frontend.attr(GatewayAttrs.AUDIT_ATTR_KEY).set(sink)
+            backend.attr(GatewayAttrs.AUDIT_ATTR_KEY).set(sink)
+        }
+
         DatabasePolicyChain(policyConfigurationLoader.load().map { it.createPolicy() })
             .also {
                 policyConfigurationLoader.watchForChanges(it)

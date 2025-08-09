@@ -4,6 +4,8 @@ import com.github.l34130.netty.dbgw.common.database.ColumnDefinition
 import com.github.l34130.netty.dbgw.core.BusinessLogicAware
 import com.github.l34130.netty.dbgw.core.GatewayState
 import com.github.l34130.netty.dbgw.core.MessageAction
+import com.github.l34130.netty.dbgw.core.audit
+import com.github.l34130.netty.dbgw.core.audit.QueryEvent
 import com.github.l34130.netty.dbgw.core.databaseCtx
 import com.github.l34130.netty.dbgw.core.databasePolicyChain
 import com.github.l34130.netty.dbgw.policy.api.PolicyDecision
@@ -32,6 +34,12 @@ class QueryCycleStatus :
                 val query = Query.readFrom(msg)
                 logger.debug { "Query: $query" }
 
+                ctx.audit().emit(
+                    QueryEvent(
+                        query = query.query,
+                    ),
+                )
+
                 ctx.databasePolicyChain()?.let { chain ->
                     val result = chain.onQuery(ctx.databaseCtx()!!.withQuery(query.query))
                     // TODO: Intercept the message and send an error response
@@ -54,6 +62,12 @@ class QueryCycleStatus :
             Parse.TYPE -> {
                 val parse = Parse.readFrom(msg)
                 logger.debug { "Parse: $parse" }
+
+                ctx.audit().emit(
+                    QueryEvent(
+                        query = parse.query,
+                    ),
+                )
 
                 ctx.databasePolicyChain()?.let { chain ->
                     val result = chain.onQuery(ctx.databaseCtx()!!.withQuery(parse.query))
