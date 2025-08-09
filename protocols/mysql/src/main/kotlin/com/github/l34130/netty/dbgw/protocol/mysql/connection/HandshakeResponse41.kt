@@ -1,5 +1,6 @@
 package com.github.l34130.netty.dbgw.protocol.mysql.connection
 
+import com.github.l34130.netty.dbgw.core.utils.netty.toByteArray
 import com.github.l34130.netty.dbgw.core.utils.toEnumSet
 import com.github.l34130.netty.dbgw.core.utils.toFlags
 import com.github.l34130.netty.dbgw.protocol.mysql.Packet
@@ -15,7 +16,6 @@ import com.github.l34130.netty.dbgw.protocol.mysql.writeLenEncInteger
 import com.github.l34130.netty.dbgw.protocol.mysql.writeLenEncString
 import com.github.l34130.netty.dbgw.protocol.mysql.writeNullTerminatedString
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.netty.buffer.ByteBuf
 import io.netty.buffer.Unpooled
 import io.netty.channel.ChannelHandlerContext
 import java.util.EnumSet
@@ -25,7 +25,7 @@ internal data class HandshakeResponse41(
     val maxPacketSize: ULong,
     val characterSet: Int,
     val username: String,
-    val authResponse: ByteBuf,
+    val authResponse: ByteArray,
     val authResponseLength: Int?,
     val database: String?,
     val clientPluginName: String?,
@@ -154,7 +154,7 @@ internal data class HandshakeResponse41(
                 maxPacketSize = maxPacketSize,
                 characterSet = characterSet,
                 username = username,
-                authResponse = authResponse.retain(),
+                authResponse = authResponse.toByteArray(),
                 authResponseLength = authResponseLength,
                 database = database,
                 clientPluginName = clientPluginName,

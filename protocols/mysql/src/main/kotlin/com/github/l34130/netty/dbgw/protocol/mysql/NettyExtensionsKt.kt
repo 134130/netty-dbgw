@@ -134,8 +134,8 @@ internal fun ByteBuf.writeLenEncString(value: String): ByteBuf {
     return this
 }
 
-internal fun ByteBuf.writeLenEncString(value: ByteBuf): ByteBuf {
-    writeLenEncInteger(value.readableBytes().toULong())
+internal fun ByteBuf.writeLenEncString(value: ByteArray): ByteBuf {
+    writeLenEncInteger(value.size.toULong())
     writeBytes(value)
     return this
 }

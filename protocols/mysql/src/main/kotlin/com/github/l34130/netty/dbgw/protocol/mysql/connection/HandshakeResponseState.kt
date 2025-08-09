@@ -160,8 +160,6 @@ internal class HandshakeResponseState(
                         "caching_sha2_password" -> CachingSha256PasswordEncoder.encode(salt, it)
                         else -> throw NotImplementedError("Authentication plugin '${packet.clientPluginName}' is not supported")
                     }
-                }?.let {
-                    Unpooled.copiedBuffer(it)
                 }
 
         return StateResult(
@@ -172,7 +170,7 @@ internal class HandshakeResponseState(
                         packet.copy(
                             username = policyCtx.username,
                             authResponse = newPassword ?: packet.authResponse,
-                            authResponseLength = newPassword?.readableBytes() ?: packet.authResponseLength,
+                            authResponseLength = newPassword?.size ?: packet.authResponseLength,
                         ),
                 ),
         )
