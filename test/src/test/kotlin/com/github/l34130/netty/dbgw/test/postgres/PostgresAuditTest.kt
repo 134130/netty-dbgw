@@ -2,7 +2,7 @@ package com.github.l34130.netty.dbgw.test.postgres
 
 import com.github.l34130.netty.dbgw.core.audit.AuditEvent
 import com.github.l34130.netty.dbgw.core.audit.AuditSink
-import com.github.l34130.netty.dbgw.core.audit.QueryEvent
+import com.github.l34130.netty.dbgw.core.audit.QueryStartAuditEvent
 import com.github.l34130.netty.dbgw.core.policy.PolicyConfigurationLoader
 import com.github.l34130.netty.dbgw.protocol.postgres.PostgresGateway
 import com.github.l34130.netty.dbgw.test.ALLOW_ALL
@@ -13,7 +13,7 @@ import kotlin.test.assertEquals
 
 class PostgresAuditTest : PostgresIntegrationTestBase("postgres:15") {
     @Test
-    fun `test QueryEvent`() {
+    fun `test QueryStartEvent`() {
         val auditSink =
             object : AuditSink {
                 val events = mutableListOf<AuditEvent>()
@@ -42,10 +42,10 @@ class PostgresAuditTest : PostgresIntegrationTestBase("postgres:15") {
 //                    conn.executeQuery("SELECT CONCAT('Hello, ', 'World!') AS greeting")
 //                }
 
-            val auditEvents = auditSink.events.filterIsInstance<QueryEvent>()
+            val auditEvents = auditSink.events.filterIsInstance<QueryStartAuditEvent>()
             assertAll(
                 { assertEquals(2, auditEvents.size) },
-                { assertEquals("SELECT 1", auditEvents[1].query) },
+                { assertEquals("SELECT 1", auditEvents[1].ctx.query) },
 //                { assertEquals("SELECT CONCAT('Hello, ', 'World!') AS greeting", auditEvents[7].query) },
             )
         } finally {

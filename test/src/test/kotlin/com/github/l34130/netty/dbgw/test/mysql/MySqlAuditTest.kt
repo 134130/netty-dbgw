@@ -2,7 +2,7 @@ package com.github.l34130.netty.dbgw.test.mysql
 
 import com.github.l34130.netty.dbgw.core.audit.AuditEvent
 import com.github.l34130.netty.dbgw.core.audit.AuditSink
-import com.github.l34130.netty.dbgw.core.audit.QueryEvent
+import com.github.l34130.netty.dbgw.core.audit.QueryStartAuditEvent
 import com.github.l34130.netty.dbgw.core.policy.PolicyConfigurationLoader
 import com.github.l34130.netty.dbgw.protocol.mysql.MySqlGateway
 import com.github.l34130.netty.dbgw.test.ALLOW_ALL
@@ -12,7 +12,7 @@ import kotlin.test.assertEquals
 
 class MySqlAuditTest : MySqlIntegrationTestBase("mysql:8.0") {
     @Test
-    fun `test QueryEvent`() {
+    fun `test QueryStartEvent`() {
         val auditSink =
             object : AuditSink {
                 val events = mutableListOf<AuditEvent>()
@@ -41,11 +41,11 @@ class MySqlAuditTest : MySqlIntegrationTestBase("mysql:8.0") {
                     conn.executeQuery("SELECT CONCAT('Hello, ', 'World!') AS greeting")
                 }
 
-            val auditEvents = auditSink.events.filterIsInstance<QueryEvent>()
+            val auditEvents = auditSink.events.filterIsInstance<QueryStartAuditEvent>()
             assertAll(
                 { assertEquals(8, auditEvents.size) },
-                { assertEquals("SELECT 1", auditEvents[3].query) },
-                { assertEquals("SELECT CONCAT('Hello, ', 'World!') AS greeting", auditEvents[7].query) },
+                { assertEquals("SELECT 1", auditEvents[3].ctx.query) },
+                { assertEquals("SELECT CONCAT('Hello, ', 'World!') AS greeting", auditEvents[7].ctx.query) },
             )
         } finally {
             gateway.shutdown()

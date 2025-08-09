@@ -2,6 +2,8 @@ package com.github.l34130.netty.dbgw.protocol.postgres.startup
 
 import com.github.l34130.netty.dbgw.core.GatewayState
 import com.github.l34130.netty.dbgw.core.MessageAction
+import com.github.l34130.netty.dbgw.core.audit
+import com.github.l34130.netty.dbgw.core.audit.AuthenticationStartAuditEvent
 import com.github.l34130.netty.dbgw.core.backend
 import com.github.l34130.netty.dbgw.core.databaseCtx
 import com.github.l34130.netty.dbgw.core.databasePolicyChain
@@ -43,9 +45,19 @@ class StartupState : GatewayState<ByteBuf, Message>() {
             // encoder will be added later to escape the startup message encoding; StartupMessage is not a message format
         }
 
+        ctx.audit().emit(
+            AuthenticationStartAuditEvent(
+                ctx = ctx.databaseCtx()!!,
+                evt =
+                    DatabaseAuthenticationEvent(
+                        username = startupMsg.user,
+                    ),
+            ),
+        )
+
         val result =
             ctx.databasePolicyChain()!!.onAuthentication(
-                ctx.databaseCtx()!!,
+                ctx = ctx.databaseCtx()!!,
                 evt =
                     DatabaseAuthenticationEvent(
                         username = startupMsg.user,

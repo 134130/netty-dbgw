@@ -3,7 +3,7 @@ package com.github.l34130.netty.dbgw.protocol.mysql.command
 import com.github.l34130.netty.dbgw.core.BusinessLogicAware
 import com.github.l34130.netty.dbgw.core.MessageAction
 import com.github.l34130.netty.dbgw.core.audit
-import com.github.l34130.netty.dbgw.core.audit.QueryEvent
+import com.github.l34130.netty.dbgw.core.audit.QueryStartAuditEvent
 import com.github.l34130.netty.dbgw.core.databaseCtx
 import com.github.l34130.netty.dbgw.core.databasePolicyChain
 import com.github.l34130.netty.dbgw.core.utils.netty.peek
@@ -77,12 +77,7 @@ internal class CommandPhaseState :
         val query = payload.readRestOfPacketString().toString(Charsets.UTF_8)
         logger.debug { "COM_QUERY: query='$query'" }
 
-        ctx.audit().emit(
-            QueryEvent(
-                query = query,
-                parameters = parameters?.associate { it.second to it.third },
-            ),
-        )
+        ctx.audit().emit(QueryStartAuditEvent(ctx.databaseCtx()!!.withQuery(query)))
 
         ctx.databasePolicyChain()?.let { chain ->
             val result = chain.onQuery(ctx.databaseCtx()!!.withQuery(query))

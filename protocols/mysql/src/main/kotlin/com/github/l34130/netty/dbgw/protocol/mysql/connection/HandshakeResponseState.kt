@@ -1,6 +1,8 @@
 package com.github.l34130.netty.dbgw.protocol.mysql.connection
 
 import com.github.l34130.netty.dbgw.core.MessageAction
+import com.github.l34130.netty.dbgw.core.audit
+import com.github.l34130.netty.dbgw.core.audit.AuthenticationStartAuditEvent
 import com.github.l34130.netty.dbgw.core.backend
 import com.github.l34130.netty.dbgw.core.databaseCtx
 import com.github.l34130.netty.dbgw.core.databasePolicyChain
@@ -160,6 +162,13 @@ internal class HandshakeResponseState : MySqlGatewayState() {
                 0
             }
         logger.trace { "Zstd Compression Level: $zstdCompressionLevel" }
+
+        ctx.audit().emit(
+            AuthenticationStartAuditEvent(
+                ctx = ctx.databaseCtx()!!,
+                evt = DatabaseAuthenticationEvent(username = username),
+            ),
+        )
 
         val result =
             ctx.databasePolicyChain()!!.onAuthentication(
