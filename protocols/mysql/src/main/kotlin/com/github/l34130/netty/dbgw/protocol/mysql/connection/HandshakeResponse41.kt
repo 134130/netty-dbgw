@@ -15,18 +15,18 @@ import com.github.l34130.netty.dbgw.protocol.mysql.writeFixedLengthInteger
 import com.github.l34130.netty.dbgw.protocol.mysql.writeLenEncInteger
 import com.github.l34130.netty.dbgw.protocol.mysql.writeLenEncString
 import com.github.l34130.netty.dbgw.protocol.mysql.writeNullTerminatedString
-import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.buffer.Unpooled
 import io.netty.channel.ChannelHandlerContext
 import java.util.EnumSet
 
 internal data class HandshakeResponse41(
+    private val sequenceId: Int,
     val clientCapabilities: EnumSet<CapabilityFlag>,
     val maxPacketSize: ULong,
     val characterSet: Int,
     val username: String,
     val authResponse: ByteArray,
-    val authResponseLength: Int?,
+    private val authResponseLength: Int?, // null if CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA is used
     val database: String?,
     val clientPluginName: String?,
     val clientConnectAttrs: Map<String, String>,
@@ -64,7 +64,7 @@ internal data class HandshakeResponse41(
             payload.writeFixedLengthInteger(1, zstdCompressionLevel.toULong())
         }
 
-        return Packet.of(sequenceId = 1, payload = payload)
+        return Packet.of(sequenceId = sequenceId, payload = payload)
     }
 
     companion object {
@@ -150,6 +150,7 @@ internal data class HandshakeResponse41(
                 }
 
             return HandshakeResponse41(
+                sequenceId = packet.sequenceId,
                 clientCapabilities = clientCapabilities,
                 maxPacketSize = maxPacketSize,
                 characterSet = characterSet,
@@ -162,44 +163,5 @@ internal data class HandshakeResponse41(
                 zstdCompressionLevel = zstdCompressionLevel,
             )
         }
-
-        private fun clientNameFromConnectAttrs(clientConnectAttrs: Map<String, String>): String? {
-            val runtimeVendor = clientConnectAttrs["_runtime_vendor"]
-            var clientName = clientConnectAttrs["_client_name"]
-            val clientVersion = clientConnectAttrs["_client_version"]
-            val (program, version, comment) =
-                if (runtimeVendor == "JetBrains s.r.o.") {
-                    val program = clientName ?: "JetBrains Client"
-                    val version = clientVersion
-                    val comment =
-                        buildString {
-                            append("JetBrains s.r.o.")
-                            clientConnectAttrs["_runtime_version"]?.let { append("; $it") }
-                        }
-
-                    Triple(program, version, comment)
-                } else if (clientName == "libmysql") {
-                    val program = clientConnectAttrs["program_name"] ?: "mysql"
-                    val version = clientVersion
-                    val comment =
-                        buildString {
-                            append("libmysql")
-                            clientConnectAttrs["_os"]?.let { append("; $it") }
-                            clientConnectAttrs["_platform"]?.let { append("; $it") }
-                        }
-
-                    Triple(program, version, comment)
-                } else {
-                    logger.warn { "Failed to parse client from attrs: $clientConnectAttrs" }
-                    return null // Unknown client
-                }
-            return buildString {
-                append(program)
-                version?.let { append("/$it") }
-                append(" ($comment)")
-            }
-        }
-
-        private val logger = KotlinLogging.logger { }
     }
 }

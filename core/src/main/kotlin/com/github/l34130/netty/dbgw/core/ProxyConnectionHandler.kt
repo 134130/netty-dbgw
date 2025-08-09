@@ -30,7 +30,7 @@ class ProxyConnectionHandler(
 
         backendFuture.addListener { future ->
             if (future.isSuccess) {
-                logger.debug { "Successfully connected to backend: ${backend.remoteAddress()}" }
+                logger.debug { "Successfully connected to backend: ${backend.localAddress()} -> ${backend.remoteAddress()}" }
                 setupPipelines(frontend, backend)
                 establishSession(frontend, backend)
                 onConnectionEstablished(frontend, backend)

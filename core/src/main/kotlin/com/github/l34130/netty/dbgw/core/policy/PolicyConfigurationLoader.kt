@@ -14,5 +14,12 @@ interface PolicyConfigurationLoader {
 
                 override fun watchForChanges(listener: PolicyChangeListener): AutoCloseable = AutoCloseable { /* No-op */ }
             }
+
+        fun of(vararg definitions: PolicyDefinition): PolicyConfigurationLoader =
+            object : PolicyConfigurationLoader {
+                override fun load(): List<PolicyDefinition> = definitions.toList()
+
+                override fun watchForChanges(listener: PolicyChangeListener): AutoCloseable = AutoCloseable { /* No-op */ }
+            }
     }
 }

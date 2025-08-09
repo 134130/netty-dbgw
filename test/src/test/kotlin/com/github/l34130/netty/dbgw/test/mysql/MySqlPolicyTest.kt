@@ -1,11 +1,12 @@
 package com.github.l34130.netty.dbgw.test.mysql
 
-import com.github.l34130.netty.dbgw.core.policy.PolicyChangeListener
 import com.github.l34130.netty.dbgw.core.policy.PolicyConfigurationLoader
 import com.github.l34130.netty.dbgw.policy.api.PolicyDefinition
+import com.github.l34130.netty.dbgw.policy.builtin.database.DatabaseImpersonationPolicyDefinition
 import com.github.l34130.netty.dbgw.policy.builtin.database.DatabaseResultSetMaskingPolicyDefinition
 import com.github.l34130.netty.dbgw.policy.builtin.database.DatabaseRowLevelSecurityPolicyDefinition
 import com.github.l34130.netty.dbgw.protocol.mysql.MySqlGateway
+import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.assertAll
 import java.sql.Date
 import java.sql.SQLException
@@ -13,21 +14,37 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
-class MySqlPolicyTest : MySqlIntegrationTestBase("mysql:8.0") {
+abstract class MySqlPolicyTest(
+    private val image: String,
+) : MySqlIntegrationTestBase(image) {
     @Test
-    fun `test DatabaseTimeRangeAccessPolicy`() {
+    fun `test DatabaseImpersonationPolicy`() {
         val gateway =
             MySqlGateway(
-                createDatabaseGatewayConfig(),
+                config = createDatabaseGatewayConfig(),
+                policyConfigurationLoader =
+                    PolicyConfigurationLoader.of(
+                        DatabaseImpersonationPolicyDefinition(
+                            action =
+                                DatabaseImpersonationPolicyDefinition.Action(
+                                    user = "testuser",
+                                    password = "testpass",
+                                ),
+                        ),
+                        PolicyDefinition.ALLOW_ALL,
+                    ),
             )
         gateway.start()
 
         try {
-            val exception =
-                assertFailsWith<SQLException> {
-                    createConnection { props -> props.setProperty("port", gateway.port().toString()) }
+            gateway
+                .createConnection { props ->
+                    props.setProperty("user", "invalid_user")
+                    props.setProperty("password", "invalid_pass")
+                }.use { conn ->
+                    val result = conn.executeQuery("SELECT CURRENT_USER()")
+                    assertEquals("testuser@%", result[1][0])
                 }
-            assertEquals("Access denied: No policy allowed the authentication (implicit deny)", exception.message)
         } finally {
             gateway.shutdown()
         }
@@ -39,26 +56,18 @@ class MySqlPolicyTest : MySqlIntegrationTestBase("mysql:8.0") {
             MySqlGateway(
                 config = createDatabaseGatewayConfig(),
                 policyConfigurationLoader =
-                    object : PolicyConfigurationLoader {
-                        override fun load(): List<PolicyDefinition> =
-                            listOf(
-                                DatabaseResultSetMaskingPolicyDefinition(
-                                    maskingRegex = "1234",
-                                ),
-                                DatabaseResultSetMaskingPolicyDefinition(
-                                    maskingRegex = "3456",
-                                ),
-                                DatabaseResultSetMaskingPolicyDefinition(
-                                    maskingRegex = "9",
-                                ),
-                                PolicyDefinition.ALLOW_ALL,
-                            )
-
-                        override fun watchForChanges(listener: PolicyChangeListener): AutoCloseable =
-                            AutoCloseable {
-                                // No-op for this test
-                            }
-                    },
+                    PolicyConfigurationLoader.of(
+                        DatabaseResultSetMaskingPolicyDefinition(
+                            maskingRegex = "1234",
+                        ),
+                        DatabaseResultSetMaskingPolicyDefinition(
+                            maskingRegex = "3456",
+                        ),
+                        DatabaseResultSetMaskingPolicyDefinition(
+                            maskingRegex = "9",
+                        ),
+                        PolicyDefinition.ALLOW_ALL,
+                    ),
             )
         gateway.start()
 
@@ -83,26 +92,20 @@ class MySqlPolicyTest : MySqlIntegrationTestBase("mysql:8.0") {
 
     @Test
     fun `test DatabaseRowLevelSecurityPolicy`() {
+        assumeTrue(image == "mysql:8")
+
         val gateway =
             MySqlGateway(
                 createDatabaseGatewayConfig(),
                 policyConfigurationLoader =
-                    object : PolicyConfigurationLoader {
-                        override fun load(): List<PolicyDefinition> =
-                            listOf(
-                                DatabaseRowLevelSecurityPolicyDefinition(
-                                    column = ".*id",
-                                    filter = "[1-5]",
-                                    action = DatabaseRowLevelSecurityPolicyDefinition.Action.DENY,
-                                ),
-                                PolicyDefinition.ALLOW_ALL,
-                            )
-
-                        override fun watchForChanges(listener: PolicyChangeListener): AutoCloseable =
-                            AutoCloseable {
-                                // No-op for this test
-                            }
-                    },
+                    PolicyConfigurationLoader.of(
+                        DatabaseRowLevelSecurityPolicyDefinition(
+                            column = ".*id",
+                            filter = "[1-5]",
+                            action = DatabaseRowLevelSecurityPolicyDefinition.Action.DENY,
+                        ),
+                        PolicyDefinition.ALLOW_ALL,
+                    ),
             )
         gateway.start()
 
@@ -137,6 +140,25 @@ class MySqlPolicyTest : MySqlIntegrationTestBase("mysql:8.0") {
                     { assertEquals("Christian", result[5][1]) },
                 )
             }
+        } finally {
+            gateway.shutdown()
+        }
+    }
+
+    @Test
+    fun `test DatabaseTimeRangeAccessPolicy`() {
+        val gateway =
+            MySqlGateway(
+                createDatabaseGatewayConfig(),
+            )
+        gateway.start()
+
+        try {
+            val exception =
+                assertFailsWith<SQLException> {
+                    createConnection { props -> props.setProperty("port", gateway.port().toString()) }
+                }
+            assertEquals("Access denied: No policy allowed the authentication (implicit deny)", exception.message)
         } finally {
             gateway.shutdown()
         }

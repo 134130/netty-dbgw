@@ -51,7 +51,6 @@ internal class AuthExchangeContinuationState(
         val payload = msg.payload
         if (payload.peek { it.readUnsignedByte().toUInt() } == 0x01u) {
             val msg = AuthMoreData.readFrom(ctx, msg)
-            msg.extraData
             // Extra authentication data beyond the initial challenge
             return StateResult(
                 nextState = this,

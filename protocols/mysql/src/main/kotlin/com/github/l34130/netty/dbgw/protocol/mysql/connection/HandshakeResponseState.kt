@@ -170,7 +170,6 @@ internal class HandshakeResponseState(
                         packet.copy(
                             username = policyCtx.username,
                             authResponse = newPassword ?: packet.authResponse,
-                            authResponseLength = newPassword?.size ?: packet.authResponseLength,
                         ),
                 ),
         )

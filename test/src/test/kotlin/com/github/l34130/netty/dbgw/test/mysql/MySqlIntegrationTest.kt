@@ -4,8 +4,14 @@ import org.junit.jupiter.api.Nested
 
 class MySqlIntegrationTest {
     @Nested
-    inner class Mysql8 : MySqlProtocolTest("mysql:8.0")
+    inner class MySql8Protocol : MySqlProtocolTest("mysql:8.0")
 
     @Nested
-    inner class MySql5 : MySqlProtocolTest("mysql:5.7")
+    inner class MySql5Protocol : MySqlProtocolTest("mysql:5.7")
+
+    @Nested
+    inner class MySql8Policy : MySqlPolicyTest("mysql:8.0")
+
+    @Nested
+    inner class MySql5Policy : MySqlPolicyTest("mysql:5.7")
 }
