@@ -8,7 +8,7 @@ import com.github.l34130.netty.dbgw.core.databaseCtx
 import com.github.l34130.netty.dbgw.core.databasePolicyChain
 import com.github.l34130.netty.dbgw.core.utils.netty.peek
 import com.github.l34130.netty.dbgw.policy.api.PolicyDecision
-import com.github.l34130.netty.dbgw.policy.api.database.query.withQuery
+import com.github.l34130.netty.dbgw.policy.api.database.DatabaseQueryEvent
 import com.github.l34130.netty.dbgw.protocol.mysql.MySqlGatewayState
 import com.github.l34130.netty.dbgw.protocol.mysql.Packet
 import com.github.l34130.netty.dbgw.protocol.mysql.capabilities
@@ -77,10 +77,10 @@ internal class CommandPhaseState :
         val query = payload.readRestOfPacketString().toString(Charsets.UTF_8)
         logger.debug { "COM_QUERY: query='$query'" }
 
-        ctx.audit().emit(QueryStartAuditEvent(ctx.databaseCtx()!!.withQuery(query)))
+        ctx.audit().emit(QueryStartAuditEvent(ctx.databaseCtx()!!, DatabaseQueryEvent(query)))
 
         ctx.databasePolicyChain()?.let { chain ->
-            val result = chain.onQuery(ctx.databaseCtx()!!.withQuery(query))
+            val result = chain.onQuery(ctx.databaseCtx()!!, DatabaseQueryEvent(query))
             if (result is PolicyDecision.Deny) {
                 val errorPacket =
                     Packet.Error.of(

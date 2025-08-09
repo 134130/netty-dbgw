@@ -2,7 +2,7 @@ package com.github.l34130.netty.dbgw.core.audit
 
 import com.github.l34130.netty.dbgw.policy.api.database.DatabaseAuthenticationEvent
 import com.github.l34130.netty.dbgw.policy.api.database.DatabaseContext
-import com.github.l34130.netty.dbgw.policy.api.database.query.DatabaseQueryContext
+import com.github.l34130.netty.dbgw.policy.api.database.DatabaseQueryEvent
 
 sealed interface AuditEvent {
     val ctx: DatabaseContext
@@ -21,7 +21,8 @@ data class AuthenticationResultAuditEvent(
 ) : AuditEvent
 
 data class QueryStartAuditEvent(
-    override val ctx: DatabaseQueryContext,
+    override val ctx: DatabaseContext,
+    val evt: DatabaseQueryEvent,
 ) : AuditEvent
 
 data class QueryResultAuditEvent(

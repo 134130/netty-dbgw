@@ -9,7 +9,7 @@ import com.github.l34130.netty.dbgw.core.audit.QueryStartAuditEvent
 import com.github.l34130.netty.dbgw.core.databaseCtx
 import com.github.l34130.netty.dbgw.core.databasePolicyChain
 import com.github.l34130.netty.dbgw.policy.api.PolicyDecision
-import com.github.l34130.netty.dbgw.policy.api.database.query.withQuery
+import com.github.l34130.netty.dbgw.policy.api.database.DatabaseQueryEvent
 import com.github.l34130.netty.dbgw.policy.api.database.query.withResultRow
 import com.github.l34130.netty.dbgw.protocol.postgres.Message
 import com.github.l34130.netty.dbgw.protocol.postgres.message.ErrorResponse
@@ -34,10 +34,10 @@ class QueryCycleStatus :
                 val query = Query.readFrom(msg)
                 logger.debug { "Query: $query" }
 
-                ctx.audit().emit(QueryStartAuditEvent(ctx.databaseCtx()!!.withQuery(query.query)))
+                ctx.audit().emit(QueryStartAuditEvent(ctx.databaseCtx()!!, DatabaseQueryEvent(query.query)))
 
                 ctx.databasePolicyChain()?.let { chain ->
-                    val result = chain.onQuery(ctx.databaseCtx()!!.withQuery(query.query))
+                    val result = chain.onQuery(ctx.databaseCtx()!!, DatabaseQueryEvent(query.query))
                     // TODO: Intercept the message and send an error response
                     if (result is PolicyDecision.Deny) {
                         StateResult(
@@ -59,10 +59,10 @@ class QueryCycleStatus :
                 val parse = Parse.readFrom(msg)
                 logger.debug { "Parse: $parse" }
 
-                ctx.audit().emit(QueryStartAuditEvent(ctx.databaseCtx()!!.withQuery(parse.query)))
+                ctx.audit().emit(QueryStartAuditEvent(ctx.databaseCtx()!!, DatabaseQueryEvent(parse.query)))
 
                 ctx.databasePolicyChain()?.let { chain ->
-                    val result = chain.onQuery(ctx.databaseCtx()!!.withQuery(parse.query))
+                    val result = chain.onQuery(ctx.databaseCtx()!!, DatabaseQueryEvent(parse.query))
                     // TODO: Intercept the message and send an error response
                     if (result is PolicyDecision.Deny) {
                         StateResult(

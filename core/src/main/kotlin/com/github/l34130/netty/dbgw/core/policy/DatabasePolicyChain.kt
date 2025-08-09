@@ -6,7 +6,7 @@ import com.github.l34130.netty.dbgw.policy.api.database.DatabaseAuthenticationEv
 import com.github.l34130.netty.dbgw.policy.api.database.DatabaseContext
 import com.github.l34130.netty.dbgw.policy.api.database.DatabasePolicy
 import com.github.l34130.netty.dbgw.policy.api.database.DatabasePolicyInterceptor
-import com.github.l34130.netty.dbgw.policy.api.database.query.DatabaseQueryContext
+import com.github.l34130.netty.dbgw.policy.api.database.DatabaseQueryEvent
 import com.github.l34130.netty.dbgw.policy.api.database.query.DatabaseResultRowContext
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.util.concurrent.CopyOnWriteArrayList
@@ -31,9 +31,12 @@ class DatabasePolicyChain(
         )
     }
 
-    override fun onQuery(ctx: DatabaseQueryContext): PolicyDecision {
+    override fun onQuery(
+        ctx: DatabaseContext,
+        evt: DatabaseQueryEvent,
+    ): PolicyDecision {
         for (policy in policies) {
-            val decision = policy.onQuery(ctx)
+            val decision = policy.onQuery(ctx, evt)
             if (decision is PolicyDecision.NotApplicable) continue
             return decision
         }

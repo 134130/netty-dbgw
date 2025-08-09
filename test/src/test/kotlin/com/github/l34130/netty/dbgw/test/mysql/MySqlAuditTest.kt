@@ -78,8 +78,8 @@ class MySqlAuditTest : MySqlIntegrationTestBase("mysql:8.0") {
             val auditEvents = auditSink.events.filterIsInstance<QueryStartAuditEvent>()
             assertAll(
                 { assertEquals(8, auditEvents.size) },
-                { assertEquals("SELECT 1", auditEvents[3].ctx.query) },
-                { assertEquals("SELECT CONCAT('Hello, ', 'World!') AS greeting", auditEvents[7].ctx.query) },
+                { assertEquals("SELECT 1", auditEvents[3].evt.query) },
+                { assertEquals("SELECT CONCAT('Hello, ', 'World!') AS greeting", auditEvents[7].evt.query) },
             )
         } finally {
             gateway.shutdown()

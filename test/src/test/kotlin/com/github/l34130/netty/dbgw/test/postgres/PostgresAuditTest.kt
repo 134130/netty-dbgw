@@ -79,7 +79,7 @@ class PostgresAuditTest : PostgresIntegrationTestBase("postgres:15") {
             val auditEvents = auditSink.events.filterIsInstance<QueryStartAuditEvent>()
             assertAll(
                 { assertEquals(2, auditEvents.size) },
-                { assertEquals("SELECT 1", auditEvents[1].ctx.query) },
+                { assertEquals("SELECT 1", auditEvents[1].evt.query) },
 //                { assertEquals("SELECT CONCAT('Hello, ', 'World!') AS greeting", auditEvents[7].query) },
             )
         } finally {

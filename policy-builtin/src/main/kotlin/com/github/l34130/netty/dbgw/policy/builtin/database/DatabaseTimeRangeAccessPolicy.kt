@@ -4,7 +4,7 @@ import com.github.l34130.netty.dbgw.policy.api.PolicyDecision
 import com.github.l34130.netty.dbgw.policy.api.database.DatabaseAuthenticationEvent
 import com.github.l34130.netty.dbgw.policy.api.database.DatabaseContext
 import com.github.l34130.netty.dbgw.policy.api.database.DatabasePolicy
-import com.github.l34130.netty.dbgw.policy.api.database.query.DatabaseQueryContext
+import com.github.l34130.netty.dbgw.policy.api.database.DatabaseQueryEvent
 import java.time.Clock
 import java.time.LocalTime
 
@@ -27,7 +27,10 @@ data class DatabaseTimeRangeAccessPolicy(
         evt: DatabaseAuthenticationEvent,
     ): PolicyDecision = evaluate()
 
-    override fun onQuery(ctx: DatabaseQueryContext): PolicyDecision = evaluate()
+    override fun onQuery(
+        ctx: DatabaseContext,
+        evt: DatabaseQueryEvent,
+    ): PolicyDecision = evaluate()
 
     private fun evaluate(): PolicyDecision {
         val currentTime = LocalTime.now(clock)
