@@ -1,6 +1,7 @@
 package com.github.l34130.netty.dbgw.policy.builtin.database
 
 import com.github.l34130.netty.dbgw.policy.api.PolicyDefinition
+import com.github.l34130.netty.dbgw.policy.api.config.AbstractResourceFactory
 import com.github.l34130.netty.dbgw.policy.api.config.Resource
 import com.github.l34130.netty.dbgw.policy.api.database.DatabasePolicy
 
@@ -19,4 +20,6 @@ data class DatabaseResultSetMaskingPolicyDefinition(
             definition = this,
             maskingRegex = Regex(maskingRegex),
         )
+
+    class Factory : AbstractResourceFactory<DatabaseResultSetMaskingPolicyDefinition>(DatabaseResultSetMaskingPolicyDefinition::class)
 }

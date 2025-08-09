@@ -2,6 +2,7 @@ package com.github.l34130.netty.dbgw.policy.builtin.database
 
 import com.fasterxml.jackson.annotation.JsonCreator
 import com.github.l34130.netty.dbgw.policy.api.PolicyDefinition
+import com.github.l34130.netty.dbgw.policy.api.config.AbstractResourceFactory
 import com.github.l34130.netty.dbgw.policy.api.config.Resource
 import com.github.l34130.netty.dbgw.policy.api.database.DatabasePolicy
 import java.time.Clock
@@ -76,4 +77,6 @@ data class DatabaseTimeRangeAccessPolicyDefinition(
     }
 
     enum class Action { ALLOW, DENY }
+
+    class Factory : AbstractResourceFactory<DatabaseTimeRangeAccessPolicyDefinition>(DatabaseTimeRangeAccessPolicyDefinition::class)
 }
