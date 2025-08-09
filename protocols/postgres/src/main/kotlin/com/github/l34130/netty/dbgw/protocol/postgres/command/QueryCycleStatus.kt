@@ -1,6 +1,6 @@
 package com.github.l34130.netty.dbgw.protocol.postgres.command
 
-import com.github.l34130.netty.dbgw.common.sql.ColumnDefinition
+import com.github.l34130.netty.dbgw.common.database.ColumnDefinition
 import com.github.l34130.netty.dbgw.core.BusinessLogicAware
 import com.github.l34130.netty.dbgw.core.GatewayState
 import com.github.l34130.netty.dbgw.core.MessageAction

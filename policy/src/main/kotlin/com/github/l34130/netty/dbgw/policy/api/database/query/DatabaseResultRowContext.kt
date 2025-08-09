@@ -1,6 +1,6 @@
 package com.github.l34130.netty.dbgw.policy.api.database.query
 
-import com.github.l34130.netty.dbgw.common.sql.ColumnDefinition
+import com.github.l34130.netty.dbgw.common.database.ColumnDefinition
 import com.github.l34130.netty.dbgw.policy.api.ClientInfo
 import com.github.l34130.netty.dbgw.policy.api.SessionInfo
 import com.github.l34130.netty.dbgw.policy.api.database.DatabaseConnectionInfo

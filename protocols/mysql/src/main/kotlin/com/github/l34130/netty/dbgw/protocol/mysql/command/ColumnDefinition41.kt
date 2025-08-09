@@ -1,7 +1,7 @@
 package com.github.l34130.netty.dbgw.protocol.mysql.command
 
-import com.github.l34130.netty.dbgw.common.sql.ColumnDefinition
-import com.github.l34130.netty.dbgw.common.sql.SqlType
+import com.github.l34130.netty.dbgw.common.database.ColumnDefinition
+import com.github.l34130.netty.dbgw.common.database.SqlType
 import com.github.l34130.netty.dbgw.protocol.mysql.constant.MySqlFieldType
 import com.github.l34130.netty.dbgw.protocol.mysql.readFixedLengthInteger
 import com.github.l34130.netty.dbgw.protocol.mysql.readFixedLengthString

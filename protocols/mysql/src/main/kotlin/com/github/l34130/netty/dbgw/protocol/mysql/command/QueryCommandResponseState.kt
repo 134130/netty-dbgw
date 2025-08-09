@@ -1,6 +1,6 @@
 package com.github.l34130.netty.dbgw.protocol.mysql.command
 
-import com.github.l34130.netty.dbgw.common.sql.ColumnDefinition
+import com.github.l34130.netty.dbgw.common.database.ColumnDefinition
 import com.github.l34130.netty.dbgw.core.MessageAction
 import com.github.l34130.netty.dbgw.core.databaseCtx
 import com.github.l34130.netty.dbgw.core.databasePolicyChain

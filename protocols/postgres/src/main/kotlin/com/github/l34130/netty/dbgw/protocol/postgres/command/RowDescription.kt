@@ -1,7 +1,7 @@
 package com.github.l34130.netty.dbgw.protocol.postgres.command
 
-import com.github.l34130.netty.dbgw.common.sql.ColumnDefinition
-import com.github.l34130.netty.dbgw.common.sql.SqlType
+import com.github.l34130.netty.dbgw.common.database.ColumnDefinition
+import com.github.l34130.netty.dbgw.common.database.SqlType
 import com.github.l34130.netty.dbgw.protocol.postgres.Message
 import com.github.l34130.netty.dbgw.protocol.postgres.readUntilNull
 import io.netty.buffer.ByteBuf

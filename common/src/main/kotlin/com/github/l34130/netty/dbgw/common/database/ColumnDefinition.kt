@@ -1,4 +1,4 @@
-package com.github.l34130.netty.dbgw.common.sql
+package com.github.l34130.netty.dbgw.common.database
 
 data class ColumnDefinition(
     val database: String,

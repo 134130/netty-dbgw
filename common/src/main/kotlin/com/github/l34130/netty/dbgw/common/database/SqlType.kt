@@ -1,4 +1,4 @@
-package com.github.l34130.netty.dbgw.common.sql
+package com.github.l34130.netty.dbgw.common.database
 
 import java.math.BigDecimal
 import java.sql.ResultSet
