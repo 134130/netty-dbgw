@@ -1,6 +1,7 @@
 package com.github.l34130.netty.dbgw.core.utils.netty
 
 import io.netty.buffer.ByteBuf
+import io.netty.buffer.ByteBufUtil
 import io.netty.buffer.Unpooled
 
 /**
@@ -76,3 +77,5 @@ fun ByteBuf.replace(
     buf.addComponents(true, before, data, after)
     return buf
 }
+
+fun ByteBuf.toByteArray(): ByteArray = ByteBufUtil.getBytes(this, this.readerIndex(), this.readableBytes(), false)

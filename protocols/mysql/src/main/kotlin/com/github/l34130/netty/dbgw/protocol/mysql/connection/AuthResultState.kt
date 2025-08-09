@@ -9,13 +9,16 @@ import com.github.l34130.netty.dbgw.protocol.mysql.command.CommandPhaseState
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.channel.ChannelHandlerContext
 
-internal class AuthResultState : MySqlGatewayState() {
+internal class AuthResultState(
+    private val pluginName: String,
+    private val password: String?,
+) : MySqlGatewayState() {
     override fun onBackendMessage(
         ctx: ChannelHandlerContext,
         msg: Packet,
     ): StateResult {
         if (msg.isEofPacket()) {
-            return AuthSwitchState().onBackendMessage(ctx, msg)
+            return AuthSwitchState(password).onBackendMessage(ctx, msg)
         }
 
         if (msg.isOkPacket()) {
@@ -38,7 +41,7 @@ internal class AuthResultState : MySqlGatewayState() {
         if (msg.payload.peek { it.readUnsignedByte().toUInt() } == 0x1u) {
             // AuthMoreData packet
             // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_connection_phase_packets_protocol_auth_more_data.html
-            return AuthExchangeContinuationState().onBackendMessage(ctx, msg)
+            return AuthExchangeContinuationState(pluginName, password).onBackendMessage(ctx, msg)
         }
 
         error("Unexpected packet type during authentication: ${msg.payload.peek { it.readUnsignedByte().toUInt() }}")

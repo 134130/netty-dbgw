@@ -6,10 +6,7 @@ interface Flag {
     val value: ULong
 }
 
-fun <E> EnumSet<E>.toFlags(): ULong where E : Enum<E>, E : Flag =
-    this
-        .map { it.value }
-        .fold(0UL) { acc, value -> acc or (1UL shl value.toInt()) }
+fun <E> EnumSet<E>.toFlags(): ULong where E : Enum<E>, E : Flag = this.fold(0UL) { acc, flag -> acc or flag.value }
 
 fun <E> ULong.toEnumSet(enumClass: Class<E>): EnumSet<E> where E : Enum<E>, E : Flag {
     val enumConstants = enumClass.enumConstants ?: throw IllegalArgumentException("Enum class $enumClass has no constants")

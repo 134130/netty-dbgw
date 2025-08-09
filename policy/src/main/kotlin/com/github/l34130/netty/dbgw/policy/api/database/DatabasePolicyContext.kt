@@ -23,17 +23,13 @@ open class DatabasePolicyContext protected constructor(
 
 class DatabaseAuthenticationPolicyContext private constructor(
     var username: String,
-    var password: String,
+    var password: String? = null,
     policyCtx: DatabasePolicyContext,
 ) : DatabasePolicyContext(policyCtx) {
     companion object {
-        fun DatabasePolicyContext.toAuthenticationPolicyContext(
-            username: String,
-            password: String,
-        ): DatabaseAuthenticationPolicyContext =
+        fun DatabasePolicyContext.toAuthenticationPolicyContext(username: String): DatabaseAuthenticationPolicyContext =
             DatabaseAuthenticationPolicyContext(
                 username = username,
-                password = password,
                 policyCtx = this,
             )
     }

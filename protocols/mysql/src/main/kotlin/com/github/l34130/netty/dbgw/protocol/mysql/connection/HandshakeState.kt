@@ -9,6 +9,7 @@ import com.github.l34130.netty.dbgw.protocol.mysql.constant.CapabilityFlag
 import com.github.l34130.netty.dbgw.protocol.mysql.readFixedLengthInteger
 import com.github.l34130.netty.dbgw.protocol.mysql.readNullTerminatedString
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.netty.buffer.ByteBufUtil
 import io.netty.channel.ChannelHandlerContext
 import java.util.EnumSet
 import kotlin.math.max
@@ -63,7 +64,7 @@ internal class HandshakeState : MySqlGatewayState() {
         }
 
         return StateResult(
-            nextState = HandshakeResponseState(),
+            nextState = HandshakeResponseState(ByteBufUtil.getBytes(authPluginDataPart1) + ByteBufUtil.getBytes(authPluginDataPart2)),
             action = MessageAction.Forward,
         )
     }

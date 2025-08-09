@@ -6,26 +6,41 @@ import com.github.l34130.netty.dbgw.protocol.mysql.MySqlGatewayState
 import com.github.l34130.netty.dbgw.protocol.mysql.Packet
 import com.github.l34130.netty.dbgw.protocol.mysql.capabilities
 import com.github.l34130.netty.dbgw.protocol.mysql.command.CommandPhaseState
-import com.github.l34130.netty.dbgw.protocol.mysql.readRestOfPacketString
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.channel.ChannelHandlerContext
 
-internal class AuthExchangeContinuationState : MySqlGatewayState() {
+internal class AuthExchangeContinuationState(
+    private val pluginName: String,
+    private val password: String?,
+) : MySqlGatewayState() {
     override fun onFrontendMessage(
         ctx: ChannelHandlerContext,
         msg: Packet,
     ): StateResult {
-        val payload = msg.payload
-        if (payload.readableBytes() < 1) {
-            throw IllegalStateException("Received AuthSwitchResponse with no data")
+        val resp = AuthSwitchResponse.readFrom(ctx, msg)
+
+        if (password == null) {
+            // If no password is provided, we just forward the response
+            return StateResult(
+                nextState = AuthResultState(pluginName, password),
+                action = MessageAction.Forward,
+            )
         }
 
-        val responseData = payload.readRestOfPacketString().toString(Charsets.UTF_8)
-        logger.trace { "Received AuthSwitchResponse with data: $responseData" }
-
         return StateResult(
-            nextState = AuthResultState(),
-            action = MessageAction.Forward,
+            nextState = AuthResultState(pluginName, password),
+            action =
+                MessageAction.Transform(
+                    newMsg =
+                        resp.copy(
+                            responseData =
+                                when (pluginName) {
+                                    "mysql_native_password" -> MySqlNativePasswordEncoder.encode(resp.responseData, password)
+                                    "caching_sha2_password" -> CachingSha256PasswordEncoder.encode(resp.responseData, password)
+                                    else -> throw NotImplementedError("Unsupported plugin: $pluginName")
+                                },
+                        ),
+                ),
         )
     }
 
@@ -35,7 +50,8 @@ internal class AuthExchangeContinuationState : MySqlGatewayState() {
     ): StateResult {
         val payload = msg.payload
         if (payload.peek { it.readUnsignedByte().toUInt() } == 0x01u) {
-            // https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_connection_phase_packets_protocol_auth_more_data.html
+            val msg = AuthMoreData.readFrom(ctx, msg)
+            msg.extraData
             // Extra authentication data beyond the initial challenge
             return StateResult(
                 nextState = this,

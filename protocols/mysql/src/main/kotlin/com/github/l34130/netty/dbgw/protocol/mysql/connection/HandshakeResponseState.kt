@@ -18,17 +18,16 @@ import com.github.l34130.netty.dbgw.protocol.mysql.capabilities
 import com.github.l34130.netty.dbgw.protocol.mysql.command.CommandPhaseState
 import com.github.l34130.netty.dbgw.protocol.mysql.constant.CapabilityFlag
 import com.github.l34130.netty.dbgw.protocol.mysql.readFixedLengthInteger
-import com.github.l34130.netty.dbgw.protocol.mysql.readLenEncInteger
-import com.github.l34130.netty.dbgw.protocol.mysql.readLenEncString
-import com.github.l34130.netty.dbgw.protocol.mysql.readNullTerminatedString
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.netty.buffer.ByteBufUtil
 import io.netty.buffer.Unpooled
 import io.netty.channel.ChannelHandlerContext
 import io.netty.handler.ssl.SslHandler
-import java.security.MessageDigest
 import java.util.EnumSet
 
-internal class HandshakeResponseState : MySqlGatewayState() {
+internal class HandshakeResponseState(
+    private val salt: ByteArray,
+) : MySqlGatewayState() {
     override fun onFrontendMessage(
         ctx: ChannelHandlerContext,
         msg: Packet,
@@ -108,67 +107,19 @@ internal class HandshakeResponseState : MySqlGatewayState() {
             )
         }
 
-        // login username
-        val username = payload.readNullTerminatedString().toString(Charsets.US_ASCII)
-        logger.trace { "Username: $username" }
+        payload.resetReaderIndex()
 
-        val authResponse =
-            if (clientCapabilities.contains(CapabilityFlag.CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA)) {
-                payload.readLenEncString()
-            } else {
-                val authResponseLength = payload.readFixedLengthInteger(1).toInt()
-                payload.readLenEncString()
-            }
+        val packet = HandshakeResponse41.readFrom(ctx, msg)
 
-        val database =
-            if (clientCapabilities.contains(CapabilityFlag.CLIENT_CONNECT_WITH_DB)) {
-                payload.readNullTerminatedString().toString(Charsets.US_ASCII)
-            } else {
-                null
-            }
-        logger.trace { "Database: $database" }
-        ctx.databaseCtx()!!.connectionInfo.database = database
-
-        val clientPluginName =
-            if (clientCapabilities.contains(CapabilityFlag.CLIENT_PLUGIN_AUTH)) {
-                payload.readNullTerminatedString()
-            } else {
-                null
-            }?.toString(Charsets.US_ASCII)
-        logger.trace { "Client Auth Plugin Name: $clientPluginName" }
-
-        val clientConnectAttrs: Map<String, String> =
-            if (clientCapabilities.contains(CapabilityFlag.CLIENT_CONNECT_ATTRS)) {
-                val lengthOfAllKeyValues = payload.readLenEncInteger()
-
-                val keyValuesByteBuf = payload.readSlice(lengthOfAllKeyValues.toInt())
-
-                val attrs = mutableMapOf<String, String>()
-                while (keyValuesByteBuf.readableBytes() > 0) {
-                    val key = keyValuesByteBuf.readLenEncString().toString(Charsets.UTF_8)
-                    val value = keyValuesByteBuf.readLenEncString().toString(Charsets.UTF_8)
-                    attrs.put(key, value)
-                }
-                attrs
-            } else {
-                emptyMap()
-            }
-        logger.trace { "Client Connect Attributes: $clientConnectAttrs" }
-        val clientName = clientNameFromConnectAttrs(clientConnectAttrs)
-        ctx.databaseCtx()!!.clientInfo.userAgent = clientName
-
-        val zstdCompressionLevel =
-            if (clientCapabilities.contains(CapabilityFlag.CLIENT_ZSTD_COMPRESSION_ALGORITHM)) {
-                payload.readFixedLengthInteger(1).toInt()
-            } else {
-                0
-            }
-        logger.trace { "Zstd Compression Level: $zstdCompressionLevel" }
+        ctx.databaseCtx()!!.apply {
+            connectionInfo.database = packet.database
+            clientInfo.userAgent = clientNameFromConnectAttrs(packet.clientConnectAttrs)
+        }
 
         ctx.audit().emit(
             AuthenticationStartAuditEvent(
                 ctx = ctx.databaseCtx()!!,
-                evt = DatabaseAuthenticationEvent(username = username),
+                evt = DatabaseAuthenticationEvent(username = packet.username),
             ),
         )
 
@@ -176,7 +127,7 @@ internal class HandshakeResponseState : MySqlGatewayState() {
             ctx
                 .databaseCtx()!!
                 .toPolicyContext()
-                .toAuthenticationPolicyContext(username, authResponse.toString(Charsets.UTF_8))
+                .toAuthenticationPolicyContext(packet.username)
 
         ctx.databasePolicyChain()!!.onAuthentication(policyCtx)
         val result = policyCtx.decision
@@ -202,9 +153,39 @@ internal class HandshakeResponseState : MySqlGatewayState() {
             )
         }
 
+        val newPassword =
+            policyCtx.password
+                ?.let {
+                    when (packet.clientPluginName) {
+                        "mysql_native_password" -> {
+                            MySqlNativePasswordEncoder.encode(salt, it).apply {
+                                println("Old password: ${ByteBufUtil.getBytes(packet.authResponse).joinToString { it.toString(16) }}")
+                                println("New password: ${this.joinToString { it.toString(16) }}")
+                            }
+                        }
+                        "caching_sha2_password" -> {
+                            CachingSha256PasswordEncoder.encode(salt, it).apply {
+                                println("Old password: ${ByteBufUtil.getBytes(packet.authResponse).joinToString { it.toString(16) }}")
+                                println("New password: ${this.joinToString { it.toString(16) }}")
+                            }
+                        }
+                        else -> throw NotImplementedError("Authentication plugin '${packet.clientPluginName}' is not supported")
+                    }
+                }?.let {
+                    Unpooled.copiedBuffer(it)
+                }
+
         return StateResult(
-            nextState = AuthResultState(),
-            action = MessageAction.Forward,
+            nextState = AuthResultState(packet.clientPluginName ?: "", policyCtx.password),
+            action =
+                MessageAction.Transform(
+                    newMsg =
+                        packet.copy(
+                            username = policyCtx.username,
+                            authResponse = newPassword ?: packet.authResponse,
+                            authResponseLength = newPassword?.readableBytes() ?: packet.authResponseLength,
+                        ),
+                ),
         )
     }
 
@@ -247,18 +228,5 @@ internal class HandshakeResponseState : MySqlGatewayState() {
 
     companion object {
         private val logger = KotlinLogging.logger {}
-
-        private fun encryptPassword(
-            pluginName: String?,
-            password: String,
-        ): String {
-            when (pluginName) {
-                "mysql_native_password" -> {
-                    val crypt = MessageDigest.getInstance("SHA-1")
-                    return crypt.digest(password.toByteArray()).toString(Charsets.US_ASCII)
-                }
-            }
-            throw NotImplementedError("Password encryption for plugin '$pluginName' is not implemented")
-        }
     }
 }

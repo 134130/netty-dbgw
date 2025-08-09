@@ -1,4 +1,5 @@
-com.github.l34130.netty.dbgw.policy.builtin.database.DatabaseResultSetMaskingPolicyDefinition.Factory
-com.github.l34130.netty.dbgw.policy.builtin.database.DatabaseRowLevelSecurityPolicyDefinition.Factory
-com.github.l34130.netty.dbgw.policy.builtin.database.DatabaseStatementTypePolicyDefinition.Factory
-com.github.l34130.netty.dbgw.policy.builtin.database.DatabaseTimeRangeAccessPolicyDefinition.Factory
+com.github.l34130.netty.dbgw.policy.builtin.database.DatabaseImpersonationPolicyDefinition$Factory
+com.github.l34130.netty.dbgw.policy.builtin.database.DatabaseResultSetMaskingPolicyDefinition$Factory
+com.github.l34130.netty.dbgw.policy.builtin.database.DatabaseRowLevelSecurityPolicyDefinition$Factory
+com.github.l34130.netty.dbgw.policy.builtin.database.DatabaseStatementTypePolicyDefinition$Factory
+com.github.l34130.netty.dbgw.policy.builtin.database.DatabaseTimeRangeAccessPolicyDefinition$Factory

@@ -13,13 +13,13 @@ import com.github.l34130.netty.dbgw.policy.api.database.DatabasePolicy
     singular = "databaseimpersonationpolicy",
 )
 class DatabaseImpersonationPolicyDefinition(
-    val action: Action,
+    val action: Action?,
 ) : PolicyDefinition {
     override fun createPolicy(): DatabasePolicy = DatabaseImpersonationPolicy(this)
 
     data class Action(
-        val user: String,
-        val password: String,
+        val user: String?,
+        val password: String?,
     )
 
     class Factory : AbstractResourceFactory<DatabaseImpersonationPolicyDefinition>(DatabaseImpersonationPolicyDefinition::class)

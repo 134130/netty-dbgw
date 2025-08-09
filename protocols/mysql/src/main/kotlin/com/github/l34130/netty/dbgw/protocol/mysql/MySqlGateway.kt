@@ -22,9 +22,10 @@ class MySqlGateway(
     private val policyConfigurationLoader: PolicyConfigurationLoader = PolicyConfigurationLoader.NOOP,
     private val auditSink: AuditSink = AuditSink.NOOP,
 ) : AbstractGateway(config) {
-    override fun createFrontendHandlers(): List<ChannelHandler> = listOf(PacketEncoder(), PacketDecoder())
+    override fun createFrontendHandlers(): List<ChannelHandler> = listOf(PacketEncoder(), PacketDecoder(), PacketConvertibleHandler())
 
-    override fun createBackendHandlers(): List<ChannelHandler> = listOf(MySqlChannelInitialHandler(), PacketEncoder(), PacketDecoder())
+    override fun createBackendHandlers(): List<ChannelHandler> =
+        listOf(MySqlChannelInitialHandler(), PacketEncoder(), PacketDecoder(), PacketConvertibleHandler())
 
     override fun createStateMachine(): StateMachine = StateMachine(HandshakeState())
 

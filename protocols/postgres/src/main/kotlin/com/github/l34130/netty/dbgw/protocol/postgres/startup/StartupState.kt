@@ -57,7 +57,7 @@ class StartupState : GatewayState<ByteBuf, Message>() {
             ),
         )
 
-        val policyCtx = ctx.databaseCtx()!!.toPolicyContext().toAuthenticationPolicyContext(startupMsg.user, "TODO: password")
+        val policyCtx = ctx.databaseCtx()!!.toPolicyContext().toAuthenticationPolicyContext(startupMsg.user)
         ctx.databasePolicyChain()!!.onAuthentication(policyCtx)
         policyCtx.decision.let { decision ->
             if (decision is PolicyDecision.Deny) {

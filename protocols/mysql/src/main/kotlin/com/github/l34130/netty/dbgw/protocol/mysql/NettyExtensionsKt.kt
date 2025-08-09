@@ -106,6 +106,11 @@ internal fun ByteBuf.readNullTerminatedString(): ByteBuf {
     return read
 }
 
+internal fun ByteBuf.writeNullTerminatedString(value: String) {
+    ByteBufUtil.writeUtf8(this, value)
+    writeZero(1) // Append null terminator
+}
+
 internal fun ByteBuf.readRestOfPacketString(): ByteBuf {
     val length = readableBytes()
     return when {
@@ -126,5 +131,11 @@ internal fun ByteBuf.writeLenEncString(value: String): ByteBuf {
     val bytes = value.toByteArray(Charsets.UTF_8)
     writeLenEncInteger(bytes.size.toULong())
     writeBytes(bytes)
+    return this
+}
+
+internal fun ByteBuf.writeLenEncString(value: ByteBuf): ByteBuf {
+    writeLenEncInteger(value.readableBytes().toULong())
+    writeBytes(value)
     return this
 }
