@@ -12,6 +12,7 @@ import com.github.l34130.netty.dbgw.policy.api.database.DatabaseAuthenticationEv
 import com.github.l34130.netty.dbgw.policy.api.database.DatabaseAuthenticationPolicyContext.Companion.toAuthenticationPolicyContext
 import com.github.l34130.netty.dbgw.policy.api.database.DatabasePolicyContext.Companion.toPolicyContext
 import com.github.l34130.netty.dbgw.protocol.postgres.Message
+import com.github.l34130.netty.dbgw.protocol.postgres.MessageConvertibleHandler
 import com.github.l34130.netty.dbgw.protocol.postgres.MessageDecoder
 import com.github.l34130.netty.dbgw.protocol.postgres.MessageEncoder
 import com.github.l34130.netty.dbgw.protocol.postgres.constant.ErrorField
@@ -39,10 +40,12 @@ class StartupState : GatewayState<ByteBuf, Message>() {
         msg.resetReaderIndex()
 
         ctx.pipeline().also {
+            it.addFirst(MessageConvertibleHandler())
             it.addFirst("encoder", MessageEncoder())
             it.addFirst("decoder", MessageDecoder())
         }
         ctx.backend().pipeline().also {
+            it.addFirst(MessageConvertibleHandler())
             it.addFirst("decoder", MessageDecoder())
             // encoder will be added later to escape the startup message encoding; StartupMessage is not a message format
         }
@@ -75,8 +78,14 @@ class StartupState : GatewayState<ByteBuf, Message>() {
         }
 
         return StateResult(
-            nextState = AuthenticationState(),
-            action = MessageAction.Forward,
+            nextState = AuthenticationState(policyCtx.username, policyCtx.password),
+            action =
+                MessageAction.Transform(
+                    newMsg =
+                        startupMsg.copy(
+                            user = policyCtx.username,
+                        ),
+                ),
         )
     }
 

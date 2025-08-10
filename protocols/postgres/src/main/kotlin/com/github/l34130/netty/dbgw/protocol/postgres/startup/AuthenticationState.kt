@@ -8,8 +8,12 @@ import com.github.l34130.netty.dbgw.protocol.postgres.message.ErrorResponse
 import com.github.l34130.netty.dbgw.protocol.postgres.message.ParameterStatusMessage
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.channel.ChannelHandlerContext
+import java.security.MessageDigest
 
-class AuthenticationState : GatewayState<Message, Message>() {
+class AuthenticationState(
+    val user: String,
+    val password: String?,
+) : GatewayState<Message, Message>() {
     private var authenticationRequest: AuthenticationRequest? = null
 
     override fun onFrontendMessage(
@@ -42,11 +46,39 @@ class AuthenticationState : GatewayState<Message, Message>() {
                 error("Never should reach here, final response should be handled in onBackendMessage")
             is AuthenticationRequest.AuthenticationMD5Password -> {
                 val passwordMsg = PasswordMessage.readFrom(msg)
-                logger.trace { "MD5 password response: $passwordMsg" }
-                StateResult(
-                    nextState = this,
-                    action = MessageAction.Forward,
-                )
+
+                val password = password
+                if (password != null) {
+                    StateResult(
+                        nextState = this,
+                        action =
+                            MessageAction.Transform(
+                                newMsg =
+                                    passwordMsg.copy(
+                                        password =
+                                            run {
+                                                val md5 = MessageDigest.getInstance("MD5")
+                                                val md5h: (ByteArray) -> ByteArray = { bytes: ByteArray ->
+                                                    val digest = md5.digest(bytes)
+                                                    val hex = digest.joinToString("") { "%02x".format(it) }
+                                                    hex.toByteArray()
+                                                }
+
+                                                val combined = password + user
+                                                val innerHex = md5h(combined.toByteArray())
+                                                val outerHex = md5h(innerHex + authReq.salt)
+
+                                                "md5".toByteArray() + outerHex
+                                            },
+                                    ),
+                            ),
+                    )
+                } else {
+                    StateResult(
+                        nextState = this,
+                        action = MessageAction.Forward,
+                    )
+                }
             }
             AuthenticationRequest.AuthenticationOk -> error("Never should reach here, ok response should be handled in onBackendMessage")
         }
