@@ -1,26 +1,27 @@
 package com.github.l34130.netty.dbgw.protocol.postgres.message
 
+import com.github.l34130.netty.dbgw.common.util.ellipsize
 import com.github.l34130.netty.dbgw.protocol.postgres.Message
 import com.github.l34130.netty.dbgw.protocol.postgres.constant.ErrorField
 import com.github.l34130.netty.dbgw.protocol.postgres.readUntilNull
+import com.github.l34130.netty.dbgw.protocol.postgres.writeNullTerminatedString
 import io.netty.buffer.Unpooled
 
 class ErrorResponse(
-    val type: ErrorField?,
-    val value: String?,
+    val fields: List<Pair<ErrorField, String>>,
 ) {
-    override fun toString(): String = "ErrorResponse(type=$type, value='$value')"
+    override fun toString(): String = "ErrorResponse(fields=${fields.joinToString { "${it.first}: ${it.second.ellipsize(50)}" }})"
 
     fun asMessage(): Message =
         Message(
             type = TYPE,
             content =
                 Unpooled.buffer().apply {
-                    writeByte(type?.code ?: 0) // Write the error field code, 0 if no error
-                    if (value != null) {
-                        writeBytes(value.toByteArray(Charsets.UTF_8)) // Write the error value
+                    for ((field, value) in fields) {
+                        writeByte(field.code)
+                        writeNullTerminatedString(value)
                     }
-                    writeByte(0) // Null terminator for the string
+                    writeByte(0) // End of fields
                 },
         )
 
@@ -32,17 +33,22 @@ class ErrorResponse(
                 "Expected 'E' for ErrorResponse, but got ${msg.type}"
             }
 
-            val code = msg.content.readByte()
-            if (code == 0.toByte()) {
-                return ErrorResponse(null, null)
+            val fields = mutableListOf<Pair<ErrorField, String>>()
+            while (msg.content.isReadable) {
+                val code = msg.content.readByte()
+                if (code == 0.toByte()) {
+                    break // End of fields
+                }
+
+                val type =
+                    ErrorField.from(code)
+                        ?: throw IllegalArgumentException("Unknown error field code: $code")
+
+                val value = msg.content.readUntilNull().toString(Charsets.UTF_8)
+                fields.add(type to value)
             }
 
-            val type =
-                ErrorField.from(code)
-                    ?: throw IllegalArgumentException("Unknown error field code: $code")
-
-            val value = msg.content.readUntilNull().toString(Charsets.UTF_8)
-            return ErrorResponse(type, value)
+            return ErrorResponse(fields)
         }
     }
 }

@@ -72,8 +72,12 @@ class StartupState :
                     action =
                         MessageAction.Intercept(
                             ErrorResponse(
-                                type = ErrorField.M,
-                                value = "Access denied: ${decision.reason}",
+                                fields =
+                                    listOf(
+                                        ErrorField.S to "FATAL",
+                                        ErrorField.C to "FATAL",
+                                        ErrorField.M to "Access denied: ${decision.reason}",
+                                    ),
                             ).asMessage(),
                         ),
                 )
