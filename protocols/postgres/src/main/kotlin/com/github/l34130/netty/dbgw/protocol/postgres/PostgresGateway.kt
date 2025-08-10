@@ -12,23 +12,15 @@ import com.github.l34130.netty.dbgw.policy.api.database.DatabaseContext
 import com.github.l34130.netty.dbgw.protocol.postgres.startup.StartupState
 import io.netty.channel.Channel
 import io.netty.channel.ChannelHandler
-import io.netty.handler.logging.LogLevel
-import io.netty.handler.logging.LoggingHandler
 
 class PostgresGateway(
     config: DatabaseGatewayConfig,
     private val policyConfigurationLoader: PolicyConfigurationLoader = PolicyConfigurationLoader.NOOP,
     private val auditSink: AuditSink = AuditSink.NOOP,
 ) : AbstractGateway(config) {
-    override fun createFrontendHandlers(): List<ChannelHandler> =
-        listOf(
-            LoggingHandler(LogLevel.DEBUG),
-        )
+    override fun createFrontendHandlers(): List<ChannelHandler> = listOf()
 
-    override fun createBackendHandlers(): List<ChannelHandler> =
-        listOf(
-            LoggingHandler(LogLevel.DEBUG),
-        )
+    override fun createBackendHandlers(): List<ChannelHandler> = listOf()
 
     override fun createStateMachine(): StateMachine? =
         StateMachine(

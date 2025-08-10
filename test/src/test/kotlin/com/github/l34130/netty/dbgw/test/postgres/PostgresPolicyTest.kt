@@ -171,7 +171,7 @@ abstract class PostgresPolicyTest(
                 assertFailsWith<SQLException> {
                     createConnection { props -> props.setProperty("port", gateway.port().toString()) }
                 }
-            assertEquals("Access denied: No policy allowed the authentication (implicit deny)", exception.message)
+            assertEquals("FATAL: Access denied: No policy allowed the authentication (implicit deny)", exception.message)
         } finally {
             gateway.shutdown()
         }

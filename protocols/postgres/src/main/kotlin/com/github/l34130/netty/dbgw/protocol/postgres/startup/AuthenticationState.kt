@@ -4,46 +4,32 @@ import com.github.l34130.netty.dbgw.core.GatewayState
 import com.github.l34130.netty.dbgw.core.MessageAction
 import com.github.l34130.netty.dbgw.protocol.postgres.Message
 import com.github.l34130.netty.dbgw.protocol.postgres.MessageEncoder
+import com.github.l34130.netty.dbgw.protocol.postgres.SaslUtils
 import com.github.l34130.netty.dbgw.protocol.postgres.message.ErrorResponse
 import com.github.l34130.netty.dbgw.protocol.postgres.message.ParameterStatusMessage
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.channel.ChannelHandlerContext
-import java.security.MessageDigest
+import java.util.Base64
 
 class AuthenticationState(
     val user: String,
     val password: String?,
 ) : GatewayState<Message, Message>() {
-    private var authenticationRequest: AuthenticationRequest? = null
+    private var lastAuthenticationRequest: AuthenticationRequest? = null
+
+    private var saslInitialResponse: SASLInitialResponse? = null
+    private var saslContinueRequest: AuthenticationRequest.AuthenticationSASLContinue? = null
 
     override fun onFrontendMessage(
         ctx: ChannelHandlerContext,
         msg: Message,
     ): StateResult {
-        val authReq = authenticationRequest
-        checkNotNull(authReq) {
+        val lastAuthReq = lastAuthenticationRequest
+        checkNotNull(lastAuthReq) {
             "Authentication request has not been received yet. This state should only be used after an authentication request."
         }
 
-        return when (authReq) {
-            is AuthenticationRequest.AuthenticationSASL -> {
-                val initialResp = SASLInitialResponse.readFrom(msg)
-                logger.trace { "SASL initial response: $initialResp" }
-                StateResult(
-                    nextState = this,
-                    action = MessageAction.Forward,
-                )
-            }
-            is AuthenticationRequest.AuthenticationSASLContinue -> {
-                val resp = SASLResponse.readFrom(msg)
-                logger.trace { "SASL response: $resp" }
-                StateResult(
-                    nextState = this,
-                    action = MessageAction.Forward,
-                )
-            }
-            is AuthenticationRequest.AuthenticationSASLFinal ->
-                error("Never should reach here, final response should be handled in onBackendMessage")
+        return when (lastAuthReq) {
             is AuthenticationRequest.AuthenticationMD5Password -> {
                 val passwordMsg = PasswordMessage.readFrom(msg)
 
@@ -53,24 +39,7 @@ class AuthenticationState(
                         nextState = this,
                         action =
                             MessageAction.Transform(
-                                newMsg =
-                                    passwordMsg.copy(
-                                        password =
-                                            run {
-                                                val md5 = MessageDigest.getInstance("MD5")
-                                                val md5h: (ByteArray) -> ByteArray = { bytes: ByteArray ->
-                                                    val digest = md5.digest(bytes)
-                                                    val hex = digest.joinToString("") { "%02x".format(it) }
-                                                    hex.toByteArray()
-                                                }
-
-                                                val combined = password + user
-                                                val innerHex = md5h(combined.toByteArray())
-                                                val outerHex = md5h(innerHex + authReq.salt)
-
-                                                "md5".toByteArray() + outerHex
-                                            },
-                                    ),
+                                newMsg = PasswordMessage.ofMd5(user, password, lastAuthReq.salt),
                             ),
                     )
                 } else {
@@ -80,7 +49,81 @@ class AuthenticationState(
                     )
                 }
             }
+            is AuthenticationRequest.AuthenticationSASL -> {
+                val initialResp =
+                    SASLInitialResponse.readFrom(msg).also {
+                        saslInitialResponse = it
+                    }
+
+                when (initialResp.mechanism) {
+                    "SCRAM-SHA-256" -> {
+                        StateResult(
+                            nextState = this,
+                            action =
+                                MessageAction.Transform(
+                                    newMsg =
+                                        initialResp.copy(),
+                                ),
+                        )
+                    }
+                    else -> {
+                        // Unsupported SASL mechanism
+                        StateResult(
+                            nextState = this,
+                            action =
+                                MessageAction.Intercept(
+                                    ErrorResponse.of(
+                                        severity = "FATAL",
+                                        code = "28000",
+                                        message = "Unsupported SASL mechanism: ${initialResp.mechanism}",
+                                    ),
+                                ),
+                        )
+                    }
+                }
+            }
+            is AuthenticationRequest.AuthenticationSASLContinue -> {
+                val initResp =
+                    checkNotNull(saslInitialResponse) {
+                        "SASL initial response has not been set. This state should only be used after a SASL initial response."
+                    }
+                val continueReq =
+                    checkNotNull(saslContinueRequest) {
+                        "SASL continue request has not been set. This state should only be used after a SASL continue request."
+                    }
+
+                if (password == null) {
+                    return StateResult(
+                        nextState = this,
+                        action = MessageAction.Forward, // No password provided, just forward the message
+                    )
+                }
+
+                val clientProof =
+                    SaslUtils.generateScramClientProof(
+                        password = password,
+                        initialResponseAttrs = initResp.attributes,
+                        continueRequestAttrs = continueReq.attributes,
+                    )
+
+                val resp = SASLResponse.readFrom(msg)
+
+                StateResult(
+                    nextState = this,
+                    action =
+                        MessageAction.Transform(
+                            SASLResponse(
+                                mapOf(
+                                    "c" to "biws",
+                                    "r" to lastAuthReq.attributes["r"]!!,
+                                    "p" to Base64.getEncoder().encodeToString(clientProof.first),
+                                ),
+                            ),
+                        ),
+                )
+            }
             AuthenticationRequest.AuthenticationOk -> error("Never should reach here, ok response should be handled in onBackendMessage")
+            else -> error("Unexpected authentication request type: $lastAuthReq")
         }
     }
 
@@ -96,30 +139,68 @@ class AuthenticationState(
 
         return when (msg.type) {
             'R' -> {
-                authenticationRequest = AuthenticationRequest.readFrom(msg)
+                lastAuthenticationRequest = AuthenticationRequest.readFrom(msg)
 
-                when (authenticationRequest) {
-                    is AuthenticationRequest.AuthenticationOk -> {
-                        logger.trace { "Authentication successful: $authenticationRequest" }
+                when (val req = lastAuthenticationRequest) {
+                    is AuthenticationRequest.AuthenticationSASL ->
                         StateResult(
-                            nextState = AuthenticationResultState(),
+                            nextState = this,
                             action = MessageAction.Forward,
                         )
-                    }
-                    is AuthenticationRequest.AuthenticationSASLFinal -> {
-                        logger.trace { "Final SASL authentication request: $authenticationRequest" }
-                        StateResult(
-                            nextState = AuthenticationResultState(),
-                            action = MessageAction.Forward,
-                        )
-                    }
-                    else -> {
-                        logger.trace { "Authentication request: $authenticationRequest" }
+                    is AuthenticationRequest.AuthenticationSASLContinue -> {
+                        saslContinueRequest = req
                         StateResult(
                             nextState = this,
                             action = MessageAction.Forward,
                         )
                     }
+                    is AuthenticationRequest.AuthenticationSASLFinal -> {
+                        val initResp =
+                            checkNotNull(saslInitialResponse) {
+                                "SASL initial response has not been set. This state should only be used after a SASL initial response."
+                            }
+                        val continueReq =
+                            checkNotNull(saslContinueRequest) {
+                                "SASL continue request has not been set. This state should only be used after a SASL continue request."
+                            }
+
+                        // If password is null, just passthrough the message
+                        if (password == null) {
+                            return StateResult(
+                                nextState = this,
+                                action = MessageAction.Forward,
+                            )
+                        }
+
+//                        val clientProof =
+//                            SaslUtils.generateScramClientProof(
+//                                password = "password",
+//                                initialResponseAttrs = initResp.attributes,
+//                                continueRequestAttrs = continueReq.attributes,
+//                            )
+
+                        // Currently, We just drop the server signature here.
+                        // TODO: Handle if password checking is required.
+                        return StateResult(
+                            nextState = AuthenticationResultState(),
+                            action = MessageAction.Drop,
+                        )
+                    }
+                    is AuthenticationRequest.AuthenticationOk -> {
+                        logger.trace { "Authentication successful: $req" }
+                        StateResult(
+                            nextState = AuthenticationResultState(),
+                            action = MessageAction.Forward,
+                        )
+                    }
+                    is AuthenticationRequest.AuthenticationMD5Password -> {
+                        logger.trace { "MD5 password authentication request: $req" }
+                        StateResult(
+                            nextState = this,
+                            action = MessageAction.Forward,
+                        )
+                    }
+                    else -> error("Unsupported authentication request type: $req")
                 }
             }
             'S' -> {

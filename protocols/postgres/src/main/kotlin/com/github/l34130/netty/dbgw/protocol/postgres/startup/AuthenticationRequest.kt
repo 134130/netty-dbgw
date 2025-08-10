@@ -1,15 +1,19 @@
 package com.github.l34130.netty.dbgw.protocol.postgres.startup
 
-import com.github.l34130.netty.dbgw.common.util.ellipsize
 import com.github.l34130.netty.dbgw.protocol.postgres.Message
+import com.github.l34130.netty.dbgw.protocol.postgres.MessageConvertible
+import com.github.l34130.netty.dbgw.protocol.postgres.SaslUtils
 import com.github.l34130.netty.dbgw.protocol.postgres.readUntilNull
 import io.netty.buffer.ByteBufUtil
+import io.netty.buffer.Unpooled
 
 sealed class AuthenticationRequest {
     companion object {
+        const val TYPE: Char = 'R'
+
         fun readFrom(msg: Message): AuthenticationRequest {
-            require(msg.type == 'R') {
-                "Expected 'R' for AuthenticationRequest, but got ${msg.type}"
+            require(msg.type == TYPE) {
+                "Expected '$TYPE' for AuthenticationRequest, but got ${msg.type}"
             }
 
             val content = msg.content
@@ -23,21 +27,15 @@ sealed class AuthenticationRequest {
                 10 -> {
                     val mechanisms = mutableListOf<String>()
                     while (content.isReadable) {
-                        val mechanism = content.readUntilNull().toString(Charsets.UTF_8)
+                        val mechanism = content.readUntilNull().toString(Charsets.US_ASCII)
                         if (mechanism.isNotEmpty()) {
                             mechanisms.add(mechanism)
                         }
                     }
                     AuthenticationSASL(mechanisms)
                 }
-                11 -> {
-                    val data = content.toString(Charsets.UTF_8)
-                    AuthenticationSASLContinue(data)
-                }
-                12 -> {
-                    val data = content.toString(Charsets.UTF_8)
-                    AuthenticationSASLFinal(data)
-                }
+                11 -> AuthenticationSASLContinue(SaslUtils.decodeSaslScramAttributes(content.toString(Charsets.US_ASCII)))
+                12 -> AuthenticationSASLFinal(SaslUtils.decodeSaslScramAttributes(content.toString(Charsets.US_ASCII)))
                 else -> TODO("Handle other authentication types: $type")
             }
         }
@@ -59,15 +57,41 @@ sealed class AuthenticationRequest {
         override fun toString(): String = "AuthenticationSASL(mechanisms=$mechanisms)"
     }
 
-    class AuthenticationSASLContinue(
-        val data: String,
-    ) : AuthenticationRequest() {
-        override fun toString(): String = "AuthenticationSASLContinue(data='${data.ellipsize(20)}')"
+    data class AuthenticationSASLContinue(
+        val attributes: Map<String, String>,
+    ) : AuthenticationRequest(),
+        MessageConvertible {
+        override fun asMessage(): Message {
+            val buf =
+                Unpooled.buffer().apply {
+                    writeInt(11)
+                    ByteBufUtil.writeAscii(this, SaslUtils.encodeSaslScramAttributes(attributes))
+                }
+            return Message(
+                type = TYPE, // 'R' for AuthenticationSASLContinue
+                content = buf,
+            )
+        }
+
+        override fun toString(): String = "AuthenticationSASLContinue(attributes=$attributes)"
     }
 
     class AuthenticationSASLFinal(
-        val data: String,
-    ) : AuthenticationRequest() {
-        override fun toString(): String = "AuthenticationSASLFinal(data='${data.ellipsize(20)}')"
+        val attributes: Map<String, String>,
+    ) : AuthenticationRequest(),
+        MessageConvertible {
+        override fun asMessage(): Message {
+            val buf =
+                Unpooled.buffer().apply {
+                    writeInt(12)
+                    ByteBufUtil.writeAscii(this, SaslUtils.encodeSaslScramAttributes(attributes))
+                }
+            return Message(
+                type = TYPE, // 'R' for AuthenticationSASLFinal
+                content = buf,
+            )
+        }
+
+        override fun toString(): String = "AuthenticationSASLFinal(attributes=$attributes)"
     }
 }

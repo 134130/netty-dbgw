@@ -50,5 +50,19 @@ class ErrorResponse(
 
             return ErrorResponse(fields)
         }
+
+        fun of(
+            severity: String,
+            code: String,
+            message: String,
+        ): ErrorResponse =
+            ErrorResponse(
+                fields =
+                    listOf(
+                        ErrorField.S to severity,
+                        ErrorField.C to code,
+                        ErrorField.M to message,
+                    ),
+            )
     }
 }
