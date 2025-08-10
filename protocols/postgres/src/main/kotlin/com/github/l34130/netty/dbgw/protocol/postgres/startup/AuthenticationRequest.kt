@@ -1,6 +1,6 @@
 package com.github.l34130.netty.dbgw.protocol.postgres.startup
 
-import com.github.l34130.netty.dbgw.core.utils.ellipsize
+import com.github.l34130.netty.dbgw.common.util.ellipsize
 import com.github.l34130.netty.dbgw.protocol.postgres.Message
 import com.github.l34130.netty.dbgw.protocol.postgres.readUntilNull
 import io.netty.buffer.ByteBufUtil

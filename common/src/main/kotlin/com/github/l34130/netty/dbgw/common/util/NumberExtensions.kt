@@ -1,4 +1,4 @@
-package com.github.l34130.netty.dbgw.core.utils
+package com.github.l34130.netty.dbgw.common.util
 
 fun Int.toHexString(): String {
     val str = toString(16).uppercase()

@@ -1,4 +1,4 @@
-package com.github.l34130.netty.dbgw.core.utils
+package com.github.l34130.netty.dbgw.common.util
 
 import org.junit.jupiter.api.DynamicTest.dynamicTest
 import org.junit.jupiter.api.TestFactory
