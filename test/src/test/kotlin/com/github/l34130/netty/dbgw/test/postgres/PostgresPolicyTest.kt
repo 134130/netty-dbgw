@@ -42,8 +42,8 @@ abstract class PostgresPolicyTest(
                     props.setProperty("user", "invalid_user")
                     props.setProperty("password", "invalid_pass")
                 }.use { conn ->
-                    val result = conn.executeQuery("SELECT CURRENT_USER()")
-                    assertEquals("testuser@%", result[1][0])
+                    val result = conn.executeQuery("SELECT current_user")
+                    assertEquals("testuser", result[1][0])
                 }
         } finally {
             gateway.shutdown()
