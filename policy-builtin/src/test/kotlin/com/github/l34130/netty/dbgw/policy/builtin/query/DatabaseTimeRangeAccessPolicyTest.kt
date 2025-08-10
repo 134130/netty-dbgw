@@ -49,8 +49,8 @@ class DatabaseTimeRangeAccessPolicyTest {
                             action = DatabaseTimeRangeAccessPolicyDefinition.Action.ALLOW,
                             clock = clock,
                         ).createPolicy()
-                val result = policy.onQuery(ctx)
-                assertIs<PolicyDecision.Allow>(result)
+                policy.onQuery(ctx)
+                assertIs<PolicyDecision.Allow>(ctx.decision)
             },
             dynamicTest("range [inclusive, exclusive) at end time is not applicable") {
                 val clock = fixedClock("2023-10-01T17:00:00Z")
@@ -61,8 +61,8 @@ class DatabaseTimeRangeAccessPolicyTest {
                             action = DatabaseTimeRangeAccessPolicyDefinition.Action.ALLOW,
                             clock = clock,
                         ).createPolicy()
-                val result = policy.onQuery(ctx)
-                assertIs<PolicyDecision.NotApplicable>(result)
+                policy.onQuery(ctx)
+                assertIs<PolicyDecision.NotApplicable>(ctx.decision)
             },
             dynamicTest("inverted range [inclusive, exclusive) at start time denies access") {
                 val clock = fixedClock("2023-10-01T09:00:00Z")
@@ -73,8 +73,8 @@ class DatabaseTimeRangeAccessPolicyTest {
                             action = DatabaseTimeRangeAccessPolicyDefinition.Action.DENY,
                             clock = clock,
                         ).createPolicy()
-                val result = policy.onQuery(ctx)
-                assertIs<PolicyDecision.Deny>(result)
+                policy.onQuery(ctx)
+                assertIs<PolicyDecision.Deny>(ctx.decision)
             },
             dynamicTest("overnight range [inclusive, exclusive) at start time allows access") {
                 val clock = fixedClock("2023-10-01T22:00:00Z")
@@ -85,8 +85,8 @@ class DatabaseTimeRangeAccessPolicyTest {
                             action = DatabaseTimeRangeAccessPolicyDefinition.Action.ALLOW,
                             clock = clock,
                         ).createPolicy()
-                val result = policy.onQuery(ctx)
-                assertIs<PolicyDecision.Allow>(result)
+                policy.onQuery(ctx)
+                assertIs<PolicyDecision.Allow>(ctx.decision)
             },
             dynamicTest("overnight range [inclusive, exclusive) at end time allows access") {
                 val clock = fixedClock("2023-10-02T02:00:00Z")
@@ -97,8 +97,8 @@ class DatabaseTimeRangeAccessPolicyTest {
                             action = DatabaseTimeRangeAccessPolicyDefinition.Action.ALLOW,
                             clock = clock,
                         ).createPolicy()
-                val result = policy.onQuery(ctx)
-                assertIs<PolicyDecision.Allow>(result)
+                policy.onQuery(ctx)
+                assertIs<PolicyDecision.Allow>(ctx.decision)
             },
             // Case: (exclusive, exclusive) -> (09:00, 17:00)
             dynamicTest("range (exclusive, exclusive)at start time is not applicable") {
@@ -110,8 +110,8 @@ class DatabaseTimeRangeAccessPolicyTest {
                             action = DatabaseTimeRangeAccessPolicyDefinition.Action.ALLOW,
                             clock = clock,
                         ).createPolicy()
-                val result = policy.onQuery(ctx)
-                assertIs<PolicyDecision.NotApplicable>(result)
+                policy.onQuery(ctx)
+                assertIs<PolicyDecision.NotApplicable>(ctx.decision)
             },
             dynamicTest("range (exclusive, exclusive) allows access right after start time") {
                 val clock = fixedClock("2023-10-01T09:00:01Z")
@@ -122,8 +122,8 @@ class DatabaseTimeRangeAccessPolicyTest {
                             action = DatabaseTimeRangeAccessPolicyDefinition.Action.ALLOW,
                             clock = clock,
                         ).createPolicy()
-                val result = policy.onQuery(ctx)
-                assertIs<PolicyDecision.Allow>(result)
+                policy.onQuery(ctx)
+                assertIs<PolicyDecision.Allow>(ctx.decision)
             },
             // Case: [inclusive, inclusive] -> [09:00, 17:00]
             dynamicTest("range [inclusive, inclusive] at end time allows access") {
@@ -135,8 +135,8 @@ class DatabaseTimeRangeAccessPolicyTest {
                             action = DatabaseTimeRangeAccessPolicyDefinition.Action.ALLOW,
                             clock = clock,
                         ).createPolicy()
-                val result = policy.onQuery(ctx)
-                assertIs<PolicyDecision.Allow>(result)
+                policy.onQuery(ctx)
+                assertIs<PolicyDecision.Allow>(ctx.decision)
             },
             dynamicTest("range [inclusive, inclusive] right after end time is not applicable") {
                 val clock = fixedClock("2023-10-01T17:00:01Z")
@@ -147,8 +147,8 @@ class DatabaseTimeRangeAccessPolicyTest {
                             action = DatabaseTimeRangeAccessPolicyDefinition.Action.ALLOW,
                             clock = clock,
                         ).createPolicy()
-                val result = policy.onQuery(ctx)
-                assertIs<PolicyDecision.NotApplicable>(result)
+                policy.onQuery(ctx)
+                assertIs<PolicyDecision.NotApplicable>(ctx.decision)
             },
             // Case: (exclusive, inclusive] -> (09:00, 17:00]
             dynamicTest("range (exclusive, inclusive] at start time is not applicable") {
@@ -160,8 +160,8 @@ class DatabaseTimeRangeAccessPolicyTest {
                             action = DatabaseTimeRangeAccessPolicyDefinition.Action.ALLOW,
                             clock = clock,
                         ).createPolicy()
-                val result = policy.onQuery(ctx)
-                assertIs<PolicyDecision.NotApplicable>(result)
+                policy.onQuery(ctx)
+                assertIs<PolicyDecision.NotApplicable>(ctx.decision)
             },
             dynamicTest("range (exclusive, inclusive] at end time allows access") {
                 val clock = fixedClock("2023-10-01T17:00:00Z")
@@ -172,8 +172,8 @@ class DatabaseTimeRangeAccessPolicyTest {
                             action = DatabaseTimeRangeAccessPolicyDefinition.Action.ALLOW,
                             clock = clock,
                         ).createPolicy()
-                val result = policy.onQuery(ctx)
-                assertIs<PolicyDecision.Allow>(result)
+                policy.onQuery(ctx)
+                assertIs<PolicyDecision.Allow>(ctx.decision)
             },
         )
 }
