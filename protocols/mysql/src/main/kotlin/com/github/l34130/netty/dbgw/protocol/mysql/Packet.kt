@@ -2,8 +2,8 @@
 
 package com.github.l34130.netty.dbgw.protocol.mysql
 
-import com.github.l34130.netty.dbgw.core.utils.netty.peek
-import com.github.l34130.netty.dbgw.core.utils.toEnumSet
+import com.github.l34130.netty.dbgw.core.util.netty.peek
+import com.github.l34130.netty.dbgw.core.util.toEnumSet
 import com.github.l34130.netty.dbgw.protocol.mysql.constant.CapabilityFlag
 import com.github.l34130.netty.dbgw.protocol.mysql.constant.ServerStatusFlag
 import io.netty.buffer.ByteBuf

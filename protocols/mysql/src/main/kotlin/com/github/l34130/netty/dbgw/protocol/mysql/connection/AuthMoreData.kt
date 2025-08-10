@@ -1,6 +1,6 @@
 package com.github.l34130.netty.dbgw.protocol.mysql.connection
 
-import com.github.l34130.netty.dbgw.core.utils.netty.toByteArray
+import com.github.l34130.netty.dbgw.core.util.netty.toByteArray
 import com.github.l34130.netty.dbgw.protocol.mysql.Packet
 import com.github.l34130.netty.dbgw.protocol.mysql.PacketConvertible
 import com.github.l34130.netty.dbgw.protocol.mysql.readRestOfPacketString

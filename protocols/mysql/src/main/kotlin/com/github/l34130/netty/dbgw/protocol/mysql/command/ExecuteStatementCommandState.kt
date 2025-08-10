@@ -1,8 +1,8 @@
 package com.github.l34130.netty.dbgw.protocol.mysql.command
 
 import com.github.l34130.netty.dbgw.core.MessageAction
-import com.github.l34130.netty.dbgw.core.utils.netty.peek
-import com.github.l34130.netty.dbgw.core.utils.toEnumSet
+import com.github.l34130.netty.dbgw.core.util.netty.peek
+import com.github.l34130.netty.dbgw.core.util.toEnumSet
 import com.github.l34130.netty.dbgw.protocol.mysql.Bitmap
 import com.github.l34130.netty.dbgw.protocol.mysql.MySqlGatewayState
 import com.github.l34130.netty.dbgw.protocol.mysql.Packet

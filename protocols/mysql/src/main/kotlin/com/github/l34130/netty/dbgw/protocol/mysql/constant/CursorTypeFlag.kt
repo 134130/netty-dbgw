@@ -1,6 +1,6 @@
 package com.github.l34130.netty.dbgw.protocol.mysql.constant
 
-import com.github.l34130.netty.dbgw.core.utils.Flag
+import com.github.l34130.netty.dbgw.core.util.Flag
 
 internal enum class CursorTypeFlag(
     override val value: ULong,

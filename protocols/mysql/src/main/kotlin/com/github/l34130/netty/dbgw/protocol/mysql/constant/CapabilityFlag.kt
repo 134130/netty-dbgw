@@ -1,6 +1,6 @@
 package com.github.l34130.netty.dbgw.protocol.mysql.constant
 
-import com.github.l34130.netty.dbgw.core.utils.Flag
+import com.github.l34130.netty.dbgw.core.util.Flag
 
 // https://dev.mysql.com/doc/dev/mysql-server/latest/group__group__cs__capabilities__flags.html
 internal enum class CapabilityFlag(

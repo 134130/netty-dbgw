@@ -1,7 +1,7 @@
 package com.github.l34130.netty.dbgw.protocol.mysql.connection
 
 import com.github.l34130.netty.dbgw.core.MessageAction
-import com.github.l34130.netty.dbgw.core.utils.netty.peek
+import com.github.l34130.netty.dbgw.core.util.netty.peek
 import com.github.l34130.netty.dbgw.protocol.mysql.MySqlGatewayState
 import com.github.l34130.netty.dbgw.protocol.mysql.Packet
 import com.github.l34130.netty.dbgw.protocol.mysql.capabilities

@@ -1,7 +1,7 @@
 
 package com.github.l34130.netty.dbgw.core
 
-import com.github.l34130.netty.dbgw.core.utils.netty.closeOnFlush
+import com.github.l34130.netty.dbgw.core.util.netty.closeOnFlush
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.channel.Channel
 import io.netty.channel.ChannelHandlerContext

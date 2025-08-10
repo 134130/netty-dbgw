@@ -1,7 +1,7 @@
 package com.github.l34130.netty.dbgw.core
 
-import com.github.l34130.netty.dbgw.core.utils.concurrent.ChannelBasedEventExecutorChooser
-import com.github.l34130.netty.dbgw.core.utils.concurrent.DefaultThreadFactory
+import com.github.l34130.netty.dbgw.core.util.concurrent.ChannelBasedEventExecutorChooser
+import com.github.l34130.netty.dbgw.core.util.concurrent.DefaultThreadFactory
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.channel.ChannelHandlerContext
 import io.netty.util.NettyRuntime

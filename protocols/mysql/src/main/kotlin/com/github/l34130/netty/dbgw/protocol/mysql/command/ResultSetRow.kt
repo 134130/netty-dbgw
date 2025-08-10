@@ -1,6 +1,6 @@
 package com.github.l34130.netty.dbgw.protocol.mysql.command
 
-import com.github.l34130.netty.dbgw.core.utils.netty.peek
+import com.github.l34130.netty.dbgw.core.util.netty.peek
 import com.github.l34130.netty.dbgw.protocol.mysql.Packet
 import com.github.l34130.netty.dbgw.protocol.mysql.readLenEncString
 import com.github.l34130.netty.dbgw.protocol.mysql.writeLenEncString

@@ -1,8 +1,8 @@
 package com.github.l34130.netty.dbgw.utils.netty
 
-import com.github.l34130.netty.dbgw.core.utils.netty.peek
-import com.github.l34130.netty.dbgw.core.utils.netty.readAndReplace
-import com.github.l34130.netty.dbgw.core.utils.netty.replace
+import com.github.l34130.netty.dbgw.core.util.netty.peek
+import com.github.l34130.netty.dbgw.core.util.netty.readAndReplace
+import com.github.l34130.netty.dbgw.core.util.netty.replace
 import io.netty.buffer.Unpooled
 import org.junit.jupiter.api.DynamicNode
 import org.junit.jupiter.api.DynamicTest.dynamicTest

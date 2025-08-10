@@ -1,6 +1,6 @@
 package com.github.l34130.netty.dbgw.core
 
-import com.github.l34130.netty.dbgw.core.utils.netty.closeOnFlush
+import com.github.l34130.netty.dbgw.core.util.netty.closeOnFlush
 import com.github.l34130.netty.dbgw.policy.api.ClientInfo
 import com.github.l34130.netty.dbgw.policy.api.SessionInfo
 import io.github.oshai.kotlinlogging.KotlinLogging

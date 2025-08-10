@@ -1,4 +1,4 @@
-package com.github.l34130.netty.dbgw.core.utils.netty
+package com.github.l34130.netty.dbgw.core.util.netty
 
 import io.netty.buffer.Unpooled
 import io.netty.channel.Channel

@@ -6,8 +6,8 @@ import com.github.l34130.netty.dbgw.core.audit.AuthenticationStartAuditEvent
 import com.github.l34130.netty.dbgw.core.backend
 import com.github.l34130.netty.dbgw.core.databaseCtx
 import com.github.l34130.netty.dbgw.core.databasePolicyChain
-import com.github.l34130.netty.dbgw.core.utils.netty.closeOnFlush
-import com.github.l34130.netty.dbgw.core.utils.toEnumSet
+import com.github.l34130.netty.dbgw.core.util.netty.closeOnFlush
+import com.github.l34130.netty.dbgw.core.util.toEnumSet
 import com.github.l34130.netty.dbgw.policy.api.PolicyDecision
 import com.github.l34130.netty.dbgw.policy.api.database.DatabaseAuthenticationEvent
 import com.github.l34130.netty.dbgw.policy.api.database.DatabaseAuthenticationPolicyContext.Companion.toAuthenticationPolicyContext
