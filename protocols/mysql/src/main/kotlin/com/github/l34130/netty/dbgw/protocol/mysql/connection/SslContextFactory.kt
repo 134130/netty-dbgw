@@ -6,7 +6,6 @@ import io.netty.handler.ssl.util.InsecureTrustManagerFactory
 import java.io.InputStream
 
 object SslContextFactory {
-
     val serverSslContext: SslContext by lazy {
         SslContextBuilder
             .forServer(
@@ -22,11 +21,7 @@ object SslContextFactory {
             .build()
     }
 
-    private fun getCertificate(): InputStream {
-        return this.javaClass.classLoader.getResourceAsStream("certificate.pem")
-    }
+    private fun getCertificate(): InputStream = this.javaClass.classLoader.getResourceAsStream("certificate.pem")
 
-    private fun getPrivateKey(): InputStream {
-        return this.javaClass.classLoader.getResourceAsStream("private.key")
-    }
+    private fun getPrivateKey(): InputStream = this.javaClass.classLoader.getResourceAsStream("private.key")
 }

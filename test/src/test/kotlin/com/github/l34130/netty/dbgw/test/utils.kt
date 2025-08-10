@@ -1,3 +1,5 @@
+@file:Suppress("ktlint:standard:filename")
+
 package com.github.l34130.netty.dbgw.test
 
 import com.github.l34130.netty.dbgw.core.policy.PolicyChangeListener

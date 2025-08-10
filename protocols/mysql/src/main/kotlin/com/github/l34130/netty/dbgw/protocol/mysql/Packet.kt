@@ -192,6 +192,7 @@ internal class Packet(
 
                 var info: String? = null
                 if (capabilities.contains(CapabilityFlag.CLIENT_SESSION_TRACK)) {
+                    @Suppress("ktlint:standard:comment-wrapping")
                     if (statusFlags?.contains(ServerStatusFlag.SERVER_SESSION_STATE_CHANGED) == true ||
                         (false /* TODO: handle status is not empty */)
                     ) {

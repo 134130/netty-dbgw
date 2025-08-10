@@ -1,0 +1,9 @@
+pre-commit:
+  jobs:
+    - name: ktlint
+      glob: "*.{kt,kts}"
+      run: ktlint --relative --format --color {staged_files}
+      stage_fixed: true
+    - name: test
+      glob: "*.{kt,kts}"
+      run: ./gradlew test --no-daemon --continue

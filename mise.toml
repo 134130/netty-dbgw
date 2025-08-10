@@ -1,0 +1,11 @@
+[tools]
+lefthook = "latest"
+ktlint = "latest"
+
+[tasks.init]
+run = """
+#!/usr/bin/env bash
+set -euo pipefail
+
+lefthook install
+"""
