@@ -1,5 +1,6 @@
 package com.github.l34130.netty.dbgw.protocol.postgres
 
+import com.github.l34130.netty.dbgw.core.util.netty.writeUtf8
 import io.netty.buffer.ByteBuf
 import io.netty.buffer.ByteBufUtil
 import io.netty.handler.codec.Delimiters
@@ -16,23 +17,7 @@ internal fun ByteBuf.readUntilNull(): ByteBuf {
     return read
 }
 
-internal fun ByteBuf.readUntil(
-    delimiter: Byte,
-    escape: Byte? = null,
-): String {
-    val sb = mutableListOf<Byte>()
-    var escaped = false
-    while (isReadable) {
-        val byte = readByte()
-        if (escape != null && byte == escape) {
-            escaped = true
-            continue
-        }
-        if (byte == delimiter && !escaped) {
-            break
-        }
-        sb.add(byte)
-        escaped = false
-    }
-    return sb.toByteArray().toString(Charsets.UTF_8)
+internal fun ByteBuf.writeNullTerminatedString(value: String) {
+    writeUtf8(value)
+    writeByte(0) // Write the null terminator
 }

@@ -1,5 +1,6 @@
 package com.github.l34130.netty.dbgw.protocol.postgres.startup
 
+import com.github.l34130.netty.dbgw.core.BusinessLogicAware
 import com.github.l34130.netty.dbgw.core.GatewayState
 import com.github.l34130.netty.dbgw.core.MessageAction
 import com.github.l34130.netty.dbgw.core.audit
@@ -22,7 +23,9 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.netty.buffer.ByteBuf
 import io.netty.channel.ChannelHandlerContext
 
-class StartupState : GatewayState<ByteBuf, Message>() {
+class StartupState :
+    GatewayState<ByteBuf, Message>(),
+    BusinessLogicAware {
     override fun onFrontendMessage(
         ctx: ChannelHandlerContext,
         msg: ByteBuf,
@@ -81,10 +84,7 @@ class StartupState : GatewayState<ByteBuf, Message>() {
             nextState = AuthenticationState(policyCtx.username, policyCtx.password),
             action =
                 MessageAction.Transform(
-                    newMsg =
-                        startupMsg.copy(
-                            user = policyCtx.username,
-                        ),
+                    newMsg = startupMsg.copy(user = policyCtx.username).asByteBuf(),
                 ),
         )
     }

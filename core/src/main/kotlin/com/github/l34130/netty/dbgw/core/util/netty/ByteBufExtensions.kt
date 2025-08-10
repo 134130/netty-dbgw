@@ -79,3 +79,5 @@ fun ByteBuf.replace(
 }
 
 fun ByteBuf.toByteArray(): ByteArray = ByteBufUtil.getBytes(this, this.readerIndex(), this.readableBytes(), false)
+
+fun ByteBuf.writeUtf8(str: String) = ByteBufUtil.writeUtf8(this, str)
