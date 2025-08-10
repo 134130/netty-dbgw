@@ -119,6 +119,14 @@ class QueryCycleStatus :
                     action = MessageAction.Forward,
                 )
             }
+            Close.TYPE -> {
+                val closeMessage = Close.readFrom(msg)
+                logger.trace { "Close: $closeMessage" }
+                StateResult(
+                    nextState = this,
+                    action = MessageAction.Forward,
+                )
+            }
             else -> TODO("Unsupported command type: ${msg.type}")
         }
 
@@ -126,17 +134,17 @@ class QueryCycleStatus :
         ctx: ChannelHandlerContext,
         msg: Message,
     ): StateResult {
-        when (msg.type) {
+        return when (msg.type) {
             ParseComplete.TYPE -> {
                 logger.trace { "Parse complete" }
-                return StateResult(
+                StateResult(
                     nextState = this,
                     action = MessageAction.Forward,
                 )
             }
             BindComplete.TYPE -> {
                 logger.trace { "Bind complete" }
-                return StateResult(
+                StateResult(
                     nextState = this,
                     action = MessageAction.Forward,
                 )
@@ -144,15 +152,7 @@ class QueryCycleStatus :
             ErrorResponse.TYPE -> {
                 val errorResponse = ErrorResponse.readFrom(msg)
                 logger.trace { "Error response: $errorResponse" }
-                return StateResult(
-                    nextState = this,
-                    action = MessageAction.Forward,
-                )
-            }
-            Close.TYPE -> {
-                val closeMessage = Close.readFrom(msg)
-                logger.trace { "Close: $closeMessage" }
-                return StateResult(
+                StateResult(
                     nextState = this,
                     action = MessageAction.Forward,
                 )
@@ -160,15 +160,29 @@ class QueryCycleStatus :
             ReadyForQuery.TYPE -> {
                 val readyForQuery = ReadyForQuery.readFrom(msg)
                 logger.trace { "Ready for query: $readyForQuery" }
-                return StateResult(
+                StateResult(
                     nextState = QueryCycleStatus(),
+                    action = MessageAction.Forward,
+                )
+            }
+            ParameterDescription.TYPE -> {
+                val parameterDescription = ParameterDescription.readFrom(msg)
+                logger.trace { "Parameter description: $parameterDescription" }
+
+//                // Update the column definitions based on the parameter types
+//                ctx.databaseCtx()?.let { dbCtx ->
+//                    dbCtx.updateParameterTypes(parameterDescription.parameterTypes)
+//                }
+
+                StateResult(
+                    nextState = this,
                     action = MessageAction.Forward,
                 )
             }
             ParameterStatus.TYPE -> {
                 val parameterStatus = ParameterStatus.readFrom(msg)
                 logger.trace { "Parameter status: $parameterStatus" }
-                return StateResult(
+                StateResult(
                     nextState = this,
                     action = MessageAction.Forward,
                 )
@@ -187,7 +201,7 @@ class QueryCycleStatus :
                         )
                     }
                 }
-                return StateResult(
+                StateResult(
                     nextState = this,
                     action =
                         MessageAction.Transform(
@@ -203,21 +217,36 @@ class QueryCycleStatus :
 
                 rowDescriptionFields.addAll(rowDescription.fields)
 
-                return StateResult(
+                StateResult(
                     nextState = this,
                     action = MessageAction.Forward,
                 )
             }
             NoData.TYPE -> {
                 logger.trace { "No data message received" }
-                return StateResult(
+                StateResult(
                     nextState = this,
                     action = MessageAction.Forward,
                 )
             }
             EmptyQueryResponse.TYPE -> {
                 logger.trace { "Empty query response received" }
-                return StateResult(
+                StateResult(
+                    nextState = this,
+                    action = MessageAction.Forward,
+                )
+            }
+            CommandComplete.TYPE -> {
+                val commandComplete = CommandComplete.readFrom(msg)
+                logger.trace { "Command complete: $commandComplete" }
+                StateResult(
+                    nextState = this,
+                    action = MessageAction.Forward,
+                )
+            }
+            CloseComplete.TYPE -> {
+                logger.trace { "Close complete received" }
+                StateResult(
                     nextState = this,
                     action = MessageAction.Forward,
                 )

@@ -15,7 +15,7 @@ class ParameterDescription(
             require(msg.type == TYPE) { "Expected $TYPE, but got ${msg.type}" }
 
             val content = msg.content
-            val parameterCount = content.readInt()
+            val parameterCount = content.readShort().toInt()
             val parameterTypes = List(parameterCount) { content.readInt() }
 
             return ParameterDescription(parameterTypes)
