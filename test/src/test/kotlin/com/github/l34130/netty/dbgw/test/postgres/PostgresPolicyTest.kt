@@ -3,6 +3,7 @@ package com.github.l34130.netty.dbgw.test.postgres
 import com.github.l34130.netty.dbgw.core.policy.PolicyChangeListener
 import com.github.l34130.netty.dbgw.core.policy.PolicyConfigurationLoader
 import com.github.l34130.netty.dbgw.policy.api.PolicyDefinition
+import com.github.l34130.netty.dbgw.policy.builtin.database.DatabaseImpersonationPolicyDefinition
 import com.github.l34130.netty.dbgw.policy.builtin.database.DatabaseResultSetMaskingPolicyDefinition
 import com.github.l34130.netty.dbgw.policy.builtin.database.DatabaseRowLevelSecurityPolicyDefinition
 import com.github.l34130.netty.dbgw.protocol.postgres.PostgresGateway
@@ -13,18 +14,37 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
-class PostgresPolicyTest : PostgresProtocolTest("postgres:15") {
+abstract class PostgresPolicyTest(
+    image: String,
+) : PostgresProtocolTest(image) {
     @Test
-    fun `test DatabaseTimeRangeAccessPolicy`() {
-        val gateway = PostgresGateway(createDatabaseGatewayConfig())
+    fun `test DatabaseImpersonationPolicy`() {
+        val gateway =
+            PostgresGateway(
+                config = createDatabaseGatewayConfig(),
+                policyConfigurationLoader =
+                    PolicyConfigurationLoader.of(
+                        DatabaseImpersonationPolicyDefinition(
+                            action =
+                                DatabaseImpersonationPolicyDefinition.Action(
+                                    user = "testuser",
+                                    password = "testpass",
+                                ),
+                        ),
+                        PolicyDefinition.ALLOW_ALL,
+                    ),
+            )
         gateway.start()
 
         try {
-            val exception =
-                assertFailsWith<SQLException> {
-                    createConnection { props -> props.setProperty("port", gateway.port().toString()) }
+            gateway
+                .createConnection { props ->
+                    props.setProperty("user", "invalid_user")
+                    props.setProperty("password", "invalid_pass")
+                }.use { conn ->
+                    val result = conn.executeQuery("SELECT CURRENT_USER()")
+                    assertEquals("testuser@%", result[1][0])
                 }
-            assertEquals("Access denied: No policy allowed the authentication (implicit deny)", exception.message)
         } finally {
             gateway.shutdown()
         }
@@ -136,6 +156,22 @@ class PostgresPolicyTest : PostgresProtocolTest("postgres:15") {
                     { assertEquals("Christian", result[5][1]) },
                 )
             }
+        } finally {
+            gateway.shutdown()
+        }
+    }
+
+    @Test
+    fun `test DatabaseTimeRangeAccessPolicy`() {
+        val gateway = PostgresGateway(createDatabaseGatewayConfig())
+        gateway.start()
+
+        try {
+            val exception =
+                assertFailsWith<SQLException> {
+                    createConnection { props -> props.setProperty("port", gateway.port().toString()) }
+                }
+            assertEquals("Access denied: No policy allowed the authentication (implicit deny)", exception.message)
         } finally {
             gateway.shutdown()
         }
