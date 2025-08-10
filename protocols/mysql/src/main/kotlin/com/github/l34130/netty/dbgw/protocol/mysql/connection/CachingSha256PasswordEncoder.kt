@@ -1,5 +1,6 @@
 package com.github.l34130.netty.dbgw.protocol.mysql.connection
 
+import com.github.l34130.netty.dbgw.common.util.ByteUtils
 import java.security.MessageDigest
 
 object CachingSha256PasswordEncoder {
@@ -19,8 +20,6 @@ object CachingSha256PasswordEncoder {
 
         val digest3 = sha256.digest(combined)
 
-        return ByteArray(digest1.size) { i ->
-            (digest1[i].toInt() xor digest3[i].toInt()).toByte()
-        }
+        return ByteUtils.xor(digest1, digest3)
     }
 }
