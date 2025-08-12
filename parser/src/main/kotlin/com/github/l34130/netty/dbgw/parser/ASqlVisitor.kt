@@ -50,6 +50,12 @@ class APlainSelectVisitor : SelectVisitorAdapter() {
     val tableVisitor = ATableVisitor()
     val whereClauseVisitor = WhereClauseVisitor(tableVisitor)
     val columnVisitor = AColumnVisitor(tableVisitor)
+    val referencedColumns: List<ColumnRef>
+        get() {
+            val fromWhere = whereClauseVisitor.columnRefs
+            val fromSubQueries = tableVisitor.tableDefinitions.flatMap { it.getAllReferences() }
+            return fromWhere + fromSubQueries
+        }
 
     override fun visit(plainSelect: PlainSelect) {
         plainSelect.fromItem.accept(tableVisitor)
@@ -199,9 +205,25 @@ sealed interface TableDefinition {
     fun getOriginalColumnSource(columnName: String): ColumnRef =
         when (this) {
             is PhysicalTableDefinition -> ColumnRef(this, columnName)
-            is DerivedTableDefinition ->
-                columns.find { it.columnName == columnName }
-                    ?: error("Column '$columnName' does not exist in the derived table '$alias'.")
+            is DerivedTableDefinition -> {
+                val subqueryColumn =
+                    this.columns.find { it.columnName == columnName }
+                        ?: this.columns.find { it.columnName == "*" }
+                        ?: error("Column '$columnName' does not exist in the derived table '$alias'.")
+
+                val physicalColumnRef =
+                    subqueryColumn.tableSource.getOriginalColumnSource(
+                        if (subqueryColumn.columnName == "*") columnName else subqueryColumn.columnName,
+                    )
+                val physicalTable =
+                    physicalColumnRef.tableSource as? PhysicalTableDefinition
+                        ?: error("Recursive search for column origin did not resolve to a physical table.")
+
+                ColumnRef(
+                    tableSource = physicalTable.copy(alias = this.alias),
+                    columnName = physicalColumnRef.columnName,
+                )
+            }
         }
 }
 
@@ -302,6 +324,16 @@ fun ColumnRef.originReferencesRecursive(): List<ColumnRef> =
     when (val tableSource = this.tableSource) {
         is PhysicalTableDefinition -> emptyList()
         is DerivedTableDefinition -> tableSource.references.flatMap { it.originReferencesRecursive() }
+    }
+
+fun TableDefinition.getAllReferences(): List<ColumnRef> =
+    when (this) {
+        is PhysicalTableDefinition -> emptyList()
+        is DerivedTableDefinition -> {
+            val directReferences = this.references
+            val nestedReferences = this.columns.flatMap { it.tableSource.getAllReferences() }
+            directReferences + nestedReferences
+        }
     }
 
 fun printSourceTree(

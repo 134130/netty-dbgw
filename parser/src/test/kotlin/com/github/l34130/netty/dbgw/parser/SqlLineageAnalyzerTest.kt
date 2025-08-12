@@ -5,35 +5,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class SqlLineageAnalyzerTest {
-    private fun debugPrint(
-        sql: String,
-        expected: ParseResult,
-        actual: ParseResult,
-    ): String =
-        buildString {
-            appendLine("SQL:\n  $sql")
-
-            appendLine("===================== Expected =====================")
-            appendLine("Columns:")
-            expected.columns.forEach { columnRef ->
-                printSourceTree(this, columnRef)
-            }
-            appendLine("Referenced Columns:")
-            expected.referencedColumns.forEach { columnRef ->
-                printSourceTree(this, columnRef)
-            }
-
-            appendLine("===================== Actual =======================")
-            appendLine("Columns:")
-            actual.columns.forEach { columnRef ->
-                printSourceTree(this, columnRef)
-            }
-            appendLine("Referenced Columns:")
-            actual.referencedColumns.forEach { columnRef ->
-                printSourceTree(this, columnRef)
-            }
-        }
-
     @Test
     @DisplayName("SELECT actor_id, first_name, last_name FROM actor WHERE actor_id = 1")
     fun `test select`() {
@@ -52,7 +23,7 @@ class SqlLineageAnalyzerTest {
                 ),
             )
 
-        assertEquals(expected, parsed, debugPrint(sql, expected, parsed))
+        assertEquals(expected, parsed, TestUtils.debugDump(sql, expected, parsed))
     }
 
     @Test
@@ -71,7 +42,7 @@ class SqlLineageAnalyzerTest {
                 ),
             )
 
-        assertEquals(expected, parsed, debugPrint(sql, expected, parsed))
+        assertEquals(expected, parsed, TestUtils.debugDump(sql, expected, parsed))
     }
 
     @Test
@@ -92,7 +63,7 @@ class SqlLineageAnalyzerTest {
                 ),
             )
 
-        assertEquals(expected, parsed, debugPrint(sql, expected, parsed))
+        assertEquals(expected, parsed, TestUtils.debugDump(sql, expected, parsed))
     }
 
     @Test
@@ -116,7 +87,7 @@ class SqlLineageAnalyzerTest {
                 ),
             )
 
-        assertEquals(expected, parsed, debugPrint(sql, expected, parsed))
+        assertEquals(expected, parsed, TestUtils.debugDump(sql, expected, parsed))
     }
 
     @Test
@@ -141,7 +112,7 @@ class SqlLineageAnalyzerTest {
                 ),
             )
 
-        assertEquals(expected, parsed, debugPrint(sql, expected, parsed))
+        assertEquals(expected, parsed, TestUtils.debugDump(sql, expected, parsed))
     }
 
     @Test
@@ -167,7 +138,7 @@ class SqlLineageAnalyzerTest {
                 ),
             )
 
-        assertEquals(expected, parsed, debugPrint(sql, expected, parsed))
+        assertEquals(expected, parsed, TestUtils.debugDump(sql, expected, parsed))
     }
 
     @Test
@@ -191,7 +162,7 @@ class SqlLineageAnalyzerTest {
                 ),
             )
 
-        assertEquals(expected, parsed, debugPrint(sql, expected, parsed))
+        assertEquals(expected, parsed, TestUtils.debugDump(sql, expected, parsed))
     }
 
     @Test
@@ -215,10 +186,9 @@ class SqlLineageAnalyzerTest {
                 ),
             )
 
-        assertEquals(expected, parsed, debugPrint(sql, expected, parsed))
+        assertEquals(expected, parsed, TestUtils.debugDump(sql, expected, parsed))
     }
 
-    // Multi From
     @Test
     @DisplayName(
         "SELECT a.actor_id, b.film_id, b.title FROM actor a, film_actor fa, film b WHERE a.actor_id = fa.actor_id AND fa.film_id = b.film_id AND a.actor_id = 1",
@@ -244,6 +214,6 @@ class SqlLineageAnalyzerTest {
                 ),
             )
 
-        assertEquals(expected, parsed, debugPrint(sql, expected, parsed))
+        assertEquals(expected, parsed, TestUtils.debugDump(sql, expected, parsed))
     }
 }

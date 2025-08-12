@@ -9,6 +9,10 @@ data class ParseResult(
 //    val diagnostics: List<Diagnostic>
 )
 
+/**
+ * SqlLineageAnalyzer parses a sql string and returns the lineage information
+ * about the columns referenced in the sql.
+ */
 class SqlLineageAnalyzer {
     fun parse(sql: String): ParseResult {
         val stmt: Statement = CCJSqlParserUtil.parse(sql)
@@ -18,7 +22,7 @@ class SqlLineageAnalyzer {
 
         return ParseResult(
             stmtVisitor.selectVisitor.plainSelectVisitor.columnVisitor.columnRefs,
-            stmtVisitor.selectVisitor.plainSelectVisitor.whereClauseVisitor.columnRefs,
+            stmtVisitor.selectVisitor.plainSelectVisitor.referencedColumns,
         )
     }
 //    fun resolve(parsed: ParseResult, schemaProvider: SchemaProvider): LineageResult
