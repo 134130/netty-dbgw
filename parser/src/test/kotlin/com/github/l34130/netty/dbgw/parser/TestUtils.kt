@@ -95,27 +95,27 @@ object TestUtils {
             append(columnName)
         }
 
-    private fun ColumnRef.originColumns(): List<ColumnRef> =
+    private fun ColumnRef.originColumns(): Set<ColumnRef> =
         when (val tableSource = this.tableSource) {
-            is PhysicalTableDefinition -> listOf(this)
+            is PhysicalTableDefinition -> setOf(this)
             is DerivedTableDefinition -> tableSource.columns
         }
 
-    private fun ColumnRef.originColumnsRecursive(): List<ColumnRef> =
+    private fun ColumnRef.originColumnsRecursive(): Set<ColumnRef> =
         when (val tableSource = this.tableSource) {
-            is PhysicalTableDefinition -> listOf(this)
-            is DerivedTableDefinition -> tableSource.columns.flatMap { it.originColumnsRecursive() }
+            is PhysicalTableDefinition -> setOf(this)
+            is DerivedTableDefinition -> tableSource.columns.flatMap { it.originColumnsRecursive() }.toSet()
         }
 
-    private fun ColumnRef.originReferences(): List<ColumnRef> =
+    private fun ColumnRef.originReferences(): Set<ColumnRef> =
         when (val tableSource = this.tableSource) {
-            is PhysicalTableDefinition -> emptyList()
+            is PhysicalTableDefinition -> emptySet()
             is DerivedTableDefinition -> tableSource.references
         }
 
-    private fun ColumnRef.originReferencesRecursive(): List<ColumnRef> =
+    private fun ColumnRef.originReferencesRecursive(): Set<ColumnRef> =
         when (val tableSource = this.tableSource) {
-            is PhysicalTableDefinition -> emptyList()
-            is DerivedTableDefinition -> tableSource.references.flatMap { it.originReferencesRecursive() }
+            is PhysicalTableDefinition -> emptySet()
+            is DerivedTableDefinition -> tableSource.references.flatMap { it.originReferencesRecursive() }.toSet()
         }
 }

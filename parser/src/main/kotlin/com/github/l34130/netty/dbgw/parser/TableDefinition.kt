@@ -37,9 +37,9 @@ sealed interface TableDefinition {
             }
         }
 
-    fun getAllReferences(): List<ColumnRef> =
+    fun getAllReferences(): Set<ColumnRef> =
         when (this) {
-            is PhysicalTableDefinition -> emptyList()
+            is PhysicalTableDefinition -> emptySet()
             is DerivedTableDefinition -> {
                 val directReferences = this.references
                 val nestedReferences = this.columns.flatMap { it.tableSource.getAllReferences() }
@@ -56,7 +56,7 @@ data class PhysicalTableDefinition(
 ) : TableDefinition
 
 data class DerivedTableDefinition(
-    val columns: List<ColumnRef>,
-    val references: List<ColumnRef> = emptyList(),
+    val columns: Set<ColumnRef>,
+    val references: Set<ColumnRef> = emptySet(),
     val alias: String,
 ) : TableDefinition

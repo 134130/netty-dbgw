@@ -4,8 +4,8 @@ import net.sf.jsqlparser.parser.CCJSqlParserUtil
 import net.sf.jsqlparser.statement.Statement
 
 data class ParseResult(
-    val columns: List<ColumnRef>,
-    val referencedColumns: List<ColumnRef>,
+    val columns: Set<ColumnRef>,
+    val referencedColumns: Set<ColumnRef>,
 //    val diagnostics: List<Diagnostic>
 )
 
@@ -21,8 +21,8 @@ class SqlLineageAnalyzer {
         stmt.accept(stmtVisitor)
 
         return ParseResult(
-            stmtVisitor.selectVisitor.plainSelectVisitor.columnVisitor.columnRefs,
-            stmtVisitor.selectVisitor.plainSelectVisitor.referencedColumns,
+            stmtVisitor.columns,
+            stmtVisitor.referencedColumns,
         )
     }
 //    fun resolve(parsed: ParseResult, schemaProvider: SchemaProvider): LineageResult
