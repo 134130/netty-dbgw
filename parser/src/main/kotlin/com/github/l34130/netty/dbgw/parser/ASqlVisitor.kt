@@ -12,30 +12,26 @@ import net.sf.jsqlparser.statement.select.Select
 import net.sf.jsqlparser.statement.select.SelectVisitorAdapter
 import net.sf.jsqlparser.statement.select.SubSelect
 
-private fun <T : Any> Iterable<T>.joinToPaddedString(): String = this.joinToString("\n") { it.toPaddedString() }
-
-private fun Any.toPaddedString(padding: String = "  "): String = this.toString().split("\n").joinToString("\n") { "$padding$it" }
-
-class AStatementVisitor : StatementVisitorAdapter() {
-    val selectVisitor = ASelectVisitor()
+class LineageStatementVisitor : StatementVisitorAdapter() {
+    val selectVisitor = LineageSelectVisitor()
 
     override fun visit(select: Select) {
         select.selectBody.accept(selectVisitor)
     }
 }
 
-class ASelectVisitor : SelectVisitorAdapter() {
-    val plainSelectVisitor = APlainSelectVisitor()
+class LineageSelectVisitor : SelectVisitorAdapter() {
+    val plainSelectVisitor = LineagePlainSelectVisitor()
 
     override fun visit(plainSelect: PlainSelect) {
         plainSelect.accept(plainSelectVisitor)
     }
 }
 
-class APlainSelectVisitor : SelectVisitorAdapter() {
-    val tableVisitor = ATableVisitor()
-    val whereClauseVisitor = WhereClauseVisitor(tableVisitor)
-    val columnVisitor = AColumnVisitor(tableVisitor)
+class LineagePlainSelectVisitor : SelectVisitorAdapter() {
+    val tableVisitor = TableSourceVisitor()
+    val whereClauseVisitor = WhereClauseColumnVisitor(tableVisitor)
+    val columnVisitor = SelectColumnVisitor(tableVisitor)
     val referencedColumns: List<ColumnRef>
         get() {
             val fromWhere = whereClauseVisitor.columnRefs
@@ -56,7 +52,7 @@ class APlainSelectVisitor : SelectVisitorAdapter() {
     }
 }
 
-class ATableVisitor : FromItemVisitorAdapter() {
+class TableSourceVisitor : FromItemVisitorAdapter() {
     val tableDefinitions: MutableList<TableDefinition> = mutableListOf()
 
     override fun visit(table: Table) {
@@ -71,7 +67,7 @@ class ATableVisitor : FromItemVisitorAdapter() {
 
     override fun visit(subSelect: SubSelect) {
         // If the FROM clause contains a subquery, we need to process it as well
-        val subSelectVisitor = APlainSelectVisitor()
+        val subSelectVisitor = LineagePlainSelectVisitor()
         subSelect.selectBody.accept(subSelectVisitor)
 
         // Add the subquery's table sources to the main table sources
@@ -84,8 +80,8 @@ class ATableVisitor : FromItemVisitorAdapter() {
     }
 }
 
-class WhereClauseVisitor(
-    val tableVisitor: ATableVisitor,
+class WhereClauseColumnVisitor(
+    val tableVisitor: TableSourceVisitor,
 ) : ExpressionVisitorAdapter() {
     val columnRefs = mutableListOf<ColumnRef>()
 
@@ -114,15 +110,15 @@ class WhereClauseVisitor(
 
     override fun visit(subSelect: SubSelect) {
         // If the WHERE clause contains a subquery, we need to process it as well
-        val subSelectVisitor = APlainSelectVisitor()
+        val subSelectVisitor = LineagePlainSelectVisitor()
         subSelect.selectBody.accept(subSelectVisitor)
 
         // TODO:
     }
 }
 
-class AColumnVisitor(
-    private val tableVisitor: ATableVisitor,
+class SelectColumnVisitor(
+    private val tableVisitor: TableSourceVisitor,
 ) : ExpressionVisitorAdapter() {
     val columnRefs = mutableListOf<ColumnRef>()
 
@@ -173,182 +169,4 @@ class AColumnVisitor(
                 columnName = "*", // Represents all columns from the specified table
             )
     }
-}
-
-sealed interface TableDefinition {
-    fun alias(): String? =
-        when (this) {
-            is PhysicalTableDefinition -> alias
-            is DerivedTableDefinition -> alias
-        }
-
-    fun name(): String =
-        when (this) {
-            is PhysicalTableDefinition -> tableName
-            is DerivedTableDefinition -> alias
-        }
-
-    fun getOriginalColumnSource(columnName: String): ColumnRef =
-        when (this) {
-            is PhysicalTableDefinition -> ColumnRef(this, columnName)
-            is DerivedTableDefinition -> {
-                val subqueryColumn =
-                    this.columns.find { it.columnName == columnName }
-                        ?: this.columns.find { it.columnName == "*" }
-                        ?: error("Column '$columnName' does not exist in the derived table '$alias'.")
-
-                val physicalColumnRef =
-                    subqueryColumn.tableSource.getOriginalColumnSource(
-                        if (subqueryColumn.columnName == "*") columnName else subqueryColumn.columnName,
-                    )
-                val physicalTable =
-                    physicalColumnRef.tableSource as? PhysicalTableDefinition
-                        ?: error("Recursive search for column origin did not resolve to a physical table.")
-
-                ColumnRef(
-                    tableSource = physicalTable.copy(alias = this.alias),
-                    columnName = physicalColumnRef.columnName,
-                )
-            }
-        }
-}
-
-data class PhysicalTableDefinition(
-    val catalogName: String? = null,
-    val schemaName: String? = null,
-    val tableName: String,
-    val alias: String? = null,
-) : TableDefinition {
-    override fun toString(): String =
-        buildString {
-            append("PhysicalTable(")
-            append("catalogName='${catalogName ?: "null"}', ")
-            append("schemaName='${schemaName ?: "null"}', ")
-            append("tableName='$tableName', ")
-            append("alias='${alias ?: "null"}'")
-            append(")")
-        }
-}
-
-data class DerivedTableDefinition(
-    val columns: List<ColumnRef>,
-    val references: List<ColumnRef> = emptyList(),
-    val alias: String,
-) : TableDefinition {
-    override fun toString(): String =
-        buildString {
-            append("DerivedTable(")
-            append("alias='$alias', ")
-
-            if (columns.isEmpty()) {
-                append("columns=[]")
-            } else {
-                appendLine("columns=[")
-                append(columns.joinToPaddedString())
-                appendLine("], ")
-            }
-
-            if (references.isEmpty()) {
-                append("references=[]")
-            } else {
-                appendLine("references=[")
-                append(references.joinToPaddedString())
-                appendLine("]")
-            }
-            append(")")
-        }
-}
-
-data class ColumnRef(
-    val tableSource: TableDefinition,
-    val columnName: String,
-) {
-    override fun toString(): String =
-        buildString {
-            append("ColumnSource(")
-            append("tableSource='$tableSource', ")
-            append("columnName='$columnName'")
-            append(")")
-        }
-}
-
-fun ColumnRef.fqn(): String =
-    buildString {
-        append(tableSource.fqn())
-        append(".")
-        append(columnName)
-    }
-
-fun TableDefinition.fqn(): String =
-    buildString {
-        if (this@fqn is PhysicalTableDefinition) {
-            catalogName?.let { append("$it.") }
-            schemaName?.let { append("$it.") }
-        }
-        append(name())
-    }
-
-fun ColumnRef.originColumns(): List<ColumnRef> =
-    when (val tableSource = this.tableSource) {
-        is PhysicalTableDefinition -> listOf(this)
-        is DerivedTableDefinition -> tableSource.columns
-    }
-
-fun ColumnRef.originColumnsRecursive(): List<ColumnRef> =
-    when (val tableSource = this.tableSource) {
-        is PhysicalTableDefinition -> listOf(this)
-        is DerivedTableDefinition -> tableSource.columns.flatMap { it.originColumnsRecursive() }
-    }
-
-fun ColumnRef.originReferences(): List<ColumnRef> =
-    when (val tableSource = this.tableSource) {
-        is PhysicalTableDefinition -> emptyList()
-        is DerivedTableDefinition -> tableSource.references
-    }
-
-fun ColumnRef.originReferencesRecursive(): List<ColumnRef> =
-    when (val tableSource = this.tableSource) {
-        is PhysicalTableDefinition -> emptyList()
-        is DerivedTableDefinition -> tableSource.references.flatMap { it.originReferencesRecursive() }
-    }
-
-fun TableDefinition.getAllReferences(): List<ColumnRef> =
-    when (this) {
-        is PhysicalTableDefinition -> emptyList()
-        is DerivedTableDefinition -> {
-            val directReferences = this.references
-            val nestedReferences = this.columns.flatMap { it.tableSource.getAllReferences() }
-            directReferences + nestedReferences
-        }
-    }
-
-fun printSourceTree(
-    sb: StringBuilder,
-    source: ColumnRef,
-    label: String = "", // [1] 의존성 종류를 표시할 라벨 파라미터 추가
-    indent: String = "  ",
-    visited: MutableSet<Any> = mutableSetOf(),
-) {
-    // 순환 참조 방지를 위해 이미 방문한 노드는 출력하지 않음
-    if (!visited.add(source)) return
-
-    // [2] 출력문에 라벨을 추가하여 의존성 종류 표시
-    sb.appendLine("$indent- $label${source.fqn()}")
-
-    // [3] originColumns를 순회하며 '열' 라벨과 함께 재귀 호출
-    source
-        .originColumns()
-        // 자기 자신을 참조하는 무한 루프 방지
-        .takeIf { it.isNotEmpty() && it.first() != source }
-        ?.forEach { origin ->
-            printSourceTree(sb, origin, "[col] ", "$indent  ", visited)
-        }
-
-    // [4] originReferences를 순회하며 '참조' 라벨과 함께 재귀 호출
-    source
-        .originReferences()
-        .takeIf { it.isNotEmpty() && it.first() != source }
-        ?.forEach { reference ->
-            printSourceTree(sb, reference, "[ref] ", "$indent  ", visited)
-        }
 }

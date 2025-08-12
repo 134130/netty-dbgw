@@ -17,7 +17,7 @@ class SqlLineageAnalyzer {
     fun parse(sql: String): ParseResult {
         val stmt: Statement = CCJSqlParserUtil.parse(sql)
 
-        val stmtVisitor = AStatementVisitor()
+        val stmtVisitor = LineageStatementVisitor()
         stmt.accept(stmtVisitor)
 
         return ParseResult(

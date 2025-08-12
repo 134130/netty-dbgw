@@ -78,4 +78,44 @@ object TestUtils {
                 printSourceTree(sb, reference, "[ref] ", "$indent  ", visited)
             }
     }
+
+    private fun TableDefinition.fqn(): String =
+        buildString {
+            if (this@fqn is PhysicalTableDefinition) {
+                catalogName?.let { append("$it.") }
+                schemaName?.let { append("$it.") }
+            }
+            append(name())
+        }
+
+    private fun ColumnRef.fqn(): String =
+        buildString {
+            append(tableSource.fqn())
+            append(".")
+            append(columnName)
+        }
+
+    private fun ColumnRef.originColumns(): List<ColumnRef> =
+        when (val tableSource = this.tableSource) {
+            is PhysicalTableDefinition -> listOf(this)
+            is DerivedTableDefinition -> tableSource.columns
+        }
+
+    private fun ColumnRef.originColumnsRecursive(): List<ColumnRef> =
+        when (val tableSource = this.tableSource) {
+            is PhysicalTableDefinition -> listOf(this)
+            is DerivedTableDefinition -> tableSource.columns.flatMap { it.originColumnsRecursive() }
+        }
+
+    private fun ColumnRef.originReferences(): List<ColumnRef> =
+        when (val tableSource = this.tableSource) {
+            is PhysicalTableDefinition -> emptyList()
+            is DerivedTableDefinition -> tableSource.references
+        }
+
+    private fun ColumnRef.originReferencesRecursive(): List<ColumnRef> =
+        when (val tableSource = this.tableSource) {
+            is PhysicalTableDefinition -> emptyList()
+            is DerivedTableDefinition -> tableSource.references.flatMap { it.originReferencesRecursive() }
+        }
 }
