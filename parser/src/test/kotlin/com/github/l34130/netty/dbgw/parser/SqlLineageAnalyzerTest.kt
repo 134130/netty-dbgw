@@ -1,5 +1,6 @@
 package com.github.l34130.netty.dbgw.parser
 
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.DisplayName
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -212,6 +213,66 @@ class SqlLineageAnalyzerTest {
                     TestUtils.column("film", "film_id", "b"),
                     TestUtils.column("actor", "actor_id", "a"),
                 ),
+            )
+
+        assertEquals(expected, parsed, TestUtils.debugDump(sql, expected, parsed))
+    }
+
+    @Test
+    @Disabled
+    @DisplayName("UPDATE actor SET first_name = 'John' WHERE actor_id = 1")
+    fun `test update`() {
+        val sql = "UPDATE actor SET first_name = 'John' WHERE actor_id = 1"
+        val parsed = SqlLineageAnalyzer().parse(sql)
+
+        val expected =
+            ParseResult(
+                columns = emptyList(),
+                referencedColumns =
+                    listOf(
+                        TestUtils.column("actor", "first_name"),
+                        TestUtils.column("actor", "actor_id"),
+                    ),
+            )
+
+        assertEquals(expected, parsed, TestUtils.debugDump(sql, expected, parsed))
+    }
+
+    @Test
+    @Disabled
+    @DisplayName("INSERT INTO actor (actor_id, first_name, last_name) VALUES (1, 'John', 'Doe')")
+    fun `test insert`() {
+        val sql = "INSERT INTO actor (actor_id, first_name, last_name) VALUES (1, 'John', 'Doe')"
+        val parsed = SqlLineageAnalyzer().parse(sql)
+
+        val expected =
+            ParseResult(
+                columns = emptyList(),
+                referencedColumns =
+                    listOf(
+                        TestUtils.column("actor", "actor_id"),
+                        TestUtils.column("actor", "first_name"),
+                        TestUtils.column("actor", "last_name"),
+                    ),
+            )
+
+        assertEquals(expected, parsed, TestUtils.debugDump(sql, expected, parsed))
+    }
+
+    @Test
+    @Disabled
+    @DisplayName("DELETE FROM actor WHERE actor_id = 1")
+    fun `test delete`() {
+        val sql = "DELETE FROM actor WHERE actor_id = 1"
+        val parsed = SqlLineageAnalyzer().parse(sql)
+
+        val expected =
+            ParseResult(
+                columns = emptyList(),
+                referencedColumns =
+                    listOf(
+                        TestUtils.column("actor", "actor_id"),
+                    ),
             )
 
         assertEquals(expected, parsed, TestUtils.debugDump(sql, expected, parsed))

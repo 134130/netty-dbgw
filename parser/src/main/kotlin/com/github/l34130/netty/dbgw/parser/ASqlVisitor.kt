@@ -1,11 +1,8 @@
 package com.github.l34130.netty.dbgw.parser
 
-import io.github.oshai.kotlinlogging.KotlinLogging
 import net.sf.jsqlparser.expression.ExpressionVisitorAdapter
-import net.sf.jsqlparser.parser.CCJSqlParserUtil
 import net.sf.jsqlparser.schema.Column
 import net.sf.jsqlparser.schema.Table
-import net.sf.jsqlparser.statement.Statement
 import net.sf.jsqlparser.statement.StatementVisitorAdapter
 import net.sf.jsqlparser.statement.select.AllColumns
 import net.sf.jsqlparser.statement.select.AllTableColumns
@@ -15,20 +12,9 @@ import net.sf.jsqlparser.statement.select.Select
 import net.sf.jsqlparser.statement.select.SelectVisitorAdapter
 import net.sf.jsqlparser.statement.select.SubSelect
 
-private val logger = KotlinLogging.logger { }
-
 private fun <T : Any> Iterable<T>.joinToPaddedString(): String = this.joinToString("\n") { it.toPaddedString() }
 
 private fun Any.toPaddedString(padding: String = "  "): String = this.toString().split("\n").joinToString("\n") { "$padding$it" }
-
-class ASqlVisitor {
-    fun visit(sql: String) {
-        val stmt: Statement = CCJSqlParserUtil.parse(sql)
-
-        val stmtVisitor = AStatementVisitor()
-        stmt.accept(stmtVisitor)
-    }
-}
 
 class AStatementVisitor : StatementVisitorAdapter() {
     val selectVisitor = ASelectVisitor()
