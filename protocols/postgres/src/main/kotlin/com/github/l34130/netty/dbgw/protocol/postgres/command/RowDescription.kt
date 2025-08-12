@@ -52,9 +52,9 @@ class RowDescription(
                 catalog = "",
                 schema = "",
                 table = "",
-                orgTable = "",
+                orgTables = emptyList(),
                 column = name,
-                orgColumn = "",
+                orgColumns = emptyList(),
                 columnType = Oid.fromCode(dataTypeId)?.type ?: SqlType.OTHER,
             )
 

@@ -29,9 +29,9 @@ internal class ColumnDefinition41(
             catalog = schema,
             schema = schema,
             table = orgTable,
-            orgTable = orgTable,
+            orgTables = listOf(orgTable),
             column = name,
-            orgColumn = orgName,
+            orgColumns = listOf(orgName),
             columnType = requireNotNull(SqlType.fromCode(type.toJavaSqlType())) { "Unsupported MySQL field type: $type" },
         )
 

@@ -24,11 +24,11 @@ class DatabaseRowLevelSecurityPolicy(
     override fun onResultRow(ctx: DatabaseResultRowPolicyContext) {
         for ((index, columnDef) in ctx.columnDefinitions.withIndex()) {
             // TODO: Remove column checking. The orgColumn should be used for matching.
-            if (!columnMatcher.matches(columnDef.orgColumn.takeIf { it.isNotEmpty() } ?: columnDef.column)) {
+            if (!columnMatcher.matches(columnDef.orgColumns.single().takeIf { it.isNotEmpty() } ?: columnDef.column!!)) {
                 continue
             }
             // TODO: Remove table checking. The orgTable should be used for matching.
-            if (!tableMatcher.matches(columnDef.orgTable.takeIf { it.isNotEmpty() } ?: columnDef.table)) {
+            if (!tableMatcher.matches(columnDef.orgTables.single().takeIf { it.isNotEmpty() } ?: columnDef.table!!)) {
                 continue
             }
             if (!schemaMatcher.matches(columnDef.schema)) continue

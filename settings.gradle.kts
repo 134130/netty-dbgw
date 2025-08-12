@@ -19,6 +19,7 @@ plugins {
 include(":app")
 include(":common")
 include(":core")
+include(":parser")
 include(":policy")
 include(":policy-builtin")
 include(":protocols:mysql")

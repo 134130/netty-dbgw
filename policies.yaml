@@ -36,3 +36,11 @@ spec:
   column: .*
   filter: .*
   action: ALLOW
+---
+apiVersion: builtin/v1
+kind: DatabaseImpersonationPolicy
+metadata: {}
+spec:
+  action:
+    user: "postgres"
+    password: "querypie1!"

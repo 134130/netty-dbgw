@@ -1,6 +1,6 @@
 gateway:
-  listenPort: 3306
-  upstreamHost: mysql.querypie.io
-  upstreamPort: 3306
-  upstreamDatabaseType: MYSQL
-  policyFile: ./policies.yaml
+  listenPort: 5432
+  upstreamHost: pgsql.querypie.io
+  upstreamPort: 5433
+  upstreamDatabaseType: POSTGRESQL
+  policyFile: policies.yaml
