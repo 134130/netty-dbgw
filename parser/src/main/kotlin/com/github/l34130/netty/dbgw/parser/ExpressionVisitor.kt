@@ -10,9 +10,6 @@ class ExpressionVisitor(
     val columnRefs = mutableSetOf<ColumnRef>()
 
     override fun visit(column: Column) {
-        val tableName = column.table?.name // In where clause, the table alias may not be present
-        val columnName = column.columnName
-
         if (fromItemVisitor.tableDefinitions.size == 1) {
             // If there's only one table, we can assume the column belongs to that table
             val tableSource = fromItemVisitor.tableDefinitions.first()
@@ -22,14 +19,12 @@ class ExpressionVisitor(
 
         // If there are multiple tables, we need to find the correct table source
         val tableSource =
-            fromItemVisitor.tableDefinitions.find { it.alias() == tableName }
-                ?: error("Column '$columnName' refers to a table alias '$tableName' that does not exist in the FROM clause.")
+            fromItemVisitor.tableDefinitions.find { it.alias() == column.table?.name }
+                ?: error(
+                    "Column '${column.columnName}' refers to a table alias '${column.table?.name}' that does not exist in the FROM clause.",
+                )
 
-        columnRefs +=
-            ColumnRef(
-                tableSource = tableSource,
-                columnName = columnName,
-            )
+        columnRefs += tableSource.getOriginalColumnSource(column.columnName)
     }
 
     override fun visit(subSelect: SubSelect) {

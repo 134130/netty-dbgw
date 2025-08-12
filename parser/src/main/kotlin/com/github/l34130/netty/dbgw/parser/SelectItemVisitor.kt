@@ -1,7 +1,5 @@
 package com.github.l34130.netty.dbgw.parser
 
-import net.sf.jsqlparser.expression.ExpressionVisitorAdapter
-import net.sf.jsqlparser.schema.Column
 import net.sf.jsqlparser.statement.select.AllColumns
 import net.sf.jsqlparser.statement.select.AllTableColumns
 import net.sf.jsqlparser.statement.select.SelectExpressionItem
@@ -15,26 +13,6 @@ class SelectItemVisitor(
     override fun visit(selectExpressionItem: SelectExpressionItem) {
         val expression = selectExpressionItem.expression
         val alias = selectExpressionItem.alias
-
-        val expressionVisitor =
-            object : ExpressionVisitorAdapter() {
-                override fun visit(column: Column) {
-                    if (fromItemVisitor.tableDefinitions.size == 1) {
-                        // If there's only one table, we can assume the column belongs to that table
-                        val tableSource = fromItemVisitor.tableDefinitions.first()
-                        columnRefs += tableSource.getOriginalColumnSource(column.columnName)
-                        return
-                    }
-
-                    // If there are multiple tables, we need to find the correct table source
-                    val tableSource =
-                        fromItemVisitor.tableDefinitions.find { it.alias() == column.table?.name }
-                            ?: error(
-                                "Column '${column.columnName}' refers to a table alias '${column.table?.name}' that does not exist in the FROM clause.",
-                            )
-
-                    columnRefs += tableSource.getOriginalColumnSource(column.columnName)
-                }
 
 //                override fun visit(function: Function) {
 //                    val functionParamVisitor = WhereClauseColumnVisitor(tableVisitor)
@@ -54,8 +32,11 @@ class SelectItemVisitor(
 //                            columnName = aliasName,
 //                        )
 //                }
-            }
+//            }
+
+        val expressionVisitor = ExpressionVisitor(fromItemVisitor)
         expression.accept(expressionVisitor)
+        columnRefs += expressionVisitor.columnRefs
     }
 
     override fun visit(allColumns: AllColumns) {
