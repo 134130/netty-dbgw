@@ -4,8 +4,8 @@ import net.sf.jsqlparser.expression.ExpressionVisitorAdapter
 import net.sf.jsqlparser.schema.Column
 import net.sf.jsqlparser.statement.select.SubSelect
 
-class ExpressionVisitor(
-    val fromItemVisitor: FromItemVisitor,
+class LineageExpressionVisitor(
+    val fromItemVisitor: LineageFromItemVisitor,
 ) : ExpressionVisitorAdapter() {
     val columnRefs = mutableSetOf<ColumnRef>()
 

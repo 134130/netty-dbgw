@@ -4,9 +4,9 @@ import net.sf.jsqlparser.statement.select.PlainSelect
 import net.sf.jsqlparser.statement.select.SelectVisitorAdapter
 
 class LineagePlainSelectVisitor : SelectVisitorAdapter() {
-    private val fromItemVisitor = FromItemVisitor()
-    private val expressionVisitor = ExpressionVisitor(fromItemVisitor)
-    private val selectItemVisitor = SelectItemVisitor(fromItemVisitor)
+    private val fromItemVisitor = LineageFromItemVisitor()
+    private val expressionVisitor = LineageExpressionVisitor(fromItemVisitor)
+    private val selectItemVisitor = LineageSelectItemVisitor(fromItemVisitor)
 
     val selectItems: Set<SelectItem>
         get() = selectItemVisitor.selectItems

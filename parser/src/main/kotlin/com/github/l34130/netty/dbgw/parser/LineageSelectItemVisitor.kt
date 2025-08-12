@@ -8,8 +8,8 @@ import net.sf.jsqlparser.statement.select.AllTableColumns
 import net.sf.jsqlparser.statement.select.SelectExpressionItem
 import net.sf.jsqlparser.statement.select.SelectItemVisitorAdapter
 
-class SelectItemVisitor(
-    private val fromItemVisitor: FromItemVisitor,
+class LineageSelectItemVisitor(
+    private val fromItemVisitor: LineageFromItemVisitor,
 ) : SelectItemVisitorAdapter() {
     val selectItems = mutableSetOf<SelectItem>()
 
@@ -20,7 +20,7 @@ class SelectItemVisitor(
         val itemVisitor =
             object : ExpressionVisitorAdapter() {
                 override fun visit(function: Function) {
-                    val functionParamVisitor = ExpressionVisitor(fromItemVisitor)
+                    val functionParamVisitor = LineageExpressionVisitor(fromItemVisitor)
                     function.parameters?.expressions?.forEach { expr ->
                         expr.accept(functionParamVisitor)
                     }
