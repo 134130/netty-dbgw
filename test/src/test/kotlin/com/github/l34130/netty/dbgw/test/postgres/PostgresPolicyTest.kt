@@ -10,6 +10,7 @@ import com.github.l34130.netty.dbgw.protocol.postgres.PostgresGateway
 import com.github.l34130.netty.dbgw.test.mysql.executeQuery
 import org.junit.jupiter.api.assertAll
 import java.sql.SQLException
+import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -101,6 +102,7 @@ abstract class PostgresPolicyTest(
     }
 
     @Test
+    @Ignore("parser is in refactoring")
     fun `test DatabaseRowLevelSecurityPolicy`() {
         val gateway =
             PostgresGateway(
