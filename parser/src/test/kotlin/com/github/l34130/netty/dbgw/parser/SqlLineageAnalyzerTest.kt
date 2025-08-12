@@ -14,14 +14,16 @@ class SqlLineageAnalyzerTest {
 
         val expected =
             ParseResult(
-                setOf(
-                    TestUtils.column("actor", "actor_id"),
-                    TestUtils.column("actor", "first_name"),
-                    TestUtils.column("actor", "last_name"),
-                ),
-                setOf(
-                    TestUtils.column("actor", "actor_id"),
-                ),
+                selectItems =
+                    setOf(
+                        DirectColumn(TestUtils.column("actor", "actor_id")),
+                        DirectColumn(TestUtils.column("actor", "first_name")),
+                        DirectColumn(TestUtils.column("actor", "last_name")),
+                    ),
+                referencedColumns =
+                    setOf(
+                        TestUtils.column("actor", "actor_id"),
+                    ),
             )
 
         assertEquals(expected, parsed, TestUtils.debugDump(sql, expected, parsed))
@@ -35,12 +37,14 @@ class SqlLineageAnalyzerTest {
 
         val expected =
             ParseResult(
-                setOf(
-                    TestUtils.column("actor", "*"),
-                ),
-                setOf(
-                    TestUtils.column("actor", "actor_id"),
-                ),
+                selectItems =
+                    setOf(
+                        DirectColumn(TestUtils.column("actor", "*")),
+                    ),
+                referencedColumns =
+                    setOf(
+                        TestUtils.column("actor", "actor_id"),
+                    ),
             )
 
         assertEquals(expected, parsed, TestUtils.debugDump(sql, expected, parsed))
@@ -54,14 +58,16 @@ class SqlLineageAnalyzerTest {
 
         val expected =
             ParseResult(
-                setOf(
-                    TestUtils.column("actor", "actor_id", "a"),
-                    TestUtils.column("actor", "first_name", "a"),
-                    TestUtils.column("actor", "last_name", "a"),
-                ),
-                setOf(
-                    TestUtils.column("actor", "actor_id", "a"),
-                ),
+                selectItems =
+                    setOf(
+                        DirectColumn(TestUtils.column("actor", "actor_id", "a")),
+                        DirectColumn(TestUtils.column("actor", "first_name", "a")),
+                        DirectColumn(TestUtils.column("actor", "last_name", "a")),
+                    ),
+                referencedColumns =
+                    setOf(
+                        TestUtils.column("actor", "actor_id", "a"),
+                    ),
             )
 
         assertEquals(expected, parsed, TestUtils.debugDump(sql, expected, parsed))
@@ -78,14 +84,16 @@ class SqlLineageAnalyzerTest {
 
         val expected =
             ParseResult(
-                setOf(
-                    TestUtils.column("actor", "actor_id", "a"),
-                ),
-                setOf(
-                    TestUtils.column("actor", "actor_id", "a"),
-                    TestUtils.column("actor", "first_name", "a"),
-                    TestUtils.column("actor", "last_name", "a"),
-                ),
+                selectItems =
+                    setOf(
+                        DirectColumn(TestUtils.column("actor", "actor_id", "a")),
+                    ),
+                referencedColumns =
+                    setOf(
+                        TestUtils.column("actor", "actor_id", "a"),
+                        TestUtils.column("actor", "first_name", "a"),
+                        TestUtils.column("actor", "last_name", "a"),
+                    ),
             )
 
         assertEquals(expected, parsed, TestUtils.debugDump(sql, expected, parsed))
@@ -102,15 +110,17 @@ class SqlLineageAnalyzerTest {
 
         val expected =
             ParseResult(
-                setOf(
-                    TestUtils.column("actor", "actor_id", "a"),
-                    TestUtils.column("film_actor", "film_id", "fa"),
-                ),
-                setOf(
-                    TestUtils.column("film_actor", "actor_id", "fa"),
-                    TestUtils.column("actor", "actor_id", "a"),
-                    TestUtils.column("film_actor", "film_id", "fa"),
-                ),
+                selectItems =
+                    setOf(
+                        DirectColumn(TestUtils.column("actor", "actor_id", "a")),
+                        DirectColumn(TestUtils.column("film_actor", "film_id", "fa")),
+                    ),
+                referencedColumns =
+                    setOf(
+                        TestUtils.column("film_actor", "actor_id", "fa"),
+                        TestUtils.column("actor", "actor_id", "a"),
+                        TestUtils.column("film_actor", "film_id", "fa"),
+                    ),
             )
 
         assertEquals(expected, parsed, TestUtils.debugDump(sql, expected, parsed))
@@ -127,16 +137,18 @@ class SqlLineageAnalyzerTest {
 
         val expected =
             ParseResult(
-                setOf(
-                    TestUtils.column("actor", "actor_id", "a"),
-                    TestUtils.column("actor", "first_name", "a"),
-                    TestUtils.column("actor", "last_name", "a"),
-                ),
-                setOf(
-                    TestUtils.column("film_actor", "actor_id", "fa"),
-                    TestUtils.column("actor", "actor_id", "a"),
-                    TestUtils.column("film_actor", "film_id", "fa"),
-                ),
+                selectItems =
+                    setOf(
+                        DirectColumn(TestUtils.column("actor", "actor_id", "a")),
+                        DirectColumn(TestUtils.column("actor", "first_name", "a")),
+                        DirectColumn(TestUtils.column("actor", "last_name", "a")),
+                    ),
+                referencedColumns =
+                    setOf(
+                        TestUtils.column("film_actor", "actor_id", "fa"),
+                        TestUtils.column("actor", "actor_id", "a"),
+                        TestUtils.column("film_actor", "film_id", "fa"),
+                    ),
             )
 
         assertEquals(expected, parsed, TestUtils.debugDump(sql, expected, parsed))
@@ -153,14 +165,16 @@ class SqlLineageAnalyzerTest {
 
         val expected =
             ParseResult(
-                setOf(
-                    TestUtils.column("actor", "actor_id", "a"),
-                    TestUtils.column("actor", "first_name", "a"),
-                    TestUtils.column("actor", "last_name", "a"),
-                ),
-                setOf(
-                    TestUtils.column("actor", "actor_id", "a"),
-                ),
+                selectItems =
+                    setOf(
+                        DirectColumn(TestUtils.column("actor", "actor_id", "a")),
+                        DirectColumn(TestUtils.column("actor", "first_name", "a")),
+                        DirectColumn(TestUtils.column("actor", "last_name", "a")),
+                    ),
+                referencedColumns =
+                    setOf(
+                        TestUtils.column("actor", "actor_id", "a"),
+                    ),
             )
 
         assertEquals(expected, parsed, TestUtils.debugDump(sql, expected, parsed))
@@ -177,17 +191,19 @@ class SqlLineageAnalyzerTest {
 
         val expected =
             ParseResult(
-                setOf(
-                    TestUtils.column("actor", "actor_id", "a"),
-                ),
-                setOf(
-                    TestUtils.column("actor", "actor_id", "a"),
-                    TestUtils.column("actor", "actor_id"),
-                    TestUtils.column("actor", "first_name"),
-                ),
+                selectItems =
+                    setOf(
+                        DirectColumn(TestUtils.column("actor", "actor_id", "a")),
+                    ),
+                referencedColumns =
+                    setOf(
+                        TestUtils.column("actor", "actor_id", "a"),
+                        TestUtils.column("actor", "actor_id"),
+                        TestUtils.column("actor", "first_name"),
+                    ),
             )
 
-        assertEquals(expected.columns, parsed.columns, TestUtils.debugDump(sql, expected, parsed))
+        assertEquals(expected.selectItems, parsed.selectItems, TestUtils.debugDump(sql, expected, parsed))
         assertEquals(expected.referencedColumns.toSet(), parsed.referencedColumns.toSet(), TestUtils.debugDump(sql, expected, parsed))
     }
 
@@ -202,14 +218,16 @@ class SqlLineageAnalyzerTest {
 
         val expected =
             ParseResult(
-                setOf(
-                    TestUtils.column("actor", "actor_id", "dt"),
-                    TestUtils.column("actor", "first_name", "dt"),
-                    TestUtils.column("actor", "last_name", "dt"),
-                ),
-                setOf(
-                    TestUtils.column("actor", "actor_id", "a"),
-                ),
+                selectItems =
+                    setOf(
+                        DirectColumn(TestUtils.column("actor", "actor_id", "dt")),
+                        DirectColumn(TestUtils.column("actor", "first_name", "dt")),
+                        DirectColumn(TestUtils.column("actor", "last_name", "dt")),
+                    ),
+                referencedColumns =
+                    setOf(
+                        TestUtils.column("actor", "actor_id", "a"),
+                    ),
             )
 
         assertEquals(expected, parsed, TestUtils.debugDump(sql, expected, parsed))
@@ -226,17 +244,19 @@ class SqlLineageAnalyzerTest {
 
         val expected =
             ParseResult(
-                setOf(
-                    TestUtils.column("actor", "actor_id", "a"),
-                    TestUtils.column("film", "film_id", "b"),
-                    TestUtils.column("film", "title", "b"),
-                ),
-                setOf(
-                    TestUtils.column("actor", "actor_id", "a"),
-                    TestUtils.column("film_actor", "actor_id", "fa"),
-                    TestUtils.column("film_actor", "film_id", "fa"),
-                    TestUtils.column("film", "film_id", "b"),
-                ),
+                selectItems =
+                    setOf(
+                        DirectColumn(TestUtils.column("actor", "actor_id", "a")),
+                        DirectColumn(TestUtils.column("film", "film_id", "b")),
+                        DirectColumn(TestUtils.column("film", "title", "b")),
+                    ),
+                referencedColumns =
+                    setOf(
+                        TestUtils.column("actor", "actor_id", "a"),
+                        TestUtils.column("film_actor", "actor_id", "fa"),
+                        TestUtils.column("film_actor", "film_id", "fa"),
+                        TestUtils.column("film", "film_id", "b"),
+                    ),
             )
 
         assertEquals(expected, parsed, TestUtils.debugDump(sql, expected, parsed))
@@ -254,26 +274,24 @@ class SqlLineageAnalyzerTest {
 
         val expected =
             ParseResult(
-                setOf(
-                    ColumnRef(
-                        tableSource =
-                            DerivedTableDefinition(
-                                columns = setOf(),
-                                references =
-                                    setOf(
-                                        TestUtils.column("actor", "first_name", "a"),
-                                        TestUtils.column("actor", "last_name", "a"),
-                                    ),
-                                alias = "",
-                            ),
-                        columnName = "full_name",
+                selectItems =
+                    setOf(
+                        FunctionColumn(
+                            functionName = "CONCAT",
+                            arguments = listOf("a.first_name", "' '", "a.last_name"),
+                            sourceColumns =
+                                setOf(
+                                    TestUtils.column("actor", "first_name", "a"),
+                                    TestUtils.column("actor", "last_name", "a"),
+                                ),
+                            alias = "full_name",
+                        ),
                     ),
-                ),
-                setOf(
-                    TestUtils.column("actor", "actor_id", "a"),
-                ),
+                referencedColumns =
+                    setOf(
+                        TestUtils.column("actor", "actor_id", "a"),
+                    ),
             )
-
         assertEquals(expected, parsed, TestUtils.debugDump(sql, expected, parsed))
     }
 
@@ -286,7 +304,7 @@ class SqlLineageAnalyzerTest {
 
         val expected =
             ParseResult(
-                columns = emptySet(),
+                selectItems = emptySet(),
                 referencedColumns =
                     setOf(
                         TestUtils.column("actor", "first_name"),
@@ -306,7 +324,7 @@ class SqlLineageAnalyzerTest {
 
         val expected =
             ParseResult(
-                columns = emptySet(),
+                selectItems = emptySet(),
                 referencedColumns =
                     setOf(
                         TestUtils.column("actor", "actor_id"),
@@ -327,7 +345,7 @@ class SqlLineageAnalyzerTest {
 
         val expected =
             ParseResult(
-                columns = emptySet(),
+                selectItems = emptySet(),
                 referencedColumns =
                     setOf(
                         TestUtils.column("actor", "actor_id"),

@@ -8,8 +8,8 @@ class LineagePlainSelectVisitor : SelectVisitorAdapter() {
     private val expressionVisitor = ExpressionVisitor(fromItemVisitor)
     private val selectItemVisitor = SelectItemVisitor(fromItemVisitor)
 
-    val columns: Set<ColumnRef>
-        get() = selectItemVisitor.columnRefs
+    val selectItems: Set<SelectItem>
+        get() = selectItemVisitor.selectItems
     val referencedColumns: Set<ColumnRef>
         get() {
             val fromWhere = expressionVisitor.columnRefs

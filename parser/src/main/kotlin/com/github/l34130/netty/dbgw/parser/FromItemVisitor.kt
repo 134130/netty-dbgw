@@ -26,7 +26,7 @@ class FromItemVisitor : FromItemVisitorAdapter() {
         // Add the subquery's table sources to the main table sources
         tableDefinitions +=
             DerivedTableDefinition(
-                columns = subSelectVisitor.columns,
+                columns = subSelectVisitor.selectItems.flatMap { it.sourceColumns }.toSet(),
                 references = subSelectVisitor.referencedColumns,
                 alias = checkNotNull(subSelect.alias?.name) { "Subquery must have an alias" },
             )

@@ -6,8 +6,8 @@ import net.sf.jsqlparser.statement.select.Select
 class LineageStatementVisitor : StatementVisitorAdapter() {
     private val selectVisitor = LineageSelectVisitor()
 
-    val columns: Set<ColumnRef>
-        get() = selectVisitor.columns
+    val selectItems: Set<SelectItem>
+        get() = selectVisitor.selectItems
     val referencedColumns: Set<ColumnRef>
         get() = selectVisitor.referencedColumns
 

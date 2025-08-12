@@ -32,7 +32,7 @@ class ExpressionVisitor(
         val subSelectVisitor = LineagePlainSelectVisitor()
         subSelect.selectBody.accept(subSelectVisitor)
 
-        columnRefs += subSelectVisitor.columns
+        columnRefs += subSelectVisitor.selectItems.flatMap { it.sourceColumns }
         columnRefs += subSelectVisitor.referencedColumns
     }
 }

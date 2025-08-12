@@ -1,10 +1,11 @@
 package com.github.l34130.netty.dbgw.parser
 
+import com.github.l34130.netty.dbgw.parser.SelectItem
 import net.sf.jsqlparser.parser.CCJSqlParserUtil
 import net.sf.jsqlparser.statement.Statement
 
 data class ParseResult(
-    val columns: Set<ColumnRef>,
+    val selectItems: Set<SelectItem>,
     val referencedColumns: Set<ColumnRef>,
 //    val diagnostics: List<Diagnostic>
 )
@@ -21,7 +22,7 @@ class SqlLineageAnalyzer {
         stmt.accept(stmtVisitor)
 
         return ParseResult(
-            stmtVisitor.columns,
+            stmtVisitor.selectItems,
             stmtVisitor.referencedColumns,
         )
     }

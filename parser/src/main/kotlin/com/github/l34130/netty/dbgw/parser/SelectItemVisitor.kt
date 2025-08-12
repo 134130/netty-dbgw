@@ -1,5 +1,8 @@
 package com.github.l34130.netty.dbgw.parser
 
+import net.sf.jsqlparser.expression.ExpressionVisitorAdapter
+import net.sf.jsqlparser.expression.Function
+import net.sf.jsqlparser.schema.Column
 import net.sf.jsqlparser.statement.select.AllColumns
 import net.sf.jsqlparser.statement.select.AllTableColumns
 import net.sf.jsqlparser.statement.select.SelectExpressionItem
@@ -8,52 +11,59 @@ import net.sf.jsqlparser.statement.select.SelectItemVisitorAdapter
 class SelectItemVisitor(
     private val fromItemVisitor: FromItemVisitor,
 ) : SelectItemVisitorAdapter() {
-    val columnRefs = mutableSetOf<ColumnRef>()
+    val selectItems = mutableSetOf<SelectItem>()
 
     override fun visit(selectExpressionItem: SelectExpressionItem) {
         val expression = selectExpressionItem.expression
-        val alias = selectExpressionItem.alias
+        val alias = selectExpressionItem.alias?.name
 
-//                override fun visit(function: Function) {
-//                    val functionParamVisitor = WhereClauseColumnVisitor(tableVisitor)
-//                    function.parameters?.expressions?.forEach { expr ->
-//                        expr.accept(functionParamVisitor)
-//                    }
-//
-//                    val aliasName = alias?.name ?: function.name
-//                    columnRefs +=
-//                        ColumnRef(
-//                            tableSource =
-//                                DerivedTableDefinition(
-//                                    columns = emptySet(),
-//                                    references = functionParamVisitor.columnRefs,
-//                                    alias = "", // function output does not have a table alias
-//                                ),
-//                            columnName = aliasName,
-//                        )
-//                }
-//            }
+        val itemVisitor =
+            object : ExpressionVisitorAdapter() {
+                override fun visit(function: Function) {
+                    val functionParamVisitor = ExpressionVisitor(fromItemVisitor)
+                    function.parameters?.expressions?.forEach { expr ->
+                        expr.accept(functionParamVisitor)
+                    }
 
-        val expressionVisitor = ExpressionVisitor(fromItemVisitor)
-        expression.accept(expressionVisitor)
-        columnRefs += expressionVisitor.columnRefs
+                    selectItems +=
+                        FunctionColumn(
+                            functionName = function.name,
+                            arguments = function.parameters?.expressions?.map { it.toString() } ?: emptyList(),
+                            sourceColumns = functionParamVisitor.columnRefs,
+                            alias = alias,
+                        )
+                }
+
+                override fun visit(column: Column) {
+                    val tableSource =
+                        if (fromItemVisitor.tableDefinitions.size == 1) {
+                            fromItemVisitor.tableDefinitions.first()
+                        } else {
+                            fromItemVisitor.tableDefinitions.find { it.alias() == column.table?.name }
+                                ?: error(
+                                    "Column '${column.columnName}' refers to a table alias '${column.table?.name}' that does not exist in the FROM clause.",
+                                )
+                        }
+                    val columnRef = tableSource.getOriginalColumnSource(column.columnName)
+                    selectItems += DirectColumn(columnRef, customAlias = alias)
+                }
+            }
+        expression.accept(itemVisitor)
     }
 
     override fun visit(allColumns: AllColumns) {
-        if (fromItemVisitor.tableDefinitions.size == 1) {
-            // If there's only one table, we can assume all columns belong to that table
-            val tableSource = fromItemVisitor.tableDefinitions.first()
-            columnRefs +=
-                ColumnRef(
-                    tableSource = tableSource,
-                    columnName = "*", // Represents all columns from the table
-                )
-            return
+        if (fromItemVisitor.tableDefinitions.size != 1) {
+            error(
+                "AllColumns can only be used when there is exactly one table in the FROM clause. Found: ${fromItemVisitor.tableDefinitions.size} tables.",
+            )
         }
-
-        error(
-            "AllColumns can only be used when there is exactly one table in the FROM clause. Found: ${fromItemVisitor.tableDefinitions.size} tables.",
-        )
+        val tableSource = fromItemVisitor.tableDefinitions.first()
+        val columnRef =
+            ColumnRef(
+                tableSource = tableSource,
+                columnName = "*",
+            )
+        selectItems += DirectColumn(columnRef)
     }
 
     override fun visit(allTableColumns: AllTableColumns) {
@@ -62,10 +72,11 @@ class SelectItemVisitor(
             fromItemVisitor.tableDefinitions.find { it.alias() == tableName }
                 ?: error("Table '$tableName' does not exist in the FROM clause.")
 
-        columnRefs +=
+        val columnRef =
             ColumnRef(
                 tableSource = tableSource,
-                columnName = "*", // Represents all columns from the specified table
+                columnName = "*",
             )
+        selectItems += DirectColumn(columnRef)
     }
 }

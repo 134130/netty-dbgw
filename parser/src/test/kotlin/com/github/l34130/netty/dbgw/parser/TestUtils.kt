@@ -10,7 +10,6 @@ object TestUtils {
         table: String,
         column: String,
         tableAlias: String? = null,
-        columnAlias: String? = null,
     ): ColumnRef {
         val tableKey = "$table:$tableAlias"
         return columns
@@ -33,9 +32,9 @@ object TestUtils {
             appendLine("SQL:\n  $sql")
 
             appendLine("===================== Expected =====================")
-            appendLine("Columns:")
-            expected.columns.forEach { columnRef ->
-                printSourceTree(this, columnRef)
+            appendLine("Select Items:")
+            expected.selectItems.forEach { selectItem ->
+                printSelectItem(this, selectItem)
             }
             appendLine("Referenced Columns:")
             expected.referencedColumns.forEach { columnRef ->
@@ -43,15 +42,39 @@ object TestUtils {
             }
 
             appendLine("===================== Actual =======================")
-            appendLine("Columns:")
-            actual.columns.forEach { columnRef ->
-                printSourceTree(this, columnRef)
+            appendLine("Select Items:")
+            actual.selectItems.forEach { selectItem ->
+                printSelectItem(this, selectItem)
             }
             appendLine("Referenced Columns:")
             actual.referencedColumns.forEach { columnRef ->
                 printSourceTree(this, columnRef)
             }
         }
+
+    private fun printSelectItem(
+        sb: StringBuilder,
+        item: SelectItem,
+        indent: String = "  ",
+        visited: MutableSet<Any> = mutableSetOf(),
+    ) {
+        if (!visited.add(item)) return
+
+        when (item) {
+            is DirectColumn -> {
+                sb.appendLine("$indent- [DirectColumn] ${item.columnRef.fqn()} (alias: ${item.alias ?: "N/A"})")
+                printSourceTree(sb, item.columnRef, "", "$indent  ", visited)
+            }
+            is FunctionColumn -> {
+                sb.appendLine(
+                    "$indent- [FunctionColumn] ${item.functionName}(${item.arguments.joinToString()}) (alias: ${item.alias ?: "N/A"})",
+                )
+                item.sourceColumns.forEach { source ->
+                    printSourceTree(sb, source, "[source] ", "$indent  ", visited)
+                }
+            }
+        }
+    }
 
     private fun printSourceTree(
         sb: StringBuilder,
