@@ -7,6 +7,7 @@ class LineagePlainSelectVisitor : SelectVisitorAdapter<Unit>() {
     private val fromItemVisitor = LineageFromItemVisitor()
     private val expressionVisitor = LineageExpressionVisitor()
     private val selectItemVisitor = LineageSelectItemVisitor()
+    private val orderByVisitor = LineageOrderByVisitor()
 
     override fun <S : Any?> visit(
         plainSelect: PlainSelect,
@@ -26,7 +27,7 @@ class LineagePlainSelectVisitor : SelectVisitorAdapter<Unit>() {
             TODO()
         }
         plainSelect.orderByElements?.forEach {
-            TODO()
+            orderByVisitor.visit(it, context)
         }
         plainSelect.distinct?.let {
             TODO()

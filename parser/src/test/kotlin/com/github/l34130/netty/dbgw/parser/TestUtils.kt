@@ -6,7 +6,7 @@ object TestUtils {
     private val tables = ConcurrentHashMap<String, PhysicalTableDefinition>()
     private val columns = ConcurrentHashMap<String, ConcurrentHashMap<String, ColumnRef>>()
 
-    fun directColumn(
+    fun directColumnRef(
         table: String,
         column: String,
         tableAlias: String? = null,
@@ -23,7 +23,7 @@ object TestUtils {
             }
     }
 
-    fun delayedColumn(
+    fun delayedColumnRef(
         tables: List<String>,
         column: String,
         tableAlias: String? = null,
@@ -51,7 +51,8 @@ object TestUtils {
         actual: ParseResult,
     ): String =
         buildString {
-            appendLine("SQL:\n  $sql")
+            appendLine("=====================   SQL    =====================")
+            appendLine(sql)
 
             appendLine("===================== Expected =====================")
             appendLine("Select Items:")

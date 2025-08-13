@@ -1,9 +1,11 @@
 package com.github.l34130.netty.dbgw.parser
 
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.DisplayName
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 
 class SqlLineageAnalyzerTest {
     @Test
@@ -16,17 +18,17 @@ class SqlLineageAnalyzerTest {
             ParseResult(
                 selectItems =
                     setOf(
-                        DirectColumn(TestUtils.directColumn("actor", "actor_id")),
-                        DirectColumn(TestUtils.directColumn("actor", "first_name")),
-                        DirectColumn(TestUtils.directColumn("actor", "last_name")),
+                        DirectColumn(TestUtils.directColumnRef("actor", "actor_id")),
+                        DirectColumn(TestUtils.directColumnRef("actor", "first_name")),
+                        DirectColumn(TestUtils.directColumnRef("actor", "last_name")),
                     ),
                 referencedColumns =
                     setOf(
-                        TestUtils.directColumn("actor", "actor_id"),
+                        TestUtils.directColumnRef("actor", "actor_id"),
                     ),
             )
 
-        assertEquals(expected, parsed, TestUtils.debugDump(sql, expected, parsed))
+        assertEquals(sql, expected, parsed)
     }
 
     @Test
@@ -39,19 +41,19 @@ class SqlLineageAnalyzerTest {
             ParseResult(
                 selectItems =
                     setOf(
-                        DirectColumn(TestUtils.directColumn("actor", "*")),
+                        DirectColumn(TestUtils.directColumnRef("actor", "*")),
                     ),
                 referencedColumns =
                     setOf(
-                        TestUtils.directColumn("actor", "actor_id"),
+                        TestUtils.directColumnRef("actor", "actor_id"),
                     ),
             )
 
-        assertEquals(expected, parsed, TestUtils.debugDump(sql, expected, parsed))
+        assertEquals(sql, expected, parsed)
     }
 
     @Test
-    @DisplayName("SELECT a.actor_id, a.first_name, a.last_name FROM actor a WHERE a.actor_id = 1")
+    @DisplayName("SELECT a.actor_id, a.first_name, last_name FROM actor a WHERE a.actor_id = 1")
     fun `test select with alias`() {
         val sql = "SELECT a.actor_id, a.first_name, a.last_name FROM actor a WHERE a.actor_id = 1"
         val parsed = SqlLineageAnalyzer().parse(sql)
@@ -60,17 +62,17 @@ class SqlLineageAnalyzerTest {
             ParseResult(
                 selectItems =
                     setOf(
-                        DirectColumn(TestUtils.directColumn("actor", "actor_id", "a")),
-                        DirectColumn(TestUtils.directColumn("actor", "first_name", "a")),
-                        DirectColumn(TestUtils.directColumn("actor", "last_name", "a")),
+                        DirectColumn(TestUtils.directColumnRef("actor", "actor_id", "a")),
+                        DirectColumn(TestUtils.directColumnRef("actor", "first_name", "a")),
+                        DirectColumn(TestUtils.directColumnRef("actor", "last_name")),
                     ),
                 referencedColumns =
                     setOf(
-                        TestUtils.directColumn("actor", "actor_id", "a"),
+                        TestUtils.directColumnRef("actor", "actor_id", "a"),
                     ),
             )
 
-        assertEquals(expected, parsed, TestUtils.debugDump(sql, expected, parsed))
+        assertEquals(sql, expected, parsed)
     }
 
     @Test
@@ -86,17 +88,17 @@ class SqlLineageAnalyzerTest {
             ParseResult(
                 selectItems =
                     setOf(
-                        DirectColumn(TestUtils.directColumn("actor", "actor_id", "a")),
+                        DirectColumn(TestUtils.directColumnRef("actor", "actor_id", "a")),
                     ),
                 referencedColumns =
                     setOf(
-                        TestUtils.directColumn("actor", "actor_id", "a"),
-                        TestUtils.directColumn("actor", "first_name", "a"),
-                        TestUtils.directColumn("actor", "last_name", "a"),
+                        TestUtils.directColumnRef("actor", "actor_id", "a"),
+                        TestUtils.directColumnRef("actor", "first_name", "a"),
+                        TestUtils.directColumnRef("actor", "last_name", "a"),
                     ),
             )
 
-        assertEquals(expected, parsed, TestUtils.debugDump(sql, expected, parsed))
+        assertEquals(sql, expected, parsed)
     }
 
     @Test
@@ -112,18 +114,18 @@ class SqlLineageAnalyzerTest {
             ParseResult(
                 selectItems =
                     setOf(
-                        DirectColumn(TestUtils.directColumn("actor", "actor_id", "a")),
-                        DirectColumn(TestUtils.directColumn("film_actor", "film_id", "fa")),
+                        DirectColumn(TestUtils.directColumnRef("actor", "actor_id", "a")),
+                        DirectColumn(TestUtils.directColumnRef("film_actor", "film_id", "fa")),
                     ),
                 referencedColumns =
                     setOf(
-                        TestUtils.directColumn("film_actor", "actor_id", "fa"),
-                        TestUtils.directColumn("actor", "actor_id", "a"),
-                        TestUtils.directColumn("film_actor", "film_id", "fa"),
+                        TestUtils.directColumnRef("film_actor", "actor_id", "fa"),
+                        TestUtils.directColumnRef("actor", "actor_id", "a"),
+                        TestUtils.directColumnRef("film_actor", "film_id", "fa"),
                     ),
             )
 
-        assertEquals(expected, parsed, TestUtils.debugDump(sql, expected, parsed))
+        assertEquals(sql, expected, parsed)
     }
 
     @Test
@@ -139,19 +141,19 @@ class SqlLineageAnalyzerTest {
             ParseResult(
                 selectItems =
                     setOf(
-                        DirectColumn(TestUtils.directColumn("actor", "actor_id", "a")),
-                        DirectColumn(TestUtils.directColumn("actor", "first_name", "a")),
-                        DirectColumn(TestUtils.directColumn("actor", "last_name", "a")),
+                        DirectColumn(TestUtils.directColumnRef("actor", "actor_id", "a")),
+                        DirectColumn(TestUtils.directColumnRef("actor", "first_name", "a")),
+                        DirectColumn(TestUtils.directColumnRef("actor", "last_name", "a")),
                     ),
                 referencedColumns =
                     setOf(
-                        TestUtils.directColumn("film_actor", "actor_id", "fa"),
-                        TestUtils.directColumn("actor", "actor_id", "a"),
-                        TestUtils.directColumn("film_actor", "film_id", "fa"),
+                        TestUtils.directColumnRef("film_actor", "actor_id", "fa"),
+                        TestUtils.directColumnRef("actor", "actor_id", "a"),
+                        TestUtils.directColumnRef("film_actor", "film_id", "fa"),
                     ),
             )
 
-        assertEquals(expected, parsed, TestUtils.debugDump(sql, expected, parsed))
+        assertEquals(sql, expected, parsed)
     }
 
     @Test
@@ -167,17 +169,17 @@ class SqlLineageAnalyzerTest {
             ParseResult(
                 selectItems =
                     setOf(
-                        DirectColumn(TestUtils.directColumn("actor", "actor_id", "a")),
-                        DirectColumn(TestUtils.directColumn("actor", "first_name", "a")),
-                        DirectColumn(TestUtils.directColumn("actor", "last_name", "a")),
+                        DirectColumn(TestUtils.directColumnRef("actor", "actor_id", "a")),
+                        DirectColumn(TestUtils.directColumnRef("actor", "first_name", "a")),
+                        DirectColumn(TestUtils.directColumnRef("actor", "last_name", "a")),
                     ),
                 referencedColumns =
                     setOf(
-                        TestUtils.directColumn("actor", "actor_id", "a"),
+                        TestUtils.directColumnRef("actor", "actor_id", "a"),
                     ),
             )
 
-        assertEquals(expected, parsed, TestUtils.debugDump(sql, expected, parsed))
+        assertEquals(sql, expected, parsed)
     }
 
     @Test
@@ -193,13 +195,13 @@ class SqlLineageAnalyzerTest {
             ParseResult(
                 selectItems =
                     setOf(
-                        DirectColumn(TestUtils.directColumn("actor", "actor_id", "a")),
+                        DirectColumn(TestUtils.directColumnRef("actor", "actor_id", "a")),
                     ),
                 referencedColumns =
                     setOf(
-                        TestUtils.directColumn("actor", "actor_id", "a"),
-                        TestUtils.directColumn("actor", "actor_id"),
-                        TestUtils.directColumn("actor", "first_name"),
+                        TestUtils.directColumnRef("actor", "actor_id", "a"),
+                        TestUtils.directColumnRef("actor", "actor_id"),
+                        TestUtils.directColumnRef("actor", "first_name"),
                     ),
             )
 
@@ -220,17 +222,17 @@ class SqlLineageAnalyzerTest {
             ParseResult(
                 selectItems =
                     setOf(
-                        DirectColumn(TestUtils.directColumn("actor", "actor_id", "dt")),
-                        DirectColumn(TestUtils.directColumn("actor", "first_name", "dt")),
-                        DirectColumn(TestUtils.directColumn("actor", "last_name", "dt")),
+                        DirectColumn(TestUtils.directColumnRef("actor", "actor_id", "dt")),
+                        DirectColumn(TestUtils.directColumnRef("actor", "first_name", "dt")),
+                        DirectColumn(TestUtils.directColumnRef("actor", "last_name", "dt")),
                     ),
                 referencedColumns =
                     setOf(
-                        TestUtils.directColumn("actor", "actor_id", "a"),
+                        TestUtils.directColumnRef("actor", "actor_id", "a"),
                     ),
             )
 
-        assertEquals(expected, parsed, TestUtils.debugDump(sql, expected, parsed))
+        assertEquals(sql, expected, parsed)
     }
 
     @Test
@@ -246,20 +248,20 @@ class SqlLineageAnalyzerTest {
             ParseResult(
                 selectItems =
                     setOf(
-                        DirectColumn(TestUtils.directColumn("actor", "actor_id", "a")),
-                        DirectColumn(TestUtils.directColumn("film", "film_id", "b")),
-                        DirectColumn(TestUtils.directColumn("film", "title", "b")),
+                        DirectColumn(TestUtils.directColumnRef("actor", "actor_id", "a")),
+                        DirectColumn(TestUtils.directColumnRef("film", "film_id", "b")),
+                        DirectColumn(TestUtils.directColumnRef("film", "title", "b")),
                     ),
                 referencedColumns =
                     setOf(
-                        TestUtils.directColumn("actor", "actor_id", "a"),
-                        TestUtils.directColumn("film_actor", "actor_id", "fa"),
-                        TestUtils.directColumn("film_actor", "film_id", "fa"),
-                        TestUtils.directColumn("film", "film_id", "b"),
+                        TestUtils.directColumnRef("actor", "actor_id", "a"),
+                        TestUtils.directColumnRef("film_actor", "actor_id", "fa"),
+                        TestUtils.directColumnRef("film_actor", "film_id", "fa"),
+                        TestUtils.directColumnRef("film", "film_id", "b"),
                     ),
             )
 
-        assertEquals(expected, parsed, TestUtils.debugDump(sql, expected, parsed))
+        assertEquals(sql, expected, parsed)
     }
 
     @Test
@@ -280,18 +282,61 @@ class SqlLineageAnalyzerTest {
                             arguments = listOf("a.first_name", "' '", "a.last_name"),
                             sourceColumns =
                                 setOf(
-                                    TestUtils.directColumn("actor", "first_name", "a"),
-                                    TestUtils.directColumn("actor", "last_name", "a"),
+                                    TestUtils.directColumnRef("actor", "first_name", "a"),
+                                    TestUtils.directColumnRef("actor", "last_name", "a"),
                                 ),
                             alias = "full_name",
                         ),
                     ),
                 referencedColumns =
                     setOf(
-                        TestUtils.directColumn("actor", "actor_id", "a"),
+                        TestUtils.directColumnRef("actor", "actor_id", "a"),
                     ),
             )
-        assertEquals(expected, parsed, TestUtils.debugDump(sql, expected, parsed))
+        assertEquals(sql, expected, parsed)
+    }
+
+    // orderBy test
+    @Test
+    @DisplayName(
+        """
+        SELECT a.actor_id, fa.film_id, f.title 
+        FROM actor a
+        JOIN film_actor fa ON fa.actor_id = a.actor_id
+        JOIN film f ON f.film_id = fa.film_id
+        ORDER BY f.title DESC, a.actor_id ASC
+        """,
+    )
+    fun `test select with orderBy`() {
+        val sql =
+            """
+            SELECT a.actor_id, fa.film_id, f.title 
+            FROM actor a
+            JOIN film_actor fa ON fa.actor_id = a.actor_id
+            JOIN film f ON f.film_id = fa.film_id
+            ORDER BY f.title DESC, a.actor_id ASC
+            """.trimIndent()
+        val parsed = SqlLineageAnalyzer().parse(sql)
+
+        val expected =
+            ParseResult(
+                selectItems =
+                    setOf(
+                        DirectColumn(TestUtils.directColumnRef("actor", "actor_id", "a")),
+                        DirectColumn(TestUtils.directColumnRef("film_actor", "film_id", "fa")),
+                        DirectColumn(TestUtils.directColumnRef("film", "title", "f")),
+                    ),
+                referencedColumns =
+                    setOf(
+                        TestUtils.directColumnRef("film_actor", "actor_id", "fa"),
+                        TestUtils.directColumnRef("actor", "actor_id", "a"),
+                        TestUtils.directColumnRef("film", "film_id", "f"),
+                        TestUtils.directColumnRef("film_actor", "film_id", "fa"),
+                        TestUtils.directColumnRef("film", "title", "f"),
+                        TestUtils.directColumnRef("actor", "actor_id", "a"),
+                    ),
+            )
+        assertEquals(sql, expected, parsed)
     }
 
     @Test
@@ -306,12 +351,12 @@ class SqlLineageAnalyzerTest {
                 selectItems = emptySet(),
                 referencedColumns =
                     setOf(
-                        TestUtils.directColumn("actor", "first_name"),
-                        TestUtils.directColumn("actor", "actor_id"),
+                        TestUtils.directColumnRef("actor", "first_name"),
+                        TestUtils.directColumnRef("actor", "actor_id"),
                     ),
             )
 
-        assertEquals(expected, parsed, TestUtils.debugDump(sql, expected, parsed))
+        assertEquals(sql, expected, parsed)
     }
 
     @Test
@@ -326,13 +371,13 @@ class SqlLineageAnalyzerTest {
                 selectItems = emptySet(),
                 referencedColumns =
                     setOf(
-                        TestUtils.directColumn("actor", "actor_id"),
-                        TestUtils.directColumn("actor", "first_name"),
-                        TestUtils.directColumn("actor", "last_name"),
+                        TestUtils.directColumnRef("actor", "actor_id"),
+                        TestUtils.directColumnRef("actor", "first_name"),
+                        TestUtils.directColumnRef("actor", "last_name"),
                     ),
             )
 
-        assertEquals(expected, parsed, TestUtils.debugDump(sql, expected, parsed))
+        assertEquals(sql, expected, parsed)
     }
 
     @Test
@@ -360,18 +405,95 @@ class SqlLineageAnalyzerTest {
             ParseResult(
                 selectItems =
                     setOf(
-                        DirectColumn(TestUtils.directColumn("orders", "*")),
+                        DirectColumn(TestUtils.directColumnRef("orders", "*")),
                     ),
                 referencedColumns =
                     setOf(
-                        TestUtils.directColumn("orders", "customer_id"),
-                        TestUtils.directColumn("customers", "id"),
-                        TestUtils.directColumn("customers", "is_vip"),
+                        TestUtils.directColumnRef("orders", "customer_id"),
+                        TestUtils.directColumnRef("customers", "id"),
+                        TestUtils.directColumnRef("customers", "is_vip"),
                         // The column cannot be resolved in static analysis. It determined in DBMS's runtime.
-                        TestUtils.delayedColumn(listOf("orders", "customers"), "order_date"),
+                        TestUtils.delayedColumnRef(listOf("orders", "customers"), "order_date"),
                     ),
             )
 
-        assertEquals(expected, parsed, TestUtils.debugDump(sql, expected, parsed))
+        assertEquals(expected, parsed)
+    }
+
+    private fun assertEquals(
+        sql: String,
+        expected: ParseResult,
+        actual: ParseResult,
+    ) {
+        try {
+            assertEquals(expected.selectItems.size, actual.selectItems.size)
+            assertEquals(expected.referencedColumns.size, actual.referencedColumns.size)
+
+            for ((index, expected) in expected.selectItems.withIndex()) {
+                val actual = actual.selectItems.elementAt(index)
+
+                when (expected) {
+                    is DirectColumn -> {
+                        val actual = assertIs<DirectColumn>(actual)
+                        assertEquals(expected.columnRef, actual.columnRef)
+                    }
+                    is FunctionColumn -> {
+                        val actual = assertIs<FunctionColumn>(actual)
+                        assertEquals(expected.functionName, actual.functionName)
+                        assertEquals(expected.arguments, actual.arguments)
+                        assertEquals(expected.sourceColumns, actual.sourceColumns)
+                        assertEquals(expected.alias, actual.alias)
+                    }
+                }
+            }
+        } catch (e: Throwable) {
+            println(TestUtils.debugDump(sql, expected, actual))
+            throw e
+        }
+    }
+
+    private fun assertEquals(
+        expected: Set<ColumnRef>,
+        actual: Set<ColumnRef>,
+    ) {
+        assertEquals(expected.size, actual.size)
+        for (expected in expected) {
+            assertTrue(actual.contains(expected))
+        }
+    }
+
+    private fun assertEquals(
+        expected: ColumnRef,
+        actual: ColumnRef,
+    ) {
+        when (expected) {
+            is DelayedColumnRef -> {
+                val actual = assertIs<DelayedColumnRef>(actual)
+                assertEquals(expected.tableSourceCandidates, actual.tableSourceCandidates)
+                assertEquals(expected.columnName, actual.columnName)
+            }
+            is DirectColumnRef -> {
+                val actual = assertIs<DirectColumnRef>(actual)
+                assertEquals(expected.tableSource, actual.tableSource)
+                assertEquals(expected.columnName, actual.columnName)
+            }
+        }
+    }
+
+    private fun assertEquals(
+        expected: TableDefinition,
+        actual: TableDefinition,
+    ) {
+        when (expected) {
+            is DerivedTableDefinition -> {
+                val actual = assertIs<DerivedTableDefinition>(actual)
+                assertEquals(expected.columns, actual.columns)
+                assertEquals(expected.alias, actual.alias)
+            }
+            is PhysicalTableDefinition -> {
+                val actual = assertIs<PhysicalTableDefinition>(actual)
+                assertEquals(expected.tableName, actual.tableName)
+            }
+        }
     }
 }
