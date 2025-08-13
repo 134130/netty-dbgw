@@ -6,20 +6,42 @@ object TestUtils {
     private val tables = ConcurrentHashMap<String, PhysicalTableDefinition>()
     private val columns = ConcurrentHashMap<String, ConcurrentHashMap<String, ColumnRef>>()
 
-    fun column(
+    fun directColumn(
         table: String,
         column: String,
         tableAlias: String? = null,
     ): ColumnRef {
         val tableKey = "$table:$tableAlias"
-        return columns
+        return this.columns
             .computeIfAbsent(tableKey) {
-                tables.computeIfAbsent(tableKey) {
+                this.tables.computeIfAbsent(tableKey) {
                     PhysicalTableDefinition(tableName = table, alias = tableAlias)
                 }
                 ConcurrentHashMap()
             }.computeIfAbsent(column) {
-                ColumnRef(tables[tableKey]!!, column)
+                DirectColumnRef(this.tables[tableKey]!!, column)
+            }
+    }
+
+    fun delayedColumn(
+        tables: List<String>,
+        column: String,
+        tableAlias: String? = null,
+    ): ColumnRef {
+        val tableKey = "${tables.joinToString(prefix = "[", postfix = "]")}:$tableAlias"
+        return this.columns
+            .computeIfAbsent(tableKey) {
+                tables.forEach { table ->
+                    this.tables.computeIfAbsent(tableKey) {
+                        PhysicalTableDefinition(tableName = table, alias = tableAlias)
+                    }
+                }
+                ConcurrentHashMap()
+            }.computeIfAbsent(column) {
+                DelayedColumnRef(
+                    tableSourceCandidates = tables.map { this.tables["$it:$tableAlias"]!! }.toSet(),
+                    columnName = column,
+                )
             }
     }
 
@@ -113,32 +135,35 @@ object TestUtils {
 
     private fun ColumnRef.fqn(): String =
         buildString {
-            append(tableSource.fqn())
+            when (this@fqn) {
+                is DirectColumnRef -> {
+                    append(tableSource.fqn())
+                }
+                is DelayedColumnRef -> {
+                    append(tableSourceCandidates.joinToString(prefix = "[", postfix = "]") { it.fqn() })
+                }
+            }
             append(".")
             append(columnName)
         }
 
     private fun ColumnRef.originColumns(): Set<ColumnRef> =
-        when (val tableSource = this.tableSource) {
-            is PhysicalTableDefinition -> setOf(this)
-            is DerivedTableDefinition -> tableSource.columns
-        }
-
-    private fun ColumnRef.originColumnsRecursive(): Set<ColumnRef> =
-        when (val tableSource = this.tableSource) {
-            is PhysicalTableDefinition -> setOf(this)
-            is DerivedTableDefinition -> tableSource.columns.flatMap { it.originColumnsRecursive() }.toSet()
+        when (this) {
+            is DirectColumnRef ->
+                when (val tableSource = this.tableSource) {
+                    is PhysicalTableDefinition -> setOf(this)
+                    is DerivedTableDefinition -> tableSource.columns
+                }
+            is DelayedColumnRef -> emptySet() // TODO()
         }
 
     private fun ColumnRef.originReferences(): Set<ColumnRef> =
-        when (val tableSource = this.tableSource) {
-            is PhysicalTableDefinition -> emptySet()
-            is DerivedTableDefinition -> tableSource.references
-        }
-
-    private fun ColumnRef.originReferencesRecursive(): Set<ColumnRef> =
-        when (val tableSource = this.tableSource) {
-            is PhysicalTableDefinition -> emptySet()
-            is DerivedTableDefinition -> tableSource.references.flatMap { it.originReferencesRecursive() }.toSet()
+        when (this) {
+            is DirectColumnRef ->
+                when (val tableSource = this.tableSource) {
+                    is PhysicalTableDefinition -> setOf(this)
+                    is DerivedTableDefinition -> tableSource.references
+                }
+            is DelayedColumnRef -> emptySet() // TODO()
         }
 }

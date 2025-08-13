@@ -63,7 +63,7 @@ class LineageSelectItemVisitor : SelectItemVisitorAdapter<Unit>() {
                     }
                     val tableSource = ctx.tableSources.first()
                     val columnRef =
-                        ColumnRef(
+                        DirectColumnRef(
                             tableSource = tableSource,
                             columnName = "*",
                         )
@@ -79,7 +79,7 @@ class LineageSelectItemVisitor : SelectItemVisitorAdapter<Unit>() {
                     val tableSource = ctx.resolveTable(tableName) ?: error("Table '$tableName' does not exist in the FROM clause.")
 
                     val columnRef =
-                        ColumnRef(
+                        DirectColumnRef(
                             tableSource = tableSource,
                             columnName = "*",
                         )

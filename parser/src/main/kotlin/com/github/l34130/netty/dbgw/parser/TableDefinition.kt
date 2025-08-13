@@ -15,7 +15,7 @@ sealed interface TableDefinition {
 
     fun getOriginalColumnSource(columnName: String): ColumnRef =
         when (this) {
-            is PhysicalTableDefinition -> ColumnRef(this, columnName)
+            is PhysicalTableDefinition -> DirectColumnRef(this, columnName)
             is DerivedTableDefinition -> {
                 val subqueryColumn =
                     this.columns.find { it.columnName == columnName }
@@ -23,14 +23,14 @@ sealed interface TableDefinition {
                         ?: error("Column '$columnName' does not exist in the derived table '$alias'.")
 
                 val physicalColumnRef =
-                    subqueryColumn.tableSource.getOriginalColumnSource(
+                    (subqueryColumn as DirectColumnRef).tableSource.getOriginalColumnSource(
                         if (subqueryColumn.columnName == "*") columnName else subqueryColumn.columnName,
                     )
                 val physicalTable =
-                    physicalColumnRef.tableSource as? PhysicalTableDefinition
+                    (physicalColumnRef as DirectColumnRef).tableSource as? PhysicalTableDefinition
                         ?: error("Recursive search for column origin did not resolve to a physical table.")
 
-                ColumnRef(
+                DirectColumnRef(
                     tableSource = physicalTable.copy(alias = this.alias),
                     columnName = physicalColumnRef.columnName,
                 )
@@ -42,7 +42,7 @@ sealed interface TableDefinition {
             is PhysicalTableDefinition -> emptySet()
             is DerivedTableDefinition -> {
                 val directReferences = this.references
-                val nestedReferences = this.columns.flatMap { it.tableSource.getAllReferences() }
+                val nestedReferences = this.columns.flatMap { (it as DirectColumnRef).tableSource.getAllReferences() }
                 directReferences + nestedReferences
             }
         }

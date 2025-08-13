@@ -16,13 +16,13 @@ class SqlLineageAnalyzerTest {
             ParseResult(
                 selectItems =
                     setOf(
-                        DirectColumn(TestUtils.column("actor", "actor_id")),
-                        DirectColumn(TestUtils.column("actor", "first_name")),
-                        DirectColumn(TestUtils.column("actor", "last_name")),
+                        DirectColumn(TestUtils.directColumn("actor", "actor_id")),
+                        DirectColumn(TestUtils.directColumn("actor", "first_name")),
+                        DirectColumn(TestUtils.directColumn("actor", "last_name")),
                     ),
                 referencedColumns =
                     setOf(
-                        TestUtils.column("actor", "actor_id"),
+                        TestUtils.directColumn("actor", "actor_id"),
                     ),
             )
 
@@ -39,11 +39,11 @@ class SqlLineageAnalyzerTest {
             ParseResult(
                 selectItems =
                     setOf(
-                        DirectColumn(TestUtils.column("actor", "*")),
+                        DirectColumn(TestUtils.directColumn("actor", "*")),
                     ),
                 referencedColumns =
                     setOf(
-                        TestUtils.column("actor", "actor_id"),
+                        TestUtils.directColumn("actor", "actor_id"),
                     ),
             )
 
@@ -60,13 +60,13 @@ class SqlLineageAnalyzerTest {
             ParseResult(
                 selectItems =
                     setOf(
-                        DirectColumn(TestUtils.column("actor", "actor_id", "a")),
-                        DirectColumn(TestUtils.column("actor", "first_name", "a")),
-                        DirectColumn(TestUtils.column("actor", "last_name", "a")),
+                        DirectColumn(TestUtils.directColumn("actor", "actor_id", "a")),
+                        DirectColumn(TestUtils.directColumn("actor", "first_name", "a")),
+                        DirectColumn(TestUtils.directColumn("actor", "last_name", "a")),
                     ),
                 referencedColumns =
                     setOf(
-                        TestUtils.column("actor", "actor_id", "a"),
+                        TestUtils.directColumn("actor", "actor_id", "a"),
                     ),
             )
 
@@ -86,13 +86,13 @@ class SqlLineageAnalyzerTest {
             ParseResult(
                 selectItems =
                     setOf(
-                        DirectColumn(TestUtils.column("actor", "actor_id", "a")),
+                        DirectColumn(TestUtils.directColumn("actor", "actor_id", "a")),
                     ),
                 referencedColumns =
                     setOf(
-                        TestUtils.column("actor", "actor_id", "a"),
-                        TestUtils.column("actor", "first_name", "a"),
-                        TestUtils.column("actor", "last_name", "a"),
+                        TestUtils.directColumn("actor", "actor_id", "a"),
+                        TestUtils.directColumn("actor", "first_name", "a"),
+                        TestUtils.directColumn("actor", "last_name", "a"),
                     ),
             )
 
@@ -112,14 +112,14 @@ class SqlLineageAnalyzerTest {
             ParseResult(
                 selectItems =
                     setOf(
-                        DirectColumn(TestUtils.column("actor", "actor_id", "a")),
-                        DirectColumn(TestUtils.column("film_actor", "film_id", "fa")),
+                        DirectColumn(TestUtils.directColumn("actor", "actor_id", "a")),
+                        DirectColumn(TestUtils.directColumn("film_actor", "film_id", "fa")),
                     ),
                 referencedColumns =
                     setOf(
-                        TestUtils.column("film_actor", "actor_id", "fa"),
-                        TestUtils.column("actor", "actor_id", "a"),
-                        TestUtils.column("film_actor", "film_id", "fa"),
+                        TestUtils.directColumn("film_actor", "actor_id", "fa"),
+                        TestUtils.directColumn("actor", "actor_id", "a"),
+                        TestUtils.directColumn("film_actor", "film_id", "fa"),
                     ),
             )
 
@@ -139,15 +139,15 @@ class SqlLineageAnalyzerTest {
             ParseResult(
                 selectItems =
                     setOf(
-                        DirectColumn(TestUtils.column("actor", "actor_id", "a")),
-                        DirectColumn(TestUtils.column("actor", "first_name", "a")),
-                        DirectColumn(TestUtils.column("actor", "last_name", "a")),
+                        DirectColumn(TestUtils.directColumn("actor", "actor_id", "a")),
+                        DirectColumn(TestUtils.directColumn("actor", "first_name", "a")),
+                        DirectColumn(TestUtils.directColumn("actor", "last_name", "a")),
                     ),
                 referencedColumns =
                     setOf(
-                        TestUtils.column("film_actor", "actor_id", "fa"),
-                        TestUtils.column("actor", "actor_id", "a"),
-                        TestUtils.column("film_actor", "film_id", "fa"),
+                        TestUtils.directColumn("film_actor", "actor_id", "fa"),
+                        TestUtils.directColumn("actor", "actor_id", "a"),
+                        TestUtils.directColumn("film_actor", "film_id", "fa"),
                     ),
             )
 
@@ -167,13 +167,13 @@ class SqlLineageAnalyzerTest {
             ParseResult(
                 selectItems =
                     setOf(
-                        DirectColumn(TestUtils.column("actor", "actor_id", "a")),
-                        DirectColumn(TestUtils.column("actor", "first_name", "a")),
-                        DirectColumn(TestUtils.column("actor", "last_name", "a")),
+                        DirectColumn(TestUtils.directColumn("actor", "actor_id", "a")),
+                        DirectColumn(TestUtils.directColumn("actor", "first_name", "a")),
+                        DirectColumn(TestUtils.directColumn("actor", "last_name", "a")),
                     ),
                 referencedColumns =
                     setOf(
-                        TestUtils.column("actor", "actor_id", "a"),
+                        TestUtils.directColumn("actor", "actor_id", "a"),
                     ),
             )
 
@@ -193,13 +193,13 @@ class SqlLineageAnalyzerTest {
             ParseResult(
                 selectItems =
                     setOf(
-                        DirectColumn(TestUtils.column("actor", "actor_id", "a")),
+                        DirectColumn(TestUtils.directColumn("actor", "actor_id", "a")),
                     ),
                 referencedColumns =
                     setOf(
-                        TestUtils.column("actor", "actor_id", "a"),
-                        TestUtils.column("actor", "actor_id"),
-                        TestUtils.column("actor", "first_name"),
+                        TestUtils.directColumn("actor", "actor_id", "a"),
+                        TestUtils.directColumn("actor", "actor_id"),
+                        TestUtils.directColumn("actor", "first_name"),
                     ),
             )
 
@@ -220,13 +220,13 @@ class SqlLineageAnalyzerTest {
             ParseResult(
                 selectItems =
                     setOf(
-                        DirectColumn(TestUtils.column("actor", "actor_id", "dt")),
-                        DirectColumn(TestUtils.column("actor", "first_name", "dt")),
-                        DirectColumn(TestUtils.column("actor", "last_name", "dt")),
+                        DirectColumn(TestUtils.directColumn("actor", "actor_id", "dt")),
+                        DirectColumn(TestUtils.directColumn("actor", "first_name", "dt")),
+                        DirectColumn(TestUtils.directColumn("actor", "last_name", "dt")),
                     ),
                 referencedColumns =
                     setOf(
-                        TestUtils.column("actor", "actor_id", "a"),
+                        TestUtils.directColumn("actor", "actor_id", "a"),
                     ),
             )
 
@@ -246,16 +246,16 @@ class SqlLineageAnalyzerTest {
             ParseResult(
                 selectItems =
                     setOf(
-                        DirectColumn(TestUtils.column("actor", "actor_id", "a")),
-                        DirectColumn(TestUtils.column("film", "film_id", "b")),
-                        DirectColumn(TestUtils.column("film", "title", "b")),
+                        DirectColumn(TestUtils.directColumn("actor", "actor_id", "a")),
+                        DirectColumn(TestUtils.directColumn("film", "film_id", "b")),
+                        DirectColumn(TestUtils.directColumn("film", "title", "b")),
                     ),
                 referencedColumns =
                     setOf(
-                        TestUtils.column("actor", "actor_id", "a"),
-                        TestUtils.column("film_actor", "actor_id", "fa"),
-                        TestUtils.column("film_actor", "film_id", "fa"),
-                        TestUtils.column("film", "film_id", "b"),
+                        TestUtils.directColumn("actor", "actor_id", "a"),
+                        TestUtils.directColumn("film_actor", "actor_id", "fa"),
+                        TestUtils.directColumn("film_actor", "film_id", "fa"),
+                        TestUtils.directColumn("film", "film_id", "b"),
                     ),
             )
 
@@ -280,15 +280,15 @@ class SqlLineageAnalyzerTest {
                             arguments = listOf("a.first_name", "' '", "a.last_name"),
                             sourceColumns =
                                 setOf(
-                                    TestUtils.column("actor", "first_name", "a"),
-                                    TestUtils.column("actor", "last_name", "a"),
+                                    TestUtils.directColumn("actor", "first_name", "a"),
+                                    TestUtils.directColumn("actor", "last_name", "a"),
                                 ),
                             alias = "full_name",
                         ),
                     ),
                 referencedColumns =
                     setOf(
-                        TestUtils.column("actor", "actor_id", "a"),
+                        TestUtils.directColumn("actor", "actor_id", "a"),
                     ),
             )
         assertEquals(expected, parsed, TestUtils.debugDump(sql, expected, parsed))
@@ -306,8 +306,8 @@ class SqlLineageAnalyzerTest {
                 selectItems = emptySet(),
                 referencedColumns =
                     setOf(
-                        TestUtils.column("actor", "first_name"),
-                        TestUtils.column("actor", "actor_id"),
+                        TestUtils.directColumn("actor", "first_name"),
+                        TestUtils.directColumn("actor", "actor_id"),
                     ),
             )
 
@@ -326,9 +326,9 @@ class SqlLineageAnalyzerTest {
                 selectItems = emptySet(),
                 referencedColumns =
                     setOf(
-                        TestUtils.column("actor", "actor_id"),
-                        TestUtils.column("actor", "first_name"),
-                        TestUtils.column("actor", "last_name"),
+                        TestUtils.directColumn("actor", "actor_id"),
+                        TestUtils.directColumn("actor", "first_name"),
+                        TestUtils.directColumn("actor", "last_name"),
                     ),
             )
 
@@ -360,14 +360,15 @@ class SqlLineageAnalyzerTest {
             ParseResult(
                 selectItems =
                     setOf(
-                        DirectColumn(TestUtils.column("orders", "*")),
+                        DirectColumn(TestUtils.directColumn("orders", "*")),
                     ),
                 referencedColumns =
                     setOf(
-                        TestUtils.column("orders", "customer_id"),
-                        TestUtils.column("customers", "id"),
-                        TestUtils.column("customers", "is_vip"),
-                        TestUtils.column("orders", "order_date"),
+                        TestUtils.directColumn("orders", "customer_id"),
+                        TestUtils.directColumn("customers", "id"),
+                        TestUtils.directColumn("customers", "is_vip"),
+                        // The column cannot be resolved in static analysis. It determined in DBMS's runtime.
+                        TestUtils.delayedColumn(listOf("orders", "customers"), "order_date"),
                     ),
             )
 

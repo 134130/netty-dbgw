@@ -1,6 +1,15 @@
 package com.github.l34130.netty.dbgw.parser
 
-data class ColumnRef(
+sealed interface ColumnRef {
+    val columnName: String
+}
+
+data class DirectColumnRef(
     val tableSource: TableDefinition,
-    val columnName: String,
-)
+    override val columnName: String,
+) : ColumnRef
+
+data class DelayedColumnRef(
+    val tableSourceCandidates: Set<TableDefinition>,
+    override val columnName: String,
+) : ColumnRef

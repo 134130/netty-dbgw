@@ -10,10 +10,13 @@ class LineageExpressionVisitor : ExpressionVisitorAdapter<Unit>() {
         context: S?,
     ) {
         val ctx = (context as LineageContext)
-        val tableSource =
-            ctx.resolveTable(column.table?.name)
-                ?: error("Column '${column.columnName}' refers to a table '${column.table?.name}' that does not exist in the FROM clause.")
-        ctx.referencedColumns += tableSource.getOriginalColumnSource(column.columnName)
+        val tableSource = ctx.resolveTable(column.table?.name)
+
+        if (tableSource != null) {
+            ctx.referencedColumns += tableSource.getOriginalColumnSource(column.columnName)
+        } else {
+            ctx.referencedColumns += DelayedColumnRef(ctx.tableSources, column.columnName)
+        }
     }
 
     override fun <S : Any?> visit(
