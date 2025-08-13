@@ -21,14 +21,16 @@ class SqlLineageAnalyzer {
         val (selectItems, referencedColumns) =
             when (stmt) {
                 is Select -> {
-                    val selectVisitor = LineageSelectVisitor()
-                    stmt.selectBody.accept(selectVisitor)
-                    selectVisitor.selectItems to selectVisitor.referencedColumns
+                    val ctx = LineageContext()
+                    val selectVisitor = LineagePlainSelectVisitor()
+                    stmt.plainSelect.accept(selectVisitor, ctx)
+                    ctx.selectItems to ctx.referencedColumns
                 }
                 is Delete -> {
+                    val ctx = LineageContext()
                     val deleteVisitor = LineageDeleteVisitor()
-                    stmt.accept(deleteVisitor)
-                    deleteVisitor.selectItems to deleteVisitor.referencedColumns
+                    stmt.accept(deleteVisitor, ctx)
+                    ctx.selectItems to ctx.referencedColumns
                 }
                 else -> TODO("Unsupported statement type: ${stmt.javaClass.simpleName}")
             }

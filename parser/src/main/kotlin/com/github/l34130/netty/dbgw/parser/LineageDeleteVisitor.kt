@@ -3,16 +3,10 @@ package com.github.l34130.netty.dbgw.parser
 import net.sf.jsqlparser.statement.StatementVisitorAdapter
 import net.sf.jsqlparser.statement.delete.Delete
 
-class LineageDeleteVisitor : StatementVisitorAdapter() {
+class LineageDeleteVisitor : StatementVisitorAdapter<Unit>() {
     private val fromItemVisitor = LineageFromItemVisitor()
     private val joinItemVisitor = LineageFromItemVisitor()
-    private val expressionVisitor =
-        LineageExpressionVisitor { fromItemVisitor.tableDefinitions + joinItemVisitor.tableDefinitions }
-
-    val selectItems: Set<SelectItem>
-        get() = fromItemVisitor.tableDefinitions.map { DirectColumn(ColumnRef(it, "*")) }.toSet()
-    val referencedColumns: Set<ColumnRef>
-        get() = expressionVisitor.columnRefs
+    private val expressionVisitor = LineageExpressionVisitor()
 
     override fun visit(delete: Delete) {
         /**

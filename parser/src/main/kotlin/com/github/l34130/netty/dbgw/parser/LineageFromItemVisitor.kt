@@ -3,36 +3,17 @@ package com.github.l34130.netty.dbgw.parser
 
 import net.sf.jsqlparser.schema.Table
 import net.sf.jsqlparser.statement.select.FromItemVisitorAdapter
-import net.sf.jsqlparser.statement.select.SubSelect
+import net.sf.jsqlparser.statement.select.LateralSubSelect
+import net.sf.jsqlparser.statement.select.ParenthesedSelect
+import net.sf.jsqlparser.statement.select.PlainSelect
 
-class LineageFromItemVisitor : FromItemVisitorAdapter() {
-    val tableDefinitions: MutableSet<TableDefinition> = mutableSetOf()
-
-    fun resolveTable(tableName: String?): TableDefinition? {
-        if (tableDefinitions.size == 1) {
-            val table = tableDefinitions.first()
-
-            return when (tableName) {
-                null -> {
-                    // If there's only one table, we can return it directly without looking for the table name
-                    table
-                }
-                (table.alias() ?: table.name()) -> {
-                    // If the table name matches the table's name or alias, we can return it'
-                    table
-                }
-                else -> {
-                    // Otherwise, the table name doesn't match the table's name or alias
-                    null
-                }
-            }
-        }
-
-        return tableDefinitions.find { (it.alias() ?: it.name()) == tableName }
-    }
-
-    override fun visit(table: Table) {
-        tableDefinitions +=
+class LineageFromItemVisitor : FromItemVisitorAdapter<Unit>() {
+    override fun <S : Any?> visit(
+        table: Table,
+        context: S?,
+    ) {
+        val ctx = (context as LineageContext)
+        ctx.tableSources +=
             PhysicalTableDefinition(
                 catalogName = table.database.databaseName,
                 schemaName = table.schemaName,
@@ -41,17 +22,35 @@ class LineageFromItemVisitor : FromItemVisitorAdapter() {
             )
     }
 
-    override fun visit(subSelect: SubSelect) {
+    override fun <S : Any?> visit(
+        lateralSubSelect: LateralSubSelect,
+        context: S?,
+    ) = super.visit(lateralSubSelect, context)
+
+    override fun <S : Any?> visit(
+        plainSelect: PlainSelect,
+        context: S?,
+    ) = super.visit(plainSelect, context)
+
+    override fun <S : Any?> visit(
+        select: ParenthesedSelect,
+        context: S?,
+    ) {
+        val ctx = (context as LineageContext)
+        val childCtx = ctx.childContext()
+
         // If the FROM clause contains a subquery, we need to process it as well
         val subSelectVisitor = LineagePlainSelectVisitor()
-        subSelect.selectBody.accept(subSelectVisitor)
+        select.select.accept(subSelectVisitor, childCtx)
 
-        // Add the subquery's table sources to the main table sources
-        tableDefinitions +=
+        // Add the subquery table source to the main table sources
+        ctx.tableSources +=
             DerivedTableDefinition(
-                columns = subSelectVisitor.selectItems.flatMap { it.sourceColumns }.toSet(),
-                references = subSelectVisitor.referencedColumns,
-                alias = checkNotNull(subSelect.alias?.name) { "Subquery must have an alias" },
+                columns = childCtx.selectItems.flatMap { it.sourceColumns }.toSet(),
+                references = childCtx.referencedColumns,
+                // NOTE: DO we need to trim the alias? (is it the jsqlparser's bug?)
+                alias = checkNotNull(select.alias?.name?.trim()) { "Subquery must have an alias" },
             )
+        ctx.referencedColumns += childCtx.referencedColumns
     }
 }

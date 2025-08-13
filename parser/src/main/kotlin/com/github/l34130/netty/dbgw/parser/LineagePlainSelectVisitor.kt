@@ -3,29 +3,24 @@ package com.github.l34130.netty.dbgw.parser
 import net.sf.jsqlparser.statement.select.PlainSelect
 import net.sf.jsqlparser.statement.select.SelectVisitorAdapter
 
-class LineagePlainSelectVisitor : SelectVisitorAdapter() {
+class LineagePlainSelectVisitor : SelectVisitorAdapter<Unit>() {
     private val fromItemVisitor = LineageFromItemVisitor()
-    private val expressionVisitor = LineageExpressionVisitor { fromItemVisitor.tableDefinitions }
-    private val selectItemVisitor = LineageSelectItemVisitor(fromItemVisitor)
+    private val expressionVisitor = LineageExpressionVisitor()
+    private val selectItemVisitor = LineageSelectItemVisitor()
 
-    val selectItems: Set<SelectItem>
-        get() = selectItemVisitor.selectItems
-    val referencedColumns: Set<ColumnRef>
-        get() {
-            val fromWhere = expressionVisitor.columnRefs
-            val fromSubQueries = fromItemVisitor.tableDefinitions.flatMap { it.getAllReferences() }
-            return fromWhere + fromSubQueries
-        }
-
-    override fun visit(plainSelect: PlainSelect) {
-        plainSelect.fromItem.accept(fromItemVisitor)
+    override fun <S : Any?> visit(
+        plainSelect: PlainSelect,
+        context: S?,
+    ) {
+        plainSelect.fromItem.accept(fromItemVisitor, context)
         plainSelect.joins?.forEach { join ->
-            join.rightItem.accept(fromItemVisitor)
-            join.onExpression?.accept(expressionVisitor)
+            join.rightItem.accept(fromItemVisitor, context)
+            join.onExpressions?.forEach { it.accept(expressionVisitor, context) }
+            join.usingColumns?.forEach { it.accept(expressionVisitor, context) }
         }
-        plainSelect.where?.accept(expressionVisitor)
+        plainSelect.where?.accept(expressionVisitor, context)
         plainSelect.selectItems.forEach { selectItem ->
-            selectItem.accept(selectItemVisitor)
+            selectItem.accept(selectItemVisitor, context)
         }
         plainSelect.groupBy?.let {
             TODO()
@@ -33,11 +28,9 @@ class LineagePlainSelectVisitor : SelectVisitorAdapter() {
         plainSelect.orderByElements?.forEach {
             TODO()
         }
-
         plainSelect.distinct?.let {
             TODO()
         }
-
         plainSelect.intoTables?.let {
             TODO()
         }

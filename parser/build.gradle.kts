@@ -13,5 +13,5 @@ dependencies {
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.18.1")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.19.0")
 
-    implementation("com.github.jsqlparser:jsqlparser:3.2")
+    implementation("com.github.jsqlparser:jsqlparser:5.3")
 }
