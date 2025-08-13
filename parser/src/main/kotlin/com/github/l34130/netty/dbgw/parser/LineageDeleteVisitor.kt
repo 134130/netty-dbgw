@@ -17,8 +17,8 @@ class LineageDeleteVisitor : StatementVisitorAdapter() {
     override fun visit(delete: Delete) {
         /**
          * DELETE FROM orders
-         * USING customers
-         * WHERE orders.customer_id = customers.id AND customers.is_vip = false
+         * JOIN customers ON orders.customer_id = customers.id
+         * WHERE customers.is_vip = false
          * ORDER BY order_date ASC
          * LIMIT 100;
          */

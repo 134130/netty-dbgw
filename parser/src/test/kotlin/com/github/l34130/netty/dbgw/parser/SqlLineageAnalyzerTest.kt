@@ -336,12 +336,11 @@ class SqlLineageAnalyzerTest {
     }
 
     @Test
-    @Disabled
     @DisplayName(
         """
         DELETE FROM orders
-        USING customers
-        WHERE orders.customer_id = customers.id AND customers.is_vip = false
+        JOIN customers ON orders.customer_id = customers.id
+        WHERE customers.is_vip = false
         ORDER BY order_date ASC
         LIMIT 100;
     """,
@@ -350,8 +349,8 @@ class SqlLineageAnalyzerTest {
         val sql =
             """
             DELETE FROM orders
-            USING customers
-            WHERE orders.customer_id = customers.id AND customers.is_vip = false
+            JOIN customers ON orders.customer_id = customers.id
+            WHERE customers.is_vip = false
             ORDER BY order_date ASC
             LIMIT 100;
             """.trimIndent()
@@ -359,10 +358,16 @@ class SqlLineageAnalyzerTest {
 
         val expected =
             ParseResult(
-                selectItems = setOf(),
+                selectItems =
+                    setOf(
+                        DirectColumn(TestUtils.column("orders", "*")),
+                    ),
                 referencedColumns =
                     setOf(
-                        TestUtils.column("actor", "actor_id"),
+                        TestUtils.column("orders", "customer_id"),
+                        TestUtils.column("customers", "id"),
+                        TestUtils.column("customers", "is_vip"),
+                        TestUtils.column("orders", "order_date"),
                     ),
             )
 

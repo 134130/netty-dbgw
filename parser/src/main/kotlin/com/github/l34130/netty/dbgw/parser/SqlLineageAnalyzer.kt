@@ -27,11 +27,8 @@ class SqlLineageAnalyzer {
                 }
                 is Delete -> {
                     val deleteVisitor = LineageDeleteVisitor()
-
                     stmt.accept(deleteVisitor)
-
-                    null to null
-                    TODO()
+                    deleteVisitor.selectItems to deleteVisitor.referencedColumns
                 }
                 else -> TODO("Unsupported statement type: ${stmt.javaClass.simpleName}")
             }
