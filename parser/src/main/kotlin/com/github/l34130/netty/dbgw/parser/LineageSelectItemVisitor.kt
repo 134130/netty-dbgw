@@ -36,14 +36,8 @@ class LineageSelectItemVisitor(
 
                 override fun visit(column: Column) {
                     val tableSource =
-                        if (fromItemVisitor.tableDefinitions.size == 1) {
-                            fromItemVisitor.tableDefinitions.first()
-                        } else {
-                            fromItemVisitor.tableDefinitions.find { it.alias() == column.table?.name }
-                                ?: error(
-                                    "Column '${column.columnName}' refers to a table alias '${column.table?.name}' that does not exist in the FROM clause.",
-                                )
-                        }
+                        fromItemVisitor.resolveTable(column.table?.name)
+                            ?: error("Column '${column.columnName}' does not exist in the FROM clause.")
                     val columnRef = tableSource.getOriginalColumnSource(column.columnName)
                     selectItems += DirectColumn(columnRef, customAlias = alias)
                 }

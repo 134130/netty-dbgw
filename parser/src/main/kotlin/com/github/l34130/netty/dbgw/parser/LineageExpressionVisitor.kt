@@ -10,20 +10,9 @@ class LineageExpressionVisitor(
     val columnRefs = mutableSetOf<ColumnRef>()
 
     override fun visit(column: Column) {
-        if (fromItemVisitor.tableDefinitions.size == 1) {
-            // If there's only one table, we can assume the column belongs to that table
-            val tableSource = fromItemVisitor.tableDefinitions.first()
-            columnRefs += tableSource.getOriginalColumnSource(column.columnName)
-            return
-        }
-
-        // If there are multiple tables, we need to find the correct table source
         val tableSource =
-            fromItemVisitor.tableDefinitions.find { it.alias() == column.table?.name }
-                ?: error(
-                    "Column '${column.columnName}' refers to a table alias '${column.table?.name}' that does not exist in the FROM clause.",
-                )
-
+            fromItemVisitor.resolveTable(column.table?.name)
+                ?: error("Column '${column.columnName}' refers to a table '${column.table?.name}' that does not exist in the FROM clause.")
         columnRefs += tableSource.getOriginalColumnSource(column.columnName)
     }
 
