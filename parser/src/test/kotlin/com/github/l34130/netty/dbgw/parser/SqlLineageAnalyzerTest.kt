@@ -262,7 +262,6 @@ class SqlLineageAnalyzerTest {
         assertEquals(expected, parsed, TestUtils.debugDump(sql, expected, parsed))
     }
 
-    // Functions test
     @Test
     @DisplayName(
         "SELECT CONCAT(a.first_name, ' ', a.last_name) FROM actor a WHERE a.actor_id = 1",
@@ -338,14 +337,29 @@ class SqlLineageAnalyzerTest {
 
     @Test
     @Disabled
-    @DisplayName("DELETE FROM actor WHERE actor_id = 1")
+    @DisplayName(
+        """
+        DELETE FROM orders
+        USING customers
+        WHERE orders.customer_id = customers.id AND customers.is_vip = false
+        ORDER BY order_date ASC
+        LIMIT 100;
+    """,
+    )
     fun `test delete`() {
-        val sql = "DELETE FROM actor WHERE actor_id = 1"
+        val sql =
+            """
+            DELETE FROM orders
+            USING customers
+            WHERE orders.customer_id = customers.id AND customers.is_vip = false
+            ORDER BY order_date ASC
+            LIMIT 100;
+            """.trimIndent()
         val parsed = SqlLineageAnalyzer().parse(sql)
 
         val expected =
             ParseResult(
-                selectItems = emptySet(),
+                selectItems = setOf(),
                 referencedColumns =
                     setOf(
                         TestUtils.column("actor", "actor_id"),

@@ -1,8 +1,9 @@
 package com.github.l34130.netty.dbgw.parser
 
-import com.github.l34130.netty.dbgw.parser.SelectItem
 import net.sf.jsqlparser.parser.CCJSqlParserUtil
 import net.sf.jsqlparser.statement.Statement
+import net.sf.jsqlparser.statement.delete.Delete
+import net.sf.jsqlparser.statement.select.Select
 
 data class ParseResult(
     val selectItems: Set<SelectItem>,
@@ -17,14 +18,25 @@ data class ParseResult(
 class SqlLineageAnalyzer {
     fun parse(sql: String): ParseResult {
         val stmt: Statement = CCJSqlParserUtil.parse(sql)
+        val (selectItems, referencedColumns) =
+            when (stmt) {
+                is Select -> {
+                    val selectVisitor = LineageSelectVisitor()
+                    stmt.selectBody.accept(selectVisitor)
+                    selectVisitor.selectItems to selectVisitor.referencedColumns
+                }
+                is Delete -> {
+                    val deleteVisitor = LineageDeleteVisitor()
 
-        val stmtVisitor = LineageStatementVisitor()
-        stmt.accept(stmtVisitor)
+                    stmt.accept(deleteVisitor)
 
-        return ParseResult(
-            stmtVisitor.selectItems,
-            stmtVisitor.referencedColumns,
-        )
+                    null to null
+                    TODO()
+                }
+                else -> TODO("Unsupported statement type: ${stmt.javaClass.simpleName}")
+            }
+
+        return ParseResult(selectItems, referencedColumns)
     }
 //    fun resolve(parsed: ParseResult, schemaProvider: SchemaProvider): LineageResult
     // convenience

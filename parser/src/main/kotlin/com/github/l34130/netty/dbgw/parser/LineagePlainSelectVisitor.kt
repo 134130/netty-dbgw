@@ -5,7 +5,7 @@ import net.sf.jsqlparser.statement.select.SelectVisitorAdapter
 
 class LineagePlainSelectVisitor : SelectVisitorAdapter() {
     private val fromItemVisitor = LineageFromItemVisitor()
-    private val expressionVisitor = LineageExpressionVisitor(fromItemVisitor)
+    private val expressionVisitor = LineageExpressionVisitor { fromItemVisitor.tableDefinitions }
     private val selectItemVisitor = LineageSelectItemVisitor(fromItemVisitor)
 
     val selectItems: Set<SelectItem>
@@ -27,16 +27,18 @@ class LineagePlainSelectVisitor : SelectVisitorAdapter() {
         plainSelect.selectItems.forEach { selectItem ->
             selectItem.accept(selectItemVisitor)
         }
+        plainSelect.groupBy?.let {
+            TODO()
+        }
+        plainSelect.orderByElements?.forEach {
+            TODO()
+        }
 
         plainSelect.distinct?.let {
             TODO()
         }
 
         plainSelect.intoTables?.let {
-            TODO()
-        }
-
-        plainSelect.orderByElements?.let {
             TODO()
         }
     }

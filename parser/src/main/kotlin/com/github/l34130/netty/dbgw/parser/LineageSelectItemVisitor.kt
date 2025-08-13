@@ -20,7 +20,7 @@ class LineageSelectItemVisitor(
         val itemVisitor =
             object : ExpressionVisitorAdapter() {
                 override fun visit(function: Function) {
-                    val functionParamVisitor = LineageExpressionVisitor(fromItemVisitor)
+                    val functionParamVisitor = LineageExpressionVisitor { fromItemVisitor.tableDefinitions }
                     function.parameters?.expressions?.forEach { expr ->
                         expr.accept(functionParamVisitor)
                     }

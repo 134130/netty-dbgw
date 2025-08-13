@@ -5,13 +5,13 @@ import net.sf.jsqlparser.schema.Column
 import net.sf.jsqlparser.statement.select.SubSelect
 
 class LineageExpressionVisitor(
-    val fromItemVisitor: LineageFromItemVisitor,
+    val tableSourceProvider: TableSourceProvider,
 ) : ExpressionVisitorAdapter() {
     val columnRefs = mutableSetOf<ColumnRef>()
 
     override fun visit(column: Column) {
         val tableSource =
-            fromItemVisitor.resolveTable(column.table?.name)
+            tableSourceProvider.resolveTable(column.table?.name)
                 ?: error("Column '${column.columnName}' refers to a table '${column.table?.name}' that does not exist in the FROM clause.")
         columnRefs += tableSource.getOriginalColumnSource(column.columnName)
     }
